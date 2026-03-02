@@ -1,0 +1,68 @@
+services:
+  # ─── PostgreSQL Database ───────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: observatory-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-observatory_db}
+      POSTGRES_USER: ${DB_USER:-observatory}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-observatory_secret}
+      SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-admin@iset-tozeur.tn}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-Admin@123!}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-observatory} -d ${DB_NAME:-observatory_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─── Backend API (Express + TypeScript) ────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: observatory-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-observatory}
+      DB_PASSWORD: ${DB_PASSWORD:-observatory_secret}
+      DB_NAME: ${DB_NAME:-observatory_db}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      CORS_ORIGIN: http://localhost:5173
+      SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-admin@iset-tozeur.tn}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-Admin@123!}
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  # ─── Frontend (React + Vite + Tailwind) ────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: observatory-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  pg_data:
