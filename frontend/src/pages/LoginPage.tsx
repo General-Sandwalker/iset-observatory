@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Activity, LogIn, AlertCircle } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
