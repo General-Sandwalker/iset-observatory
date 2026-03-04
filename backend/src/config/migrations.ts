@@ -103,6 +103,28 @@ const migrations = [
       ON CONFLICT DO NOTHING;
     `,
   },
+  {
+    name: '003_datasets_schema',
+    sql: `
+      -- ─── Datasets / uploaded-file registry ───────────────────
+      CREATE TABLE IF NOT EXISTS datasets (
+          id              SERIAL PRIMARY KEY,
+          name            VARCHAR(255) NOT NULL,
+          file_name       VARCHAR(255) NOT NULL,
+          table_name      VARCHAR(255) UNIQUE,
+          status          VARCHAR(50) NOT NULL DEFAULT 'uploaded',
+          row_count       INT DEFAULT 0,
+          column_mapping  JSONB,
+          uploaded_by     INT REFERENCES users(id),
+          created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+
+      -- ─── Index for quick lookups ─────────────────────────────
+      CREATE INDEX IF NOT EXISTS idx_datasets_status ON datasets(status);
+      CREATE INDEX IF NOT EXISTS idx_datasets_uploaded_by ON datasets(uploaded_by);
+    `,
+  },
 ];
 
 export async function runMigrations(): Promise<void> {

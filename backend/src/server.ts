@@ -7,6 +7,7 @@ import healthRouter from './routes/health';
 import authRouter from './routes/auth';
 import usersRouter from './routes/users';
 import rolesRouter from './routes/roles';
+import datasetsRouter from './routes/datasets';
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use('/api', healthRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/roles', rolesRouter);
+app.use('/api/datasets', datasetsRouter);
 
 // --------------- Error Handler -----------
 app.use(errorHandler);

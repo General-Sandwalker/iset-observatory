@@ -40,3 +40,32 @@ export interface LoginCredentials {
   email: string;
   password: string;
 }
+
+// ─── Phase 3: Ingestion Engine types ─────────────────────────────
+
+export interface Dataset {
+  id: number;
+  name: string;
+  file_name: string;
+  table_name: string | null;
+  status: 'uploaded' | 'processing' | 'imported' | 'error';
+  row_count: number;
+  column_mapping: ColumnMapping[] | null;
+  uploaded_by: number;
+  uploaded_by_name?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ColumnMapping {
+  originalHeader: string;
+  columnName: string;
+  columnType: 'TEXT' | 'INTEGER' | 'NUMERIC' | 'DATE' | 'BOOLEAN';
+}
+
+export interface ParsedPreview {
+  dataset: Dataset;
+  headers: string[];
+  preview: Record<string, unknown>[];
+  totalRows: number;
+}

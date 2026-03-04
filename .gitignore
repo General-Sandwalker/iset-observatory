@@ -29,5 +29,9 @@ npm-debug.log*
 # Coverage
 coverage/
 
+# Uploaded files
+backend/uploads/*
+!backend/uploads/.gitkeep
+
 
 setup_github.sh
