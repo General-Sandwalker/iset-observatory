@@ -8,6 +8,9 @@ import authRouter from './routes/auth';
 import usersRouter from './routes/users';
 import rolesRouter from './routes/roles';
 import datasetsRouter from './routes/datasets';
+import aiRouter from './routes/ai';
+import chartsRouter from './routes/charts';
+import dashboardsRouter from './routes/dashboards';
 
 const app = express();
 
@@ -22,6 +25,9 @@ app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/roles', rolesRouter);
 app.use('/api/datasets', datasetsRouter);
+app.use('/api/ai', aiRouter);
+app.use('/api/charts', chartsRouter);
+app.use('/api/dashboards', dashboardsRouter);
 
 // --------------- Error Handler -----------
 app.use(errorHandler);

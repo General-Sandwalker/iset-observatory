@@ -125,6 +125,33 @@ const migrations = [
       CREATE INDEX IF NOT EXISTS idx_datasets_uploaded_by ON datasets(uploaded_by);
     `,
   },
+  {
+    name: '004_charts_dashboards',
+    sql: `
+      -- ─── Saved Charts ────────────────────────────────────────
+      CREATE TABLE IF NOT EXISTS charts (
+          id              SERIAL PRIMARY KEY,
+          title           VARCHAR(255) NOT NULL,
+          chart_type      VARCHAR(50)  NOT NULL,
+          dataset_id      INT NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,
+          config          JSONB NOT NULL DEFAULT '{}',
+          created_by      INT REFERENCES users(id),
+          created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+
+      -- ─── Dashboards ──────────────────────────────────────────
+      CREATE TABLE IF NOT EXISTS dashboards (
+          id              SERIAL PRIMARY KEY,
+          title           VARCHAR(255) NOT NULL,
+          description     TEXT,
+          layout          JSONB NOT NULL DEFAULT '[]',
+          created_by      INT REFERENCES users(id),
+          created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `,
+  },
 ];
 
 export async function runMigrations(): Promise<void> {

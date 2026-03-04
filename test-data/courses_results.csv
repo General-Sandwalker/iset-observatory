@@ -1,0 +1,23 @@
+CourseCode,CourseName,Department,Semester,Year,Instructor,Enrolled,Passed,Failed,AverageGrade,PassRate
+CS101,Introduction to Programming,Computer Science,S1,2025,Dr. Sami Bouaziz,45,38,7,12.4,84.4
+CS201,Data Structures,Computer Science,S1,2025,Dr. Sami Bouaziz,38,30,8,11.8,78.9
+CS301,Software Engineering,Computer Science,S1,2025,Dr. Leila Hammami,32,28,4,13.5,87.5
+CS202,Database Systems,Computer Science,S2,2025,Dr. Nizar Trifi,40,35,5,13.1,87.5
+CS302,Web Development,Computer Science,S2,2025,Dr. Leila Hammami,35,33,2,14.2,94.3
+CS303,Artificial Intelligence,Computer Science,S2,2025,Dr. Nizar Trifi,30,22,8,11.2,73.3
+EE101,Circuit Analysis,Electrical Engineering,S1,2025,Dr. Hedi Snoussi,42,34,8,11.5,81.0
+EE201,Digital Electronics,Electrical Engineering,S1,2025,Dr. Hedi Snoussi,36,29,7,11.9,80.6
+EE301,Control Systems,Electrical Engineering,S2,2025,Dr. Amel Gharbi,28,20,8,10.8,71.4
+EE202,Power Systems,Electrical Engineering,S2,2025,Dr. Amel Gharbi,33,26,7,11.1,78.8
+BA101,Principles of Management,Business Administration,S1,2025,Dr. Imen Jeddi,50,44,6,13.0,88.0
+BA201,Financial Accounting,Business Administration,S1,2025,Dr. Imen Jeddi,43,36,7,12.2,83.7
+BA301,Strategic Management,Business Administration,S2,2025,Dr. Kamel Mbarki,37,32,5,13.6,86.5
+BA202,Marketing Fundamentals,Business Administration,S2,2025,Dr. Kamel Mbarki,41,38,3,14.0,92.7
+CS101,Introduction to Programming,Computer Science,S1,2024,Dr. Sami Bouaziz,50,40,10,11.9,80.0
+CS201,Data Structures,Computer Science,S1,2024,Dr. Sami Bouaziz,42,32,10,11.2,76.2
+CS301,Software Engineering,Computer Science,S1,2024,Dr. Leila Hammami,35,30,5,13.0,85.7
+CS202,Database Systems,Computer Science,S2,2024,Dr. Nizar Trifi,44,37,7,12.8,84.1
+BA101,Principles of Management,Business Administration,S1,2024,Dr. Imen Jeddi,55,47,8,12.7,85.5
+BA201,Financial Accounting,Business Administration,S1,2024,Dr. Imen Jeddi,48,38,10,11.8,79.2
+EE101,Circuit Analysis,Electrical Engineering,S1,2024,Dr. Hedi Snoussi,46,35,11,11.0,76.1
+EE201,Digital Electronics,Electrical Engineering,S1,2024,Dr. Hedi Snoussi,39,30,9,11.4,76.9

@@ -1,0 +1,31 @@
+AlumniID,FullName,GraduationYear,Department,Degree,CurrentEmployer,JobTitle,Sector,MonthlySalary,City,MonthsToFirstJob,Satisfied
+A001,Sofiane Hammami,2020,Computer Science,Licence,Vermeg,Software Developer,IT,2800,Tunis,3,Yes
+A002,Olfa Belhaj,2020,Business Administration,Licence,Banque de Tunisie,Account Manager,Banking,2200,Tunis,6,Yes
+A003,Nabil Chaabane,2021,Electrical Engineering,Licence,STEG,Maintenance Engineer,Energy,2100,Tozeur,4,Yes
+A004,Sana Jlassi,2021,Computer Science,Licence,Sofrecom,Full-Stack Developer,IT,3200,Tunis,2,Yes
+A005,Karim Bouzgarrou,2020,Computer Science,Licence,,Unemployed,,,12,No
+A006,Meriem Ayari,2022,Business Administration,Licence,Carrefour Tunisie,Store Manager,Retail,1800,Sfax,5,No
+A007,Walid Guedri,2021,Computer Science,Licence,Talan Tunisie,Data Analyst,IT,2600,Tunis,1,Yes
+A008,Hajer Mbarek,2020,Electrical Engineering,Licence,Leoni,Production Supervisor,Manufacturing,2400,Sousse,3,Yes
+A009,Anis Selmi,2022,Computer Science,Licence,Freelance,Web Developer,IT,3000,Tozeur,0,Yes
+A010,Rania Chihi,2021,Business Administration,Licence,Ooredoo,HR Assistant,Telecom,2000,Tunis,7,No
+A011,Mehdi Gasmi,2022,Computer Science,Licence,Primatec,Backend Developer,IT,2900,Tunis,2,Yes
+A012,Imen Laabidi,2020,Business Administration,Licence,Mediterranean Bank,Credit Analyst,Banking,2300,Sfax,4,Yes
+A013,Zied Kammoun,2021,Electrical Engineering,Licence,Coficab,Quality Engineer,Manufacturing,2500,Sousse,3,Yes
+A014,Ameni Bouslama,2022,Computer Science,Licence,,Unemployed,,,10,No
+A015,Yassine Ouerghi,2020,Computer Science,Licence,Telnet,Embedded Developer,IT,2700,Tunis,2,Yes
+A016,Emna Agrebi,2021,Business Administration,Licence,Magasin General,Sales Manager,Retail,1700,Gafsa,8,No
+A017,Saif Boujelben,2022,Electrical Engineering,Licence,STEG,Grid Technician,Energy,1900,Tozeur,5,Yes
+A018,Nesrine Fehri,2020,Computer Science,Licence,Oxia,QA Engineer,IT,2500,Tunis,3,Yes
+A019,Fedi Gharbi,2021,Computer Science,Licence,Think-it,DevOps Engineer,IT,3500,Tunis,1,Yes
+A020,Asma Tlili,2022,Business Administration,Licence,BNA,Branch Assistant,Banking,1800,Tozeur,6,No
+A021,Houssem Dridi,2020,Electrical Engineering,Licence,,Unemployed,,,15,No
+A022,Lina Ksouri,2021,Computer Science,Licence,Wevioo,UI/UX Designer,IT,2400,Tunis,4,Yes
+A023,Raouf Mahjoubi,2022,Computer Science,Licence,Instadeep,ML Intern,IT,1600,Tunis,1,Yes
+A024,Jihene Arfaoui,2020,Business Administration,Licence,Enda Tamweel,Microcredit Officer,Finance,2100,Nefta,3,Yes
+A025,Haythem Baccouche,2021,Electrical Engineering,Licence,Hutchinson,Process Engineer,Manufacturing,2600,Sousse,2,Yes
+A026,Chaima Rezgui,2022,Computer Science,Licence,Linedata,Java Developer,IT,2800,Tunis,3,Yes
+A027,Fares Guesmi,2020,Computer Science,Licence,Orange Tunisie,Network Admin,Telecom,2300,Tunis,5,Yes
+A028,Sonia Ammar,2021,Business Administration,Licence,,Unemployed,,,11,No
+A029,Malek Dhouib,2022,Electrical Engineering,Licence,Yazaki,Test Technician,Manufacturing,2000,Gafsa,4,No
+A030,Abir Mnasri,2020,Computer Science,Licence,Sofrecom,Scrum Master,IT,3100,Tunis,2,Yes

@@ -1,0 +1,26 @@
+StudentID,FullName,Email,Department,Level,GPA,City,EnrollmentYear,Status
+1001,Ahmed Ben Ali,ahmed.benali@iset.tn,Computer Science,L3,14.5,Tozeur,2023,Active
+1002,Fatma Trabelsi,fatma.trabelsi@iset.tn,Computer Science,L2,12.8,Nefta,2024,Active
+1003,Mohamed Gharbi,mohamed.gharbi@iset.tn,Business Administration,L3,15.2,Gafsa,2023,Active
+1004,Amira Khelifi,amira.khelifi@iset.tn,Electrical Engineering,L1,11.3,Tozeur,2025,Active
+1005,Youssef Hamdi,youssef.hamdi@iset.tn,Computer Science,L3,16.8,Tunis,2023,Active
+1006,Salma Bouazizi,salma.bouazizi@iset.tn,Business Administration,L2,13.9,Tozeur,2024,Active
+1007,Khalil Mansouri,khalil.mansouri@iset.tn,Electrical Engineering,L3,10.5,Gabes,2023,Active
+1008,Rim Chaibi,rim.chaibi@iset.tn,Computer Science,L1,14.1,Sfax,2025,Active
+1009,Omar Jaziri,omar.jaziri@iset.tn,Computer Science,L2,9.8,Tozeur,2024,Inactive
+1010,Nour Sassi,nour.sassi@iset.tn,Business Administration,L3,17.2,Nefta,2023,Active
+1011,Amine Ferchichi,amine.ferchichi@iset.tn,Electrical Engineering,L2,12.0,Tozeur,2024,Active
+1012,Hana Meddeb,hana.meddeb@iset.tn,Computer Science,L3,15.7,Gafsa,2023,Active
+1013,Bilel Khemiri,bilel.khemiri@iset.tn,Business Administration,L1,11.6,Tozeur,2025,Active
+1014,Ines Dridi,ines.dridi@iset.tn,Computer Science,L2,13.4,Sfax,2024,Active
+1015,Rami Tounsi,rami.tounsi@iset.tn,Electrical Engineering,L3,14.9,Tozeur,2023,Active
+1016,Sarra Belhadj,sarra.belhadj@iset.tn,Computer Science,L1,16.1,Tunis,2025,Active
+1017,Tarek Abidi,tarek.abidi@iset.tn,Business Administration,L2,8.7,Tozeur,2024,Inactive
+1018,Mariem Karoui,mariem.karoui@iset.tn,Computer Science,L3,13.2,Nefta,2023,Active
+1019,Aymen Hosni,aymen.hosni@iset.tn,Electrical Engineering,L1,15.4,Gabes,2025,Active
+1020,Cyrine Mejri,cyrine.mejri@iset.tn,Computer Science,L2,14.7,Tozeur,2024,Active
+1021,Firas Slimani,firas.slimani@iset.tn,Business Administration,L3,12.3,Gafsa,2023,Active
+1022,Asma Hannachi,asma.hannachi@iset.tn,Electrical Engineering,L2,11.9,Tozeur,2024,Active
+1023,Wael Bouzidi,wael.bouzidi@iset.tn,Computer Science,L3,17.5,Sfax,2023,Active
+1024,Donia Fourati,donia.fourati@iset.tn,Computer Science,L1,10.2,Tozeur,2025,Active
+1025,Hamza Riahi,hamza.riahi@iset.tn,Business Administration,L2,14.0,Nefta,2024,Active

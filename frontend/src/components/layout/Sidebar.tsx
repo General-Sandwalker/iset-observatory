@@ -7,6 +7,7 @@ import {
   FileSpreadsheet,
   BrainCircuit,
   BarChart3,
+  Columns3,
   ClipboardList,
   Settings,
   LogOut,
@@ -22,6 +23,7 @@ const navItems = [
   { to: '/import', label: 'Data Import', icon: FileSpreadsheet },
   { to: '/ai', label: 'AI Analysis', icon: BrainCircuit },
   { to: '/charts', label: 'Visualizations', icon: BarChart3 },
+  { to: '/dashboards', label: 'Dashboards', icon: Columns3 },
   { to: '/surveys', label: 'Surveys', icon: ClipboardList },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];

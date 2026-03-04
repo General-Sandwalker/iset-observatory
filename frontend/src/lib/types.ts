@@ -69,3 +69,98 @@ export interface ParsedPreview {
   preview: Record<string, unknown>[];
   totalRows: number;
 }
+
+// ─── Phase 4: AI & Analytical Intelligence types ─────────────────
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  sql?: string;
+  data?: Record<string, unknown>[];
+  rowCount?: number;
+}
+
+export interface NLQueryResult {
+  question: string;
+  sql: string;
+  data: Record<string, unknown>[];
+  rowCount: number;
+  explanation: string;
+}
+
+export interface SurveyField {
+  id: string;
+  type: 'text' | 'textarea' | 'number' | 'select' | 'radio' | 'checkbox' | 'date' | 'email' | 'rating';
+  label: string;
+  placeholder?: string;
+  required: boolean;
+  options?: string[];
+  min?: number;
+  max?: number;
+}
+
+export interface GeneratedSurvey {
+  title: string;
+  description: string;
+  fields: SurveyField[];
+  goal: string;
+}
+
+export interface QueryableTable {
+  id: number;
+  name: string;
+  table_name: string;
+  row_count: number;
+  column_mapping: ColumnMapping[];
+}
+
+// ─── Phase 5: Visual Dashboard Editor types ──────────────────────
+
+export type ChartType = 'bar' | 'line' | 'pie' | 'doughnut' | 'radar' | 'polarArea';
+export type AggregationType = 'COUNT' | 'SUM' | 'AVG' | 'MIN' | 'MAX';
+
+export interface ChartConfig {
+  xColumn: string;
+  yColumn: string;
+  aggregation: AggregationType;
+  colors?: string[];
+  showLegend?: boolean;
+  showGrid?: boolean;
+}
+
+export interface Chart {
+  id: number;
+  title: string;
+  chart_type: ChartType;
+  dataset_id: number;
+  config: ChartConfig;
+  dataset_name?: string;
+  table_name?: string;
+  column_mapping?: ColumnMapping[];
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChartDataPoint {
+  label: string;
+  value: number;
+}
+
+export interface DashboardLayoutItem {
+  chartId: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface Dashboard {
+  id: number;
+  title: string;
+  description?: string;
+  layout: DashboardLayoutItem[];
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+}
