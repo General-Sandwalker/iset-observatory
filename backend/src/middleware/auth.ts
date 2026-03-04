@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
+import pool from '../config/database';
 
 export interface JwtPayload {
   id: number;
@@ -36,7 +37,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
 }
 
 /**
- * Middleware factory: restrict access to specific roles.
+ * Middleware factory: restrict access to specific roles (legacy, simple check).
  * Usage: `authorize('super_admin', 'admin')`
  */
 export function authorize(...roles: string[]) {
@@ -46,5 +47,40 @@ export function authorize(...roles: string[]) {
       return;
     }
     next();
+  };
+}
+
+/**
+ * Middleware factory: check if the user has a specific permission via RBAC tables.
+ * Usage: `requirePermission('users.create')`
+ */
+export function requirePermission(...requiredPermissions: string[]) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Not authenticated.' });
+      return;
+    }
+
+    try {
+      const result = await pool.query(
+        `SELECT DISTINCT p.name
+         FROM user_roles ur
+         JOIN role_permissions rp ON rp.role_id = ur.role_id
+         JOIN permissions p ON p.id = rp.permission_id
+         WHERE ur.user_id = $1
+           AND p.name = ANY($2)`,
+        [req.user.id, requiredPermissions]
+      );
+
+      if (result.rows.length < requiredPermissions.length) {
+        res.status(403).json({ success: false, message: 'Insufficient permissions.' });
+        return;
+      }
+
+      next();
+    } catch (error) {
+      console.error('Permission check error:', error);
+      res.status(500).json({ success: false, message: 'Internal server error.' });
+    }
   };
 }

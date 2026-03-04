@@ -3,6 +3,7 @@ import {
   Activity,
   LayoutDashboard,
   Users,
+  Shield,
   FileSpreadsheet,
   BrainCircuit,
   BarChart3,
@@ -17,6 +18,7 @@ import { useState } from 'react';
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/users', label: 'Users', icon: Users },
+  { to: '/roles', label: 'Roles', icon: Shield },
   { to: '/import', label: 'Data Import', icon: FileSpreadsheet },
   { to: '/ai', label: 'AI Analysis', icon: BrainCircuit },
   { to: '/charts', label: 'Visualizations', icon: BarChart3 },

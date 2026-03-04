@@ -4,6 +4,8 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import AppLayout from './components/layout/AppLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import UsersPage from './pages/UsersPage';
+import RolesPage from './pages/RolesPage';
 
 export default function App() {
   return (
@@ -22,7 +24,8 @@ export default function App() {
             }
           >
             <Route index element={<DashboardPage />} />
-            {/* Future routes will be added here */}
+            <Route path="users" element={<UsersPage />} />
+            <Route path="roles" element={<RolesPage />} />
           </Route>
         </Routes>
       </AuthProvider>
