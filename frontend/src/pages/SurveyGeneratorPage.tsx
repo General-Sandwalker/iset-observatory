@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   ClipboardList, Wand2, Loader2, Eye, Copy, Check, ArrowLeft, Star,
   Download, Save, Share2, ChevronDown, ChevronUp, Link,
   ExternalLink, BookMarked, Trash2,
 } from 'lucide-react';
-import QRCode from 'qrcode';
 import api from '../lib/api';
 import type { GeneratedSurvey, SurveyField, SavedSurvey } from '../lib/types';
 
@@ -128,8 +127,6 @@ export default function SurveyGeneratorPage() {
   const [shareUrl, setShareUrl] = useState('');
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
   // ── fetch saved surveys ──────────────────────────────────────────────────
   const fetchSaved = useCallback(async () => {
     setLoadingSaved(true);
@@ -141,18 +138,6 @@ export default function SurveyGeneratorPage() {
   }, []);
 
   useEffect(() => { fetchSaved(); }, [fetchSaved]);
-
-  // ── QR code rendering ────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!shareOpen || !canvasRef.current) return;
-    const url = shareUrl.trim();
-    if (url) {
-      QRCode.toCanvas(canvasRef.current, url, { width: 200, margin: 1 }).catch(() => {});
-    } else {
-      const ctx = canvasRef.current.getContext('2d');
-      if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    }
-  }, [shareUrl, shareOpen]);
 
   // ── actions ──────────────────────────────────────────────────────────────
   async function handleGenerate(e: React.FormEvent) {
@@ -228,12 +213,18 @@ export default function SurveyGeneratorPage() {
     setTimeout(() => setCopiedLink(false), 2000);
   }
 
-  function downloadQrPng() {
-    if (!canvasRef.current) return;
+  async function downloadQrPng() {
+    const url = shareUrl.trim();
+    if (!url) return;
+    const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+    const res = await fetch(apiUrl);
+    const blob = await res.blob();
+    const objUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = canvasRef.current.toDataURL('image/png');
+    a.href = objUrl;
     a.download = `${survey?.title?.replace(/[^a-z0-9]/gi, '_').toLowerCase() ?? 'survey'}_qr.png`;
     a.click();
+    URL.revokeObjectURL(objUrl);
   }
 
   function loadSavedSurvey(s: SavedSurvey & { schema?: GeneratedSurvey }) {
@@ -490,14 +481,14 @@ export default function SurveyGeneratorPage() {
                   <div className="flex flex-col items-center gap-3">
                     <div
                       className="rounded-xl p-3"
-                      style={{ background: shareUrl.trim() ? '#fff' : 'var(--ag-bg)', border: '1px solid var(--ag-border)' }}
+                      style={{ background: '#fff', border: '1px solid var(--ag-border)', opacity: shareUrl.trim() ? 1 : 0.2 }}
                     >
-                      <canvas
-                        ref={canvasRef}
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl.trim() || 'https://example.com')}`}
+                        alt="QR code"
                         width={200}
                         height={200}
                         className="block"
-                        style={{ opacity: shareUrl.trim() ? 1 : 0.2 }}
                       />
                     </div>
                     {shareUrl.trim() && (
