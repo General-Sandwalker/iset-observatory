@@ -11,9 +11,130 @@ import {
   ChevronRight,
   AlertCircle,
   Code,
+  BarChart3,
+  X,
 } from 'lucide-react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  RadialLinearScale,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
+import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
 import api from '../lib/api';
 import type { ChatMessage, QueryableTable } from '../lib/types';
+
+ChartJS.register(
+  CategoryScale, LinearScale, BarElement, LineElement, PointElement,
+  ArcElement, RadialLinearScale, Title, Tooltip, Legend, Filler,
+);
+
+const PALETTE = [
+  'rgba(59,130,246,0.75)', 'rgba(16,185,129,0.75)', 'rgba(245,158,11,0.75)',
+  'rgba(239,68,68,0.75)', 'rgba(139,92,246,0.75)', 'rgba(236,72,153,0.75)',
+  'rgba(20,184,166,0.75)', 'rgba(249,115,22,0.75)', 'rgba(99,102,241,0.75)',
+  'rgba(168,85,247,0.75)', 'rgba(34,197,94,0.75)', 'rgba(234,179,8,0.75)',
+];
+
+type MiniChartType = 'bar' | 'horizontalBar' | 'line' | 'pie' | 'doughnut';
+
+const MINI_CHART_TYPES: { value: MiniChartType; label: string }[] = [
+  { value: 'bar', label: 'Bar' },
+  { value: 'horizontalBar', label: 'H-Bar' },
+  { value: 'line', label: 'Line' },
+  { value: 'pie', label: 'Pie' },
+  { value: 'doughnut', label: 'Donut' },
+];
+
+function isNumeric(val: unknown): boolean {
+  return val !== null && val !== undefined && val !== '' && !isNaN(Number(val));
+}
+
+function InlineChart({ data, onClose }: { data: Record<string, unknown>[]; onClose: () => void }) {
+  const columns = Object.keys(data[0] || {});
+  const numericCols = columns.filter((c) => data.slice(0, 10).every((r) => isNumeric(r[c])));
+  const labelCols = columns.filter((c) => !numericCols.includes(c));
+
+  const [chartType, setChartType] = useState<MiniChartType>('bar');
+  const [labelCol, setLabelCol] = useState(labelCols[0] || columns[0]);
+  const [valueCol, setValueCol] = useState(numericCols[0] || columns[1] || columns[0]);
+
+  const labels = data.map((r) => String(r[labelCol] ?? ''));
+  const values = data.map((r) => Number(r[valueCol] ?? 0));
+  const bgColors = PALETTE.slice(0, labels.length);
+  const borderColors = bgColors.map((c) => c.replace('0.75', '1'));
+
+  const chartData = {
+    labels,
+    datasets: [{ label: valueCol, data: values, backgroundColor: bgColors, borderColor: borderColors, borderWidth: 1, fill: false }],
+  };
+
+  const isHorizontal = chartType === 'horizontalBar';
+  const baseOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { mode: 'index' as const } },
+  };
+  const barOpts = { ...baseOpts, ...(isHorizontal ? { indexAxis: 'y' as const } : {}) };
+
+  return (
+    <div className="px-4 pb-4">
+      {/* Controls */}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        {/* Chart type pills */}
+        <div className="flex gap-1 flex-wrap">
+          {MINI_CHART_TYPES.map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setChartType(value)}
+              className="px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors"
+              style={{
+                background: chartType === value ? 'var(--ag-accent-lo)' : 'var(--ag-surface2)',
+                borderColor: chartType === value ? 'var(--ag-accent)' : 'var(--ag-border)',
+                color: chartType === value ? 'var(--ag-accent)' : 'var(--ag-text3)',
+              }}
+            >{label}</button>
+          ))}
+        </div>
+        {/* Column selectors */}
+        <select
+          value={labelCol}
+          onChange={(e) => setLabelCol(e.target.value)}
+          className="ag-input px-2 py-1 text-xs"
+          title="Label column"
+        >
+          {columns.map((c) => <option key={c} value={c}>Label: {c}</option>)}
+        </select>
+        <select
+          value={valueCol}
+          onChange={(e) => setValueCol(e.target.value)}
+          className="ag-input px-2 py-1 text-xs"
+          title="Value column"
+        >
+          {columns.map((c) => <option key={c} value={c}>Value: {c}</option>)}
+        </select>
+        <button onClick={onClose} className="ml-auto p-1 rounded" style={{ color: 'var(--ag-text3)' }}>
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+      {/* Chart */}
+      <div style={{ height: 260, background: 'var(--ag-surface2)', borderRadius: 8, padding: 12, border: '1px solid var(--ag-border)' }}>
+        {(chartType === 'bar' || chartType === 'horizontalBar') && <Bar data={chartData} options={barOpts} />}
+        {chartType === 'line' && <Line data={chartData} options={baseOpts} />}
+        {chartType === 'pie' && <Pie data={chartData} options={{ ...baseOpts, plugins: { legend: { position: 'right' } } }} />}
+        {chartType === 'doughnut' && <Doughnut data={chartData} options={{ ...baseOpts, plugins: { legend: { position: 'right' } } }} />}
+      </div>
+    </div>
+  );
+}
 
 export default function AIAnalysisPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -205,6 +326,7 @@ function renderMarkdown(text: string): React.ReactNode {
 function MessageBubble({ message }: { message: ChatMessage }) {
   const [showSql, setShowSql] = useState(false);
   const [showData, setShowData] = useState(true);
+  const [showChart, setShowChart] = useState(false);
 
   if (message.role === 'user') {
     return (
@@ -273,6 +395,16 @@ function MessageBubble({ message }: { message: ChatMessage }) {
                 {message.rowCount} {message.rowCount === 1 ? 'row' : 'rows'} returned
               </span>
             )}
+            {hasResults && (
+              <button
+                onClick={() => { setShowChart(!showChart); if (!showChart) setShowData(false); else setShowData(true); }}
+                className="flex items-center gap-1 transition-colors hover:opacity-80"
+                style={{ color: showChart ? 'var(--ag-accent)' : 'var(--ag-text3)' }}
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                {showChart ? 'Hide chart' : 'Visualize'}
+              </button>
+            )}
             <button
               onClick={() => setShowSql(!showSql)}
               className="ml-auto flex items-center gap-1 transition-colors hover:opacity-80"
@@ -308,7 +440,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         )}
 
         {/* Results table */}
-        {hasResults && (
+        {hasResults && !showChart && (
           <div className="px-4 py-3">
             <button
               onClick={() => setShowData(!showData)}
@@ -322,6 +454,11 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             </button>
             {showData && <ResultTable data={message.data!} />}
           </div>
+        )}
+
+        {/* Inline chart */}
+        {hasResults && showChart && (
+          <InlineChart data={message.data!} onClose={() => { setShowChart(false); setShowData(true); }} />
         )}
       </div>
     </div>

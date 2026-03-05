@@ -38,6 +38,7 @@ ChartJS.register(
 
 const CHART_TYPES: { value: ChartType; label: string; icon: React.ElementType }[] = [
   { value: 'bar', label: 'Bar', icon: BarChart3 },
+  { value: 'horizontalBar', label: 'H-Bar', icon: BarChart3 },
   { value: 'line', label: 'Line', icon: LineChart },
   { value: 'pie', label: 'Pie', icon: PieChart },
   { value: 'doughnut', label: 'Doughnut', icon: PieChart },
@@ -76,16 +77,17 @@ function buildChartData(data: ChartApiData, xLabel: string, yLabel: string, agg:
 
 function renderChartJS(type: ChartType, data: ChartApiData, title: string, xCol: string, yCol: string, agg: string) {
   const chartData = buildChartData(data, xCol, yCol, agg);
-  const opts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' as const }, title: { display: true, text: title || 'Preview' } } };
-  const props = { data: chartData, options: opts };
+  const baseOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' as const }, title: { display: true, text: title || 'Preview' } } };
+  const barOpts = { ...baseOpts, ...(type === 'horizontalBar' ? { indexAxis: 'y' as const } : {}) };
   switch (type) {
-    case 'bar': return <Bar {...props} />;
-    case 'line': return <Line {...props} />;
-    case 'pie': return <Pie {...props} />;
-    case 'doughnut': return <Doughnut {...props} />;
-    case 'radar': return <RadarChart {...props} />;
-    case 'polarArea': return <PolarArea {...props} />;
-    default: return <Bar {...props} />;
+    case 'bar':
+    case 'horizontalBar': return <Bar data={chartData} options={barOpts} />;
+    case 'line': return <Line data={chartData} options={baseOpts} />;
+    case 'pie': return <Pie data={chartData} options={baseOpts} />;
+    case 'doughnut': return <Doughnut data={chartData} options={baseOpts} />;
+    case 'radar': return <RadarChart data={chartData} options={baseOpts} />;
+    case 'polarArea': return <PolarArea data={chartData} options={baseOpts} />;
+    default: return <Bar data={chartData} options={baseOpts} />;
   }
 }
 

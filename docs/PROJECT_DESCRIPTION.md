@@ -1,33 +1,82 @@
-# ISET Tozeur: Adaptive Digital Observatory & Data Engine
+# ISET Tozeur — Adaptive Digital Observatory
 
 ## 1. Project Vision
-The **Adaptive Digital Observatory** is a next-generation data management platform built for ISET Tozeur. Its primary purpose is to centralize, analyze, and visualize academic performance and professional integration data (Alumni tracking). 
 
-Unlike traditional software with fixed data fields, this platform is a **"Data Engine"**—it allows administrators to create their own database structures on the fly by importing Excel/CSV files and mapping them to dynamic tables.
+The **Adaptive Digital Observatory** is a full-stack data management and analytics platform built for ISET Tozeur. It centralises academic and professional-integration data (alumni tracking, course results, student records) and exposes them through AI-assisted analysis, interactive dashboards, and a schema-agnostic import engine.
 
-## 2. Core Functional Modules
+Unlike rigid fixed-schema software, the platform acts as a **"Data Engine"**: administrators import any CSV/Excel file, visually map columns to SQL types, and the system creates a live PostgreSQL table — no migrations written by hand.
 
-### A. Adaptive Data Ingestion (The Importer)
-- **Schema-Agnostic**: Accepts any CSV or Excel file regardless of column names.
-- **Visual Mapping**: A UI tool where users match file headers to SQL data types (String, Number, Date, etc.).
-- **Dynamic Schema Generation**: Automatically executes `CREATE TABLE` commands in PostgreSQL based on user input.
+---
 
-### B. AI-Assisted Analysis Layer
-- **Natural Language to SQL**: Users can ask plain-English questions (e.g., "What percentage of IT graduates found a job within 6 months?") and the AI generates the secure SQL query.
-- **Automated Insights**: AI scans datasets to highlight trends, such as declining success rates in specific departments.
+## 2. Core Modules
 
-### C. Visual Data Showcase (Dashboard Editor)
-- **Widget-Based Workspace**: A drag-and-drop editor to create charts (Bar, Pie, Line, Radar) using **Chart.js**.
-- **Reporting & Export**: One-click generation of official PDF reports and raw Excel exports.
+### A. Adaptive Data Ingestion
+- **Schema-agnostic**: Accepts any CSV or Excel file regardless of column names or layout.
+- **Visual mapping workspace**: Users match file headers to SQL data types (TEXT, INTEGER, NUMERIC, DATE, BOOLEAN).
+- **Dynamic schema generation**: Executes `CREATE TABLE` in PostgreSQL based on the mapping.
+- **Bulk import worker**: Streams rows into the new table with type-coercion and error reporting.
+- **Dataset management**: Browse imported datasets, view row counts, re-import, or delete.
 
-### D. Identity & Security (RBAC)
-- **Strict Access**: No public registration.
-- **Seeded Super Admin**: Initialized via Docker environment variables.
-- **Granular Permissions**: Fine-grained control over who can import data, create surveys, or view analytics.
+### B. Database Explorer & Table Editor
+- **Explorer view**: Card grid of all dynamic tables showing row count, column count, and import date.
+- **Table editor**: Full CRUD on every row — paginated view, inline cell editing (double-click), add-row modal, multi-select delete.
+- **Schema editor**: Rename columns, change column types, or drop the entire table.
+- **Search & sort**: Per-table column-level sorting and keyword search across all columns.
 
-## 3. Technical Specifications
-- **Frontend**: React.js (Vite) + Tailwind CSS + Lucide Icons.
-- **Backend**: Node.js (Express) with TypeScript.
-- **Database**: PostgreSQL 15+.
-- **Deployment**: Docker & Docker Compose (Multi-container setup).
-- **AI Integration**: Google Gemini API or OpenAI API.
+### C. AI-Assisted Analysis
+- **Natural Language → SQL**: Chat interface where users type plain-English questions (e.g. *"What is the average GPA by department?"*); the AI generates a read-only SELECT query using the live schema.
+- **Two-stage Groq pipeline**:
+  1. NL → SQL generation (schema-aware prompt).
+  2. Results → Insights (second call with actual data; produces a 2–4 sentence natural-language interpretation with bold key figures).
+- **Inline chart builder**: Any query result can be visualised instantly — pick chart type (Bar, Horizontal Bar, Line, Pie, Doughnut), label column, and value column without leaving the chat.
+- **Conversation history**: Session history stored per user with a one-click clear.
+- **Safety**: Only SELECT queries are executed; non-SELECT AI output is blocked server-side.
+
+### D. Chart Builder & Dashboards
+- **Chart builder**: Pick a dataset → choose X axis (group-by) → choose Y axis (aggregation: COUNT / SUM / AVG / MIN / MAX) → select chart type → preview → save.
+- **Supported chart types**: Bar, Horizontal Bar, Line, Pie, Doughnut, Radar, Polar Area.
+- **Dashboard canvas**: Drag-and-drop grid editor; add saved charts as widgets, resize, rearrange, and name dashboards.
+- **Live sync**: Dashboard widgets refresh data on every open.
+- **PDF & Excel export**: One-click export for any dashboard.
+
+### E. Survey Generator & Publisher
+- **AI-generated surveys**: Describe a goal in plain language; the AI returns a fully structured survey (field labels, types, options, validation rules).
+- **Supported field types**: Text, Textarea, Number, Select, Radio, Checkbox, Date, Email, Rating.
+- **Public sharing**: Each survey gets a unique shareable URL and a QR code for printing.
+- **Response collection**: Submissions stored in PostgreSQL; results viewable in the admin panel.
+
+### F. Identity & Access Control (RBAC)
+- **No public registration**: All accounts seeded by admins.
+- **Seeded Super Admin**: Created on first boot via Docker environment variables.
+- **Role management**: Create custom roles, assign granular permissions, attach roles to users.
+- **Self-protection**: Admins cannot delete their own account.
+- **JWT authentication**: Stateless bearer tokens with server-side verification on every request.
+
+---
+
+## 3. Technical Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 19 + TypeScript + Vite + Tailwind CSS v4 |
+| UI Components | Lucide React icons, Chart.js 4 + react-chartjs-2 |
+| Drag & Drop | @dnd-kit/core + @dnd-kit/sortable |
+| PDF Export | jsPDF + jspdf-autotable |
+| Backend | Node.js + Express + TypeScript |
+| Database | PostgreSQL 15 |
+| AI | Groq (llama / deepseek models) with retry + rate-limit handling |
+| Auth | bcryptjs + JWT |
+| File Parsing | ExcelJS + PapaParse (via multer upload) |
+| Deployment | Docker + Docker Compose (multi-container) |
+
+---
+
+## 4. Deployment
+
+The application ships as three Docker services defined in `docker-compose.yml`:
+
+- **`db`** — PostgreSQL 15 with an init script that seeds the super admin account.
+- **`backend`** — Express API on port 5000 with auto-migration runner on startup.
+- **`frontend`** — Vite dev server (or Nginx for production builds) on port 5173.
+
+All secrets (DB credentials, Groq API key, JWT secret, super admin password) are injected via environment variables — no secrets are committed to source control.

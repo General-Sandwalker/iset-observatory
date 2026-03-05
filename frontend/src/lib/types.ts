@@ -127,7 +127,7 @@ export interface QueryableTable {
 
 // ─── Phase 5: Visual Dashboard Editor types ──────────────────────
 
-export type ChartType = 'bar' | 'line' | 'pie' | 'doughnut' | 'radar' | 'polarArea';
+export type ChartType = 'bar' | 'horizontalBar' | 'line' | 'pie' | 'doughnut' | 'radar' | 'polarArea';
 export type AggregationType = 'COUNT' | 'SUM' | 'AVG' | 'MIN' | 'MAX';
 
 export interface ChartConfig {
