@@ -107,6 +107,14 @@ export interface GeneratedSurvey {
   goal: string;
 }
 
+export interface SavedSurvey {
+  id: number;
+  title: string;
+  description: string | null;
+  goal: string | null;
+  created_at: string;
+}
+
 export interface QueryableTable {
   id: number;
   name: string;
