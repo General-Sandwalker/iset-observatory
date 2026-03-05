@@ -92,11 +92,25 @@ export async function updateChart(req: Request, res: Response): Promise<void> {
 
 export async function deleteChart(req: Request, res: Response): Promise<void> {
   try {
-    const result = await pool.query('DELETE FROM charts WHERE id = $1 RETURNING id', [req.params.id]);
+    const chartId = parseInt(req.params.id as string, 10);
+    const result = await pool.query('DELETE FROM charts WHERE id = $1 RETURNING id', [chartId]);
     if (result.rows.length === 0) {
       res.status(404).json({ success: false, message: 'Chart not found.' });
       return;
     }
+
+    // ── Issue #19: purge this chartId from every dashboard layout ──
+    await pool.query(
+      `UPDATE dashboards
+       SET layout = (
+         SELECT COALESCE(jsonb_agg(elem), '[]'::jsonb)
+         FROM   jsonb_array_elements(layout) AS elem
+         WHERE  (elem->>'chartId')::int != $1
+       )
+       WHERE layout @> jsonb_build_array(jsonb_build_object('chartId', $1::int))`,
+      [chartId],
+    );
+
     res.json({ success: true, message: 'Chart deleted.' });
   } catch (error) {
     console.error('Delete chart error:', error);
