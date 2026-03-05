@@ -21,6 +21,18 @@ function getGroq(): Groq {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
+ * Strip <think>…</think> reasoning blocks (emitted by some Groq models)
+ * and markdown code fences, then return trimmed JSON text.
+ */
+function cleanJSON(raw: string): string {
+  return raw
+    .replace(/<think>[\s\S]*?<\/think>/gi, '') // remove reasoning blocks
+    .replace(/^```json?\s*/im, '')              // remove opening fence
+    .replace(/\s*```$/im, '')                   // remove closing fence
+    .trim();
+}
+
+/**
  * Retry wrapper for Gemini API calls with exponential backoff.
  * Handles 429 rate-limit errors automatically.
  */
@@ -117,9 +129,7 @@ USER QUESTION: ${question}`;
   // Parse AI response
   let parsed: { sql: string; explanation: string };
   try {
-    // Strip possible markdown fences
-    const cleaned = text.replace(/^```json?\n?/i, '').replace(/\n?```$/i, '');
-    parsed = JSON.parse(cleaned);
+    parsed = JSON.parse(cleanJSON(text));
   } catch {
     throw new Error(`AI returned invalid JSON: ${text.slice(0, 300)}`);
   }
@@ -209,8 +219,7 @@ RULES:
 
   let parsed: Omit<GeneratedSurvey, 'goal'>;
   try {
-    const cleaned = text.replace(/^```json?\n?/i, '').replace(/\n?```$/i, '');
-    parsed = JSON.parse(cleaned);
+    parsed = JSON.parse(cleanJSON(text));
   } catch {
     throw new Error(`AI returned invalid JSON: ${text.slice(0, 300)}`);
   }
