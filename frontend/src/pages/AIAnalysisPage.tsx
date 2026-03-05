@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   BrainCircuit,
   Send,
@@ -188,6 +188,20 @@ export default function AIAnalysisPage() {
   );
 }
 
+function renderMarkdown(text: string): React.ReactNode {
+  // Split on **bold** and *italic* tokens, preserving delimiters
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} style={{ color: 'var(--ag-text)', fontWeight: 600 }}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('*') && part.endsWith('*')) {
+      return <em key={i}>{part.slice(1, -1)}</em>;
+    }
+    return part;
+  });
+}
+
 function MessageBubble({ message }: { message: ChatMessage }) {
   const [showSql, setShowSql] = useState(false);
   const [showData, setShowData] = useState(true);
@@ -230,7 +244,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
                 className="w-4 h-4 mt-0.5 shrink-0"
                 style={{ color: 'var(--ag-accent)' }}
               />
-              <p>{message.insights}</p>
+              <p>{renderMarkdown(message.insights!)}</p>
             </div>
           </div>
         ) : (
