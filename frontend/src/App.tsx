@@ -14,6 +14,8 @@ import SurveyGeneratorPage from './pages/SurveyGeneratorPage';
 import ChartBuilderPage from './pages/ChartBuilderPage';
 import DashboardCanvasPage from './pages/DashboardCanvasPage';
 import SettingsPage from './pages/SettingsPage';
+import DatabaseExplorerPage from './pages/DatabaseExplorerPage';
+import TableEditorPage from './pages/TableEditorPage';
 
 export default function App() {
   return (
@@ -42,6 +44,8 @@ export default function App() {
             <Route path="dashboards" element={<DashboardCanvasPage />} />
             <Route path="surveys" element={<SurveyGeneratorPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="explore" element={<DatabaseExplorerPage />} />
+            <Route path="explore/:id" element={<TableEditorPage />} />
           </Route>
 
           {/* Fallback */}
