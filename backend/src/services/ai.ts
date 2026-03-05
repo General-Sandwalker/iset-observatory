@@ -95,6 +95,52 @@ export interface NLQueryResult {
   data: Record<string, unknown>[];
   rowCount: number;
   explanation: string;
+  insights: string;
+}
+
+/**
+ * After executing the query, send the actual results back to Groq
+ * for a natural-language interpretation of what the data shows.
+ */
+async function generateDataInsights(
+  question: string,
+  sql: string,
+  data: Record<string, unknown>[],
+  rowCount: number,
+): Promise<string> {
+  if (rowCount === 0) {
+    return 'The query ran successfully but returned no matching rows.';
+  }
+
+  const groq = getGroq();
+  // Limit sample to 30 rows to stay within token budget
+  const sample = data.slice(0, 30);
+
+  const prompt = `You are a data analyst helping a higher-education institute (ISET Tozeur) interpret query results.
+
+USER QUESTION: "${question}"
+
+SQL EXECUTED:
+${sql}
+
+RESULTS (${rowCount} rows total, showing up to 30):
+${JSON.stringify(sample, null, 2)}
+
+Write a concise 2-4 sentence natural-language analysis that:
+1. Directly answers the user's question using specific numbers from the data.
+2. Highlights any notable patterns, extremes, or outliers.
+3. Is clear and non-technical — suitable for a non-SQL audience.
+
+Return ONLY the analysis text. Do not include SQL, markdown, or JSON.`;
+
+  const completion = await withRetry(() =>
+    groq.chat.completions.create({
+      model: config.groq.model,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  );
+
+  return (completion.choices[0].message.content ?? '').trim();
 }
 
 export async function naturalLanguageToSQL(question: string): Promise<NLQueryResult> {
@@ -141,6 +187,7 @@ USER QUESTION: ${question}`;
       data: [],
       rowCount: 0,
       explanation: parsed.explanation || 'Could not generate a query for this question.',
+      insights: parsed.explanation || 'Could not generate a query for this question.',
     };
   }
 
@@ -152,13 +199,18 @@ USER QUESTION: ${question}`;
 
   // Execute the query
   const queryResult = await pool.query(parsed.sql);
+  const rows = queryResult.rows;
+
+  // Generate natural-language insights from the actual results
+  const insights = await generateDataInsights(question, parsed.sql, rows, rows.length);
 
   return {
     question,
     sql: parsed.sql,
-    data: queryResult.rows,
-    rowCount: queryResult.rows.length,
+    data: rows,
+    rowCount: rows.length,
     explanation: parsed.explanation,
+    insights,
   };
 }
 

@@ -52,6 +52,7 @@ export default function AIAnalysisPage() {
           sql: result.sql,
           data: result.data,
           rowCount: result.rowCount,
+          insights: result.insights,
         },
       ]);
     } catch (err: any) {
@@ -159,7 +160,7 @@ export default function AIAnalysisPage() {
         {loading && (
           <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--ag-accent)' }}>
             <Loader2 className="w-4 h-4 animate-spin" />
-            Thinking…
+            Querying and analysing your data…
           </div>
         )}
         <div ref={messagesEndRef} />
@@ -189,7 +190,7 @@ export default function AIAnalysisPage() {
 
 function MessageBubble({ message }: { message: ChatMessage }) {
   const [showSql, setShowSql] = useState(false);
-  const [showData, setShowData] = useState(false);
+  const [showData, setShowData] = useState(true);
 
   if (message.role === 'user') {
     return (
@@ -207,53 +208,105 @@ function MessageBubble({ message }: { message: ChatMessage }) {
     );
   }
 
+  const hasResults = message.data && message.data.length > 0;
+  const hasInsights = !!message.insights;
+
   return (
     <div className="flex justify-start">
-      <div
-        className="ag-card px-4 py-3 max-w-[90%] space-y-2"
-        style={{ background: 'var(--ag-surface)' }}
-      >
-        <p className="text-sm" style={{ color: 'var(--ag-text)' }}>{message.content}</p>
+      <div className="ag-card max-w-[92%] overflow-hidden" style={{ background: 'var(--ag-surface)' }}>
 
-        {message.sql && (
-          <button
-            onClick={() => setShowSql(!showSql)}
-            className="flex items-center gap-1 text-xs transition-colors"
-            style={{ color: 'var(--ag-accent)' }}
+        {/* Insights banner — shown when we have real data analysis */}
+        {hasInsights ? (
+          <div
+            className="px-4 py-3 text-sm leading-relaxed"
+            style={{
+              background: 'var(--ag-accent-lo)',
+              borderBottom: '1px solid var(--ag-accent)',
+              color: 'var(--ag-text)',
+            }}
           >
-            <Code className="w-3.5 h-3.5" />
-            {showSql ? 'Hide' : 'Show'} SQL
-            {showSql ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-          </button>
+            <div className="flex items-start gap-2">
+              <BrainCircuit
+                className="w-4 h-4 mt-0.5 shrink-0"
+                style={{ color: 'var(--ag-accent)' }}
+              />
+              <p>{message.insights}</p>
+            </div>
+          </div>
+        ) : (
+          /* Fallback: plain explanation when no insights (e.g. error or empty result) */
+          <div className="px-4 py-3">
+            <p className="text-sm" style={{ color: 'var(--ag-text)' }}>{message.content}</p>
+          </div>
         )}
+
+        {/* Stats strip */}
+        {message.sql && (
+          <div
+            className="flex items-center gap-3 px-4 py-2 text-xs"
+            style={{
+              borderBottom: hasResults || true ? '1px solid var(--ag-border)' : undefined,
+              background: 'var(--ag-surface2)',
+              color: 'var(--ag-text3)',
+            }}
+          >
+            {message.rowCount !== undefined && (
+              <span
+                className="flex items-center gap-1 font-medium"
+                style={{ color: message.rowCount > 0 ? 'var(--ag-green)' : 'var(--ag-amber)' }}
+              >
+                <Table2 className="w-3.5 h-3.5" />
+                {message.rowCount} {message.rowCount === 1 ? 'row' : 'rows'} returned
+              </span>
+            )}
+            <button
+              onClick={() => setShowSql(!showSql)}
+              className="ml-auto flex items-center gap-1 transition-colors hover:opacity-80"
+              style={{ color: 'var(--ag-accent)' }}
+            >
+              <Code className="w-3.5 h-3.5" />
+              {showSql ? 'Hide SQL' : 'View SQL'}
+              {showSql ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+            </button>
+          </div>
+        )}
+
+        {/* SQL block (collapsible) */}
         {showSql && message.sql && (
           <pre
-            className="rounded-lg p-3 text-xs overflow-x-auto font-mono"
-            style={{ background: 'var(--ag-bg2)', color: 'var(--ag-green)', border: '1px solid var(--ag-border)' }}
+            className="px-4 py-3 text-xs overflow-x-auto font-mono"
+            style={{
+              background: 'var(--ag-bg2)',
+              color: 'var(--ag-green)',
+              borderBottom: '1px solid var(--ag-border)',
+            }}
           >
             {message.sql}
           </pre>
         )}
 
-        {message.data && message.data.length > 0 && (
-          <>
-            <button
-              onClick={() => setShowData(!showData)}
-              className="flex items-center gap-1 text-xs transition-colors"
-              style={{ color: 'var(--ag-accent)' }}
-            >
-              <Table2 className="w-3.5 h-3.5" />
-              {showData ? 'Hide' : 'Show'} Results ({message.rowCount} rows)
-              {showData ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-            </button>
-            {showData && <ResultTable data={message.data} />}
-          </>
-        )}
-
+        {/* Empty result warning */}
         {message.sql && message.data && message.data.length === 0 && (
-          <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--ag-amber)' }}>
+          <div className="flex items-center gap-1.5 px-4 py-3 text-xs" style={{ color: 'var(--ag-amber)' }}>
             <AlertCircle className="w-3.5 h-3.5" />
             Query returned no results.
+          </div>
+        )}
+
+        {/* Results table */}
+        {hasResults && (
+          <div className="px-4 py-3">
+            <button
+              onClick={() => setShowData(!showData)}
+              className="flex items-center gap-1.5 text-xs mb-2 transition-colors"
+              style={{ color: 'var(--ag-text2)' }}
+            >
+              <Table2 className="w-3.5 h-3.5" />
+              <span className="font-medium">Results</span>
+              <span style={{ color: 'var(--ag-text3)' }}>({message.rowCount} rows)</span>
+              {showData ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+            </button>
+            {showData && <ResultTable data={message.data!} />}
           </div>
         )}
       </div>

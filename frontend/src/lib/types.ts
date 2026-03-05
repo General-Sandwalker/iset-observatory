@@ -79,6 +79,7 @@ export interface ChatMessage {
   sql?: string;
   data?: Record<string, unknown>[];
   rowCount?: number;
+  insights?: string;
 }
 
 export interface NLQueryResult {
@@ -87,6 +88,7 @@ export interface NLQueryResult {
   data: Record<string, unknown>[];
   rowCount: number;
   explanation: string;
+  insights: string;
 }
 
 export interface SurveyField {
