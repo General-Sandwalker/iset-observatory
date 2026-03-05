@@ -33,6 +33,8 @@ import {
   ArcElement, RadialLinearScale, Title, Tooltip, Legend, Filler,
 } from 'chart.js';
 import { Bar, Line, Pie, Doughnut, Radar as RadarChart, PolarArea } from 'react-chartjs-2';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import api from '../lib/api';
 import type { Dashboard, Chart, ChartType, DashboardLayoutItem } from '../lib/types';
 
@@ -236,25 +238,70 @@ export default function DashboardCanvasPage() {
 
   async function exportPDF() {
     try {
-      const { default: jsPDF } = await import('jspdf');
-      await import('jspdf-autotable');
       const doc = new jsPDF('landscape', 'mm', 'a4');
-      doc.setFontSize(20); doc.text(activeDashboard?.title || 'Dashboard', 14, 20);
-      doc.setFontSize(10); doc.setTextColor(120);
-      doc.text(`Exported on ${new Date().toLocaleString()} · ${layoutItems.length} charts`, 14, 28);
-      let yPos = 40;
+
+      // Title
+      doc.setFontSize(22);
+      doc.setTextColor(30, 30, 60);
+      doc.text(activeDashboard?.title || 'Dashboard', 14, 18);
+
+      doc.setFontSize(9);
+      doc.setTextColor(120);
+      doc.text(
+        `Exported on ${new Date().toLocaleString()} · ${layoutItems.length} chart${layoutItems.length !== 1 ? 's' : ''}`,
+        14,
+        26,
+      );
+
+      let yPos = 34;
+
       for (const item of layoutItems) {
         const chart = charts.find((c) => c.id === item.chartId);
         const data = chartDataMap[item.chartId];
-        if (!chart || !data) continue;
-        if (yPos > 160) { doc.addPage(); yPos = 20; }
-        doc.setFontSize(12); doc.setTextColor(30); doc.text(chart.title, 14, yPos); yPos += 6;
-        const tableBody = data.labels.slice(0, 20).map((label, i) => [label, String(data.values[i])]);
-        (doc as any).autoTable({ startY: yPos, head: [['Label', 'Value']], body: tableBody, theme: 'striped', styles: { fontSize: 8 }, margin: { left: 14 } });
-        yPos = (doc as any).lastAutoTable.finalY + 12;
+        if (!chart || !data || data.labels.length === 0) continue;
+
+        if (yPos > 170) { doc.addPage(); yPos = 20; }
+
+        // Chart section heading
+        doc.setFontSize(13);
+        doc.setTextColor(30, 30, 60);
+        doc.text(chart.title, 14, yPos);
+
+        const meta: string[] = [];
+        if (chart.chart_type) meta.push(chart.chart_type);
+        if (chart.dataset_name) meta.push(chart.dataset_name);
+        if (meta.length) {
+          doc.setFontSize(8);
+          doc.setTextColor(100);
+          doc.text(meta.join(' · '), 14, yPos + 5);
+        }
+
+        yPos += meta.length ? 9 : 6;
+
+        const tableBody = data.labels.slice(0, 30).map((label, i) => [
+          String(label),
+          String(data.values[i] ?? ''),
+        ]);
+
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Label', 'Value']],
+          body: tableBody,
+          theme: 'striped',
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [240, 245, 255] },
+          margin: { left: 14, right: 14 },
+        });
+
+        yPos = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14;
       }
-      doc.save(`${activeDashboard?.title || 'dashboard'}.pdf`);
-    } catch { alert('Failed to export PDF.'); }
+
+      doc.save(`${(activeDashboard?.title || 'dashboard').replace(/\s+/g, '_')}.pdf`);
+    } catch (err) {
+      console.error('PDF export error:', err);
+      alert('Failed to export PDF. Check the browser console for details.');
+    }
   }
 
   if (loading) {

@@ -152,6 +152,27 @@ const migrations = [
       );
     `,
   },
+  {
+    name: '005_user_preferences',
+    sql: `
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences JSONB NOT NULL DEFAULT '{}';
+    `,
+  },
+  {
+    name: '006_surveys',
+    sql: `
+      CREATE TABLE IF NOT EXISTS surveys (
+          id          SERIAL PRIMARY KEY,
+          user_id     INT REFERENCES users(id) ON DELETE SET NULL,
+          title       VARCHAR(255) NOT NULL,
+          description TEXT,
+          goal        TEXT,
+          schema      JSONB NOT NULL DEFAULT '{}',
+          created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `,
+  },
 ];
 
 export async function runMigrations(): Promise<void> {

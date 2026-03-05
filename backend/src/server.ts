@@ -11,6 +11,8 @@ import datasetsRouter from './routes/datasets';
 import aiRouter from './routes/ai';
 import chartsRouter from './routes/charts';
 import dashboardsRouter from './routes/dashboards';
+import statsRouter from './routes/stats';
+import surveysRouter from './routes/surveys';
 
 const app = express();
 
@@ -28,6 +30,8 @@ app.use('/api/datasets', datasetsRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/charts', chartsRouter);
 app.use('/api/dashboards', dashboardsRouter);
+app.use('/api', statsRouter);
+app.use('/api/surveys', surveysRouter);
 
 // --------------- Error Handler -----------
 app.use(errorHandler);

@@ -5,11 +5,13 @@ type Theme = 'light' | 'dark';
 interface ThemeContextValue {
   theme: Theme;
   toggleTheme: () => void;
+  applyTheme: (t: Theme) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
   theme: 'dark',
   toggleTheme: () => {},
+  applyTheme: () => {},
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -32,8 +34,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
   }
 
+  function applyTheme(t: Theme) {
+    setTheme(t);
+  }
+
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, applyTheme }}>
       {children}
     </ThemeContext.Provider>
   );

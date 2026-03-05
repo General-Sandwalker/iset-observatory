@@ -11,6 +11,7 @@ export interface User {
   created_at?: string;
   updated_at?: string;
   roles?: Role[];
+  preferences?: Record<string, unknown>;
 }
 
 export interface Role {
@@ -104,6 +105,14 @@ export interface GeneratedSurvey {
   description: string;
   fields: SurveyField[];
   goal: string;
+}
+
+export interface SavedSurvey {
+  id: number;
+  title: string;
+  description: string | null;
+  goal: string | null;
+  created_at: string;
 }
 
 export interface QueryableTable {
