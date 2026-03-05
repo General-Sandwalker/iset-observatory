@@ -52,6 +52,38 @@ const PALETTE = [
   'rgba(168, 85, 247, 0.7)', 'rgba(34, 197, 94, 0.7)', 'rgba(234, 179, 8, 0.7)',
 ];
 
+// ── Issue #21: unavailable placeholder ──────────────────────────
+function UnavailablePlaceholder({ chartId, onRemove }: { chartId: number; onRemove: (id: number) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: chartId });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, border: '1px dashed var(--ag-border)', background: 'var(--ag-surface)' }}
+      className="rounded-xl p-4 backdrop-blur"
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <button {...attributes} {...listeners} className="cursor-grab" style={{ color: 'var(--ag-text3)' }}>
+          <GripVertical className="w-4 h-4" />
+        </button>
+        <span className="text-xs flex-1" style={{ color: 'var(--ag-text3)' }}>Chart #{chartId}</span>
+        <button
+          onClick={() => onRemove(chartId)}
+          className="transition-colors"
+          style={{ color: 'var(--ag-text3)' }}
+          onMouseOver={(e) => (e.currentTarget.style.color = 'var(--ag-red)')}
+          onMouseOut={(e) => (e.currentTarget.style.color = 'var(--ag-text3)')}
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
+      <div className="flex flex-col items-center justify-center gap-2" style={{ height: 220 }}>
+        <BarChart3 className="w-8 h-8 opacity-30" style={{ color: 'var(--ag-text3)' }} />
+        <p className="text-xs" style={{ color: 'var(--ag-text3)' }}>Chart no longer exists</p>
+      </div>
+    </div>
+  );
+}
+
 function SortableChartCard({
   chartId, chart, chartData, onRemove,
 }: {
@@ -180,7 +212,16 @@ export default function DashboardCanvasPage() {
 
   async function openDashboard(dashboard: Dashboard) {
     setActiveDashboard(dashboard);
-    const items: DashboardLayoutItem[] = Array.isArray(dashboard.layout) ? dashboard.layout : [];
+    const raw: DashboardLayoutItem[] = Array.isArray(dashboard.layout) ? dashboard.layout : [];
+
+    // ── Issue #20: drop any layout entries whose chartId no longer exists ──
+    const knownIds = new Set(charts.map((c) => c.id));
+    const items = raw.filter((it) => {
+      const valid = knownIds.has(it.chartId);
+      if (!valid) console.warn(`[Dashboard] Dropping orphaned chartId ${it.chartId} from layout.`);
+      return valid;
+    });
+
     setLayoutItems(items);
     loadChartData(items);
   }
@@ -425,15 +466,30 @@ export default function DashboardCanvasPage() {
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={layoutItems.map((it) => it.chartId)} strategy={verticalListSortingStrategy}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {layoutItems.map((item) => (
-                  <SortableChartCard
-                    key={item.chartId}
-                    chartId={item.chartId}
-                    chart={charts.find((c) => c.id === item.chartId)}
-                    chartData={chartDataMap[item.chartId]}
-                    onRemove={removeChart}
-                  />
-                ))}
+                {layoutItems.map((item) => {
+                  const chart = charts.find((c) => c.id === item.chartId);
+                  const chartData = chartDataMap[item.chartId];
+                  // Issue #21: show placeholder if chart missing or data resolved empty
+                  const unavailable = !chart || (chartData !== undefined && chartData.labels.length === 0);
+                  if (unavailable) {
+                    return (
+                      <UnavailablePlaceholder
+                        key={item.chartId}
+                        chartId={item.chartId}
+                        onRemove={removeChart}
+                      />
+                    );
+                  }
+                  return (
+                    <SortableChartCard
+                      key={item.chartId}
+                      chartId={item.chartId}
+                      chart={chart}
+                      chartData={chartData}
+                      onRemove={removeChart}
+                    />
+                  );
+                })}
               </div>
             </SortableContext>
           </DndContext>
