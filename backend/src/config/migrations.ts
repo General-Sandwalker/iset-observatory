@@ -173,6 +173,17 @@ const migrations = [
       );
     `,
   },
+  {
+    name: '007_ai_queries',
+    sql: `
+      CREATE TABLE IF NOT EXISTS ai_queries (
+        id         SERIAL PRIMARY KEY,
+        user_id    INT REFERENCES users(id) ON DELETE SET NULL,
+        question   TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `,
+  },
 ];
 
 export async function runMigrations(): Promise<void> {

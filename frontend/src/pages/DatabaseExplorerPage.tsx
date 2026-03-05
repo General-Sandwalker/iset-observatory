@@ -101,10 +101,21 @@ export default function DatabaseExplorerPage() {
 
       {/* Body */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="ag-card h-40 animate-pulse"
-              style={{ background: 'var(--ag-card-bg)' }} />
+            <div key={i} className="rounded-2xl overflow-hidden animate-pulse"
+              style={{ background: 'var(--ag-card-bg)', border: '1px solid var(--ag-border)', height: 176 }}>
+              <div className="h-0.5 w-full" style={{ background: 'var(--ag-border)' }} />
+              <div className="p-5 space-y-3">
+                <div className="flex justify-between">
+                  <div className="w-10 h-10 rounded-xl" style={{ background: 'var(--ag-border)' }} />
+                  <div className="w-16 h-5 rounded-full" style={{ background: 'var(--ag-border)' }} />
+                </div>
+                <div className="w-3/4 h-3.5 rounded" style={{ background: 'var(--ag-border)' }} />
+                <div className="w-1/2 h-3 rounded" style={{ background: 'var(--ag-border)' }} />
+              </div>
+              <div className="h-10" style={{ background: 'var(--ag-hover)' }} />
+            </div>
           ))}
         </div>
       ) : error ? (
@@ -120,54 +131,88 @@ export default function DatabaseExplorerPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((ds) => {
             const colCount = ds.column_mapping?.length ?? 0;
             return (
               <button
                 key={ds.id}
                 onClick={() => navigate(`/explore/${ds.id}`)}
-                className="ag-card text-left group transition-all hover:shadow-lg"
-                style={{ cursor: 'pointer', borderColor: 'var(--ag-border)' }}
+                className="group text-left relative overflow-hidden rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl"
+                style={{
+                  background: 'var(--ag-card-bg)',
+                  border: '1px solid var(--ag-border)',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+                }}
               >
-                {/* Card header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: 'var(--ag-accent-lo)' }}>
-                    <Table2 className="w-4.5 h-4.5" style={{ color: 'var(--ag-accent)' }} />
+                {/* Accent top bar */}
+                <div
+                  className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl transition-opacity duration-200 opacity-60 group-hover:opacity-100"
+                  style={{ background: 'linear-gradient(90deg, var(--ag-accent), var(--ag-accent2, var(--ag-accent)))' }}
+                />
+
+                <div className="p-5">
+                  {/* Header row */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                      style={{
+                        background: 'var(--ag-accent-lo)',
+                        boxShadow: 'inset 0 0 0 1px var(--ag-accent)',
+                      }}
+                    >
+                      <Table2 className="w-5 h-5" style={{ color: 'var(--ag-accent)' }} />
+                    </div>
+                    <span
+                      className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full"
+                      style={{ background: 'var(--ag-accent-lo)', color: 'var(--ag-accent)' }}
+                    >
+                      <Rows3 className="w-3 h-3" />
+                      {fmt(ds.row_count)}
+                    </span>
                   </div>
-                  <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ color: 'var(--ag-accent)' }} />
+
+                  {/* Title */}
+                  <h3 className="font-semibold text-sm leading-snug truncate mb-0.5" style={{ color: 'var(--ag-text1)' }}>
+                    {ds.name}
+                  </h3>
+                  <p className="text-xs font-mono truncate mb-4" style={{ color: 'var(--ag-text3)' }}>
+                    {ds.table_name}
+                  </p>
+
+                  {/* Divider */}
+                  <div className="mb-4" style={{ borderTop: '1px solid var(--ag-border)' }} />
+
+                  {/* Stats row */}
+                  <div className="flex items-center justify-between text-xs" style={{ color: 'var(--ag-text2)' }}>
+                    <div className="flex items-center gap-1">
+                      <Columns3 className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--ag-text3)' }} />
+                      <span>{colCount} cols</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <CalendarDays className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--ag-text3)' }} />
+                      <span>{relDate(ds.created_at)}</span>
+                    </div>
+                    {ds.uploaded_by_name && (
+                      <div className="flex items-center gap-1 max-w-[90px]">
+                        <User className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--ag-text3)' }} />
+                        <span className="truncate">{ds.uploaded_by_name}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Name */}
-                <h3 className="font-semibold text-sm mb-0.5 truncate" style={{ color: 'var(--ag-text1)' }}>
-                  {ds.name}
-                </h3>
-                <p className="text-xs font-mono mb-4 truncate" style={{ color: 'var(--ag-text3)' }}>
-                  {ds.table_name}
-                </p>
-
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-3 text-xs" style={{ color: 'var(--ag-text2)' }}>
-                  <div className="flex items-center gap-1.5">
-                    <Rows3 className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--ag-accent)' }} />
-                    <span>{fmt(ds.row_count)} rows</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Columns3 className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--ag-accent)' }} />
-                    <span>{colCount} columns</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <CalendarDays className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--ag-text3)' }} />
-                    <span>{relDate(ds.created_at)}</span>
-                  </div>
-                  {ds.uploaded_by_name && (
-                    <div className="flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--ag-text3)' }} />
-                      <span className="truncate">{ds.uploaded_by_name}</span>
-                    </div>
-                  )}
+                {/* Footer CTA */}
+                <div
+                  className="px-5 py-3 flex items-center justify-between text-xs font-medium transition-colors duration-150"
+                  style={{
+                    borderTop: '1px solid var(--ag-border)',
+                    background: 'var(--ag-hover)',
+                    color: 'var(--ag-accent)',
+                  }}
+                >
+                  <span>Open table</span>
+                  <ChevronRight className="w-3.5 h-3.5 transition-transform duration-150 group-hover:translate-x-0.5" />
                 </div>
               </button>
             );

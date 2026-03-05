@@ -29,6 +29,9 @@ export async function nlQuery(req: Request, res: Response): Promise<void> {
 
     const result = await naturalLanguageToSQL(question.trim());
 
+    // Persist query count to DB (fire-and-forget)
+    pool.query('INSERT INTO ai_queries (user_id, question) VALUES ($1, $2)', [req.user!.id, question.trim()]).catch(() => {});
+
     // Store in chat history
     const userId = req.user!.id;
     if (!chatHistories.has(userId)) chatHistories.set(userId, []);

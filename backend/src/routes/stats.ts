@@ -13,8 +13,8 @@ router.get('/stats', authenticate, async (_req: Request, res: Response): Promise
       pool.query(`SELECT COUNT(*) AS count FROM charts`),
       pool.query(`SELECT COUNT(*) AS count FROM dashboards`),
       pool.query(
-        `SELECT COUNT(*) AS count FROM ai_conversations WHERE created_at >= NOW() - INTERVAL '30 days'`
-      ).catch(() => ({ rows: [{ count: '0' }] })), // graceful fallback if table doesn't exist
+        `SELECT COUNT(*) AS count FROM ai_queries WHERE created_at >= NOW() - INTERVAL '30 days'`
+      ).catch(() => ({ rows: [{ count: '0' }] })),
     ]);
 
     res.json({
