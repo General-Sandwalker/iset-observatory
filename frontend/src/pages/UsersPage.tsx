@@ -6,8 +6,11 @@ import {
 import api from '../lib/api';
 import type { User, Role } from '../lib/types';
 import UserModal from '../components/layout/UserModal';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function UsersPage() {
+  const { user: currentUser } = useAuth();
+  const currentUserId = currentUser?.id;
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
@@ -184,16 +187,18 @@ export default function UsersPage() {
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
-                    <button
-                      onClick={() => handleDelete(user)}
-                      className="p-1.5 rounded-lg transition-colors"
-                      style={{ color: 'var(--ag-text3)' }}
-                      onMouseOver={(e) => (e.currentTarget.style.color = 'var(--ag-red)')}
-                      onMouseOut={(e) => (e.currentTarget.style.color = 'var(--ag-text3)')}
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {user.id !== currentUserId && (
+                      <button
+                        onClick={() => handleDelete(user)}
+                        className="p-1.5 rounded-lg transition-colors"
+                        style={{ color: 'var(--ag-text3)' }}
+                        onMouseOver={(e) => (e.currentTarget.style.color = 'var(--ag-red)')}
+                        onMouseOut={(e) => (e.currentTarget.style.color = 'var(--ag-text3)')}
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
