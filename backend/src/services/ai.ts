@@ -140,7 +140,9 @@ Return ONLY the analysis text. Do not include SQL, markdown, or JSON.`;
     }),
   );
 
-  return (completion.choices[0].message.content ?? '').trim();
+  const raw = completion.choices[0].message.content ?? '';
+  // Strip <think>…</think> reasoning blocks emitted by some Groq models
+  return raw.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 }
 
 export async function naturalLanguageToSQL(question: string): Promise<NLQueryResult> {
