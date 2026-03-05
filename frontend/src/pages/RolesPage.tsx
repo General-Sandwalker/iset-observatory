@@ -50,7 +50,6 @@ export default function RolesPage() {
     }
   };
 
-  // Group permissions by category
   const permsByCategory = allPermissions.reduce<Record<string, Permission[]>>((acc, p) => {
     (acc[p.category] ??= []).push(p);
     return acc;
@@ -59,103 +58,98 @@ export default function RolesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        <div className="w-8 h-8 rounded-full border-2 border-transparent animate-spin"
+          style={{ borderTopColor: 'var(--ag-accent)' }} />
       </div>
     );
   }
 
   return (
     <div>
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Shield className="w-6 h-6 text-blue-600" />
-          <h1 className="text-2xl font-bold text-gray-900">Roles & Permissions</h1>
+          <Shield className="w-6 h-6" style={{ color: 'var(--ag-accent)' }} />
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--ag-text)' }}>Roles & Permissions</h1>
         </div>
         <button
           onClick={() => { setEditingRole(null); setModalOpen(true); }}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          className="ag-btn-primary flex items-center gap-2 px-4 py-2 text-sm"
         >
           <Plus className="w-4 h-4" /> Create Role
         </button>
       </div>
 
-      {/* Alerts */}
       {error && (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
+        <div className="ag-alert-red flex items-center gap-2 text-sm px-4 py-3 mb-4">
           <AlertCircle className="w-4 h-4 shrink-0" /> {error}
         </div>
       )}
       {success && (
-        <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3 mb-4">
+        <div className="ag-alert-green flex items-center gap-2 text-sm px-4 py-3 mb-4">
           <CheckCircle className="w-4 h-4 shrink-0" /> {success}
         </div>
       )}
 
-      {/* Roles list */}
       <div className="space-y-3">
         {roles.map((role) => (
-          <div key={role.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            {/* Role header */}
+          <div key={role.id} className="ag-card overflow-hidden">
             <div
-              className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 transition-colors"
+              className="flex items-center justify-between px-5 py-4 cursor-pointer transition-colors"
+              style={{ background: expandedRole === role.id ? 'var(--ag-surface2)' : 'transparent' }}
               onClick={() => setExpandedRole(expandedRole === role.id ? null : role.id)}
             >
               <div className="flex items-center gap-3">
-                <Shield className={`w-5 h-5 ${role.is_system ? 'text-amber-500' : 'text-blue-500'}`} />
+                <Shield className="w-5 h-5" style={{ color: role.is_system ? 'var(--ag-amber)' : 'var(--ag-accent)' }} />
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">{role.name}</span>
+                    <span className="font-medium" style={{ color: 'var(--ag-text)' }}>{role.name}</span>
                     {role.is_system && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-amber-100 text-amber-700">
+                      <span
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium"
+                        style={{ background: 'var(--ag-amber-lo)', color: 'var(--ag-amber)', border: '1px solid var(--ag-amber)' }}
+                      >
                         <Lock className="w-3 h-3" /> System
                       </span>
                     )}
                   </div>
                   {role.description && (
-                    <p className="text-xs text-gray-500 mt-0.5">{role.description}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--ag-text3)' }}>{role.description}</p>
                   )}
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">
+                <span className="text-xs" style={{ color: 'var(--ag-text3)' }}>
                   {role.permissions?.length || 0} permissions
                 </span>
-                {expandedRole === role.id ? (
-                  <ChevronUp className="w-4 h-4 text-gray-400" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
-                )}
+                {expandedRole === role.id
+                  ? <ChevronUp className="w-4 h-4" style={{ color: 'var(--ag-text3)' }} />
+                  : <ChevronDown className="w-4 h-4" style={{ color: 'var(--ag-text3)' }} />
+                }
               </div>
             </div>
 
-            {/* Expanded permissions */}
             {expandedRole === role.id && (
-              <div className="border-t border-gray-200 px-5 py-4 bg-gray-50">
+              <div className="px-5 py-4" style={{ borderTop: '1px solid var(--ag-border)', background: 'var(--ag-surface2)' }}>
                 <div className="flex flex-wrap gap-1.5 mb-3">
                   {role.permissions?.map((p) => (
-                    <span
-                      key={p.id}
-                      className="px-2 py-0.5 rounded text-xs bg-blue-50 text-blue-700 border border-blue-200"
-                    >
-                      {p.name}
-                    </span>
+                    <span key={p.id} className="ag-badge ag-badge-accent">{p.name}</span>
                   ))}
                   {(!role.permissions || role.permissions.length === 0) && (
-                    <span className="text-xs text-gray-400">No permissions assigned</span>
+                    <span className="text-xs" style={{ color: 'var(--ag-text3)' }}>No permissions assigned</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={(e) => { e.stopPropagation(); setEditingRole(role); setModalOpen(true); }}
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                    className="ag-btn-ghost flex items-center gap-1 px-3 py-1.5 text-xs"
                   >
                     <Pencil className="w-3 h-3" /> Edit
                   </button>
                   {!role.is_system && (
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(role); }}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg transition-colors"
+                      style={{ border: '1px solid var(--ag-red)', color: 'var(--ag-red)', background: 'var(--ag-red-lo)' }}
                     >
                       <Trash2 className="w-3 h-3" /> Delete
                     </button>
@@ -167,7 +161,6 @@ export default function RolesPage() {
         ))}
       </div>
 
-      {/* Role Modal */}
       {modalOpen && (
         <RoleModal
           role={editingRole}
@@ -195,8 +188,6 @@ export default function RolesPage() {
   );
 }
 
-// ── Inline Role Modal Component ─────────────────────────────
-
 interface RoleModalProps {
   role: Role | null;
   permsByCategory: Record<string, Permission[]>;
@@ -206,7 +197,6 @@ interface RoleModalProps {
 
 function RoleModal({ role, permsByCategory, onSave, onClose }: RoleModalProps) {
   const isEdit = !!role;
-
   const [name, setName] = useState(role?.name || '');
   const [description, setDescription] = useState(role?.description || '');
   const [selectedPerms, setSelectedPerms] = useState<number[]>(
@@ -216,9 +206,7 @@ function RoleModal({ role, permsByCategory, onSave, onClose }: RoleModalProps) {
   const [submitting, setSubmitting] = useState(false);
 
   const togglePerm = (id: number) => {
-    setSelectedPerms((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
-    );
+    setSelectedPerms((prev) => prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]);
   };
 
   const toggleCategory = (perms: Permission[]) => {
@@ -245,77 +233,79 @@ function RoleModal({ role, permsByCategory, onSave, onClose }: RoleModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0 0 0 / 0.55)' }}>
+      <div className="ag-card w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto"
+        style={{ background: 'var(--ag-surface)' }}>
+        <div className="flex items-center justify-between px-6 py-4"
+          style={{ borderBottom: '1px solid var(--ag-border)' }}>
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--ag-text)' }}>
             {isEdit ? 'Edit Role' : 'Create Role'}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="p-1 rounded transition-colors"
+            style={{ color: 'var(--ag-text3)' }}
+            onMouseOver={(e) => (e.currentTarget.style.color = 'var(--ag-text)')}
+            onMouseOut={(e) => (e.currentTarget.style.color = 'var(--ag-text3)')}>
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+            <div className="ag-alert-red flex items-center gap-2 text-sm px-4 py-3">
               <AlertCircle className="w-4 h-4 shrink-0" /> {error}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Role Name</label>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--ag-text2)' }}>Role Name</label>
             <input
-              type="text"
-              required
-              value={name}
+              type="text" required value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={isEdit && role?.is_system}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
+              className="ag-input w-full px-3 py-2.5 text-sm disabled:opacity-50"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--ag-text2)' }}>Description</label>
             <input
-              type="text"
-              value={description}
+              type="text" value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="ag-input w-full px-3 py-2.5 text-sm"
             />
           </div>
 
-          {/* Permissions by category */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Permissions</label>
-            <div className="space-y-3">
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ag-text2)' }}>Permissions</label>
+            <div className="space-y-2">
               {Object.entries(permsByCategory).map(([category, perms]) => {
                 const allChecked = perms.every((p) => selectedPerms.includes(p.id));
                 const someChecked = perms.some((p) => selectedPerms.includes(p.id));
                 return (
-                  <div key={category} className="border border-gray-200 rounded-lg p-3">
+                  <div key={category} className="rounded-lg p-3"
+                    style={{ border: '1px solid var(--ag-border)', background: 'var(--ag-surface2)' }}>
                     <label className="flex items-center gap-2 mb-2 cursor-pointer">
                       <input
-                        type="checkbox"
-                        checked={allChecked}
+                        type="checkbox" checked={allChecked}
                         ref={(el) => { if (el) el.indeterminate = someChecked && !allChecked; }}
                         onChange={() => toggleCategory(perms)}
-                        className="w-4 h-4 text-blue-600 rounded border-gray-300"
+                        className="w-4 h-4 rounded"
+                        style={{ accentColor: 'var(--ag-accent)' }}
                       />
-                      <span className="text-sm font-medium text-gray-800 capitalize">{category}</span>
+                      <span className="text-sm font-medium capitalize" style={{ color: 'var(--ag-text)' }}>{category}</span>
                     </label>
                     <div className="ml-6 space-y-1">
                       {perms.map((p) => (
                         <label key={p.id} className="flex items-center gap-2 cursor-pointer">
                           <input
-                            type="checkbox"
-                            checked={selectedPerms.includes(p.id)}
+                            type="checkbox" checked={selectedPerms.includes(p.id)}
                             onChange={() => togglePerm(p.id)}
-                            className="w-3.5 h-3.5 text-blue-600 rounded border-gray-300"
+                            className="w-3.5 h-3.5 rounded"
+                            style={{ accentColor: 'var(--ag-accent)' }}
                           />
-                          <span className="text-xs text-gray-700">{p.name}</span>
+                          <span className="text-xs" style={{ color: 'var(--ag-text2)' }}>{p.name}</span>
                           {p.description && (
-                            <span className="text-xs text-gray-400">— {p.description}</span>
+                            <span className="text-xs" style={{ color: 'var(--ag-text3)' }}>— {p.description}</span>
                           )}
                         </label>
                       ))}
@@ -327,18 +317,8 @@ function RoleModal({ role, permsByCategory, onSave, onClose }: RoleModalProps) {
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
+            <button type="button" onClick={onClose} className="ag-btn-ghost px-4 py-2 text-sm">Cancel</button>
+            <button type="submit" disabled={submitting} className="ag-btn-primary px-4 py-2 text-sm">
               {submitting ? 'Saving…' : isEdit ? 'Update Role' : 'Create Role'}
             </button>
           </div>

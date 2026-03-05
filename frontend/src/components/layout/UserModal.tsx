@@ -3,7 +3,7 @@ import { X, AlertCircle } from 'lucide-react';
 import type { User, Role } from '../../lib/types';
 
 interface Props {
-  user: User | null; // null = create mode
+  user: User | null;
   roles: Role[];
   onSave: (data: any) => Promise<void>;
   onClose: () => void;
@@ -11,7 +11,6 @@ interface Props {
 
 export default function UserModal({ user, roles, onSave, onClose }: Props) {
   const isEdit = !!user;
-
   const [email, setEmail] = useState(user?.email || '');
   const [fullName, setFullName] = useState(user?.full_name || user?.fullName || '');
   const [password, setPassword] = useState('');
@@ -32,21 +31,14 @@ export default function UserModal({ user, roles, onSave, onClose }: Props) {
     e.preventDefault();
     setError('');
     setSubmitting(true);
-
     try {
-      const data: any = {
-        email,
-        fullName,
-        roleIds: selectedRoles,
-        isActive,
-      };
+      const data: any = { email, fullName, roleIds: selectedRoles, isActive };
       if (password) data.password = password;
       if (!isEdit && !password) {
         setError('Password is required for new users.');
         setSubmitting(false);
         return;
       }
-
       await onSave(data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Operation failed.');
@@ -56,14 +48,26 @@ export default function UserModal({ user, roles, onSave, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0 0 0 / 0.55)' }}>
+      <div
+        className="ag-card w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto"
+        style={{ background: 'var(--ag-surface)' }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">
+        <div
+          className="flex items-center justify-between px-6 py-4"
+          style={{ borderBottom: '1px solid var(--ag-border)' }}
+        >
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--ag-text)' }}>
             {isEdit ? 'Edit User' : 'Add User'}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg transition-colors"
+            style={{ color: 'var(--ag-text3)' }}
+            onMouseOver={(e) => (e.currentTarget.style.color = 'var(--ag-text)')}
+            onMouseOut={(e) => (e.currentTarget.style.color = 'var(--ag-text3)')}
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -71,65 +75,83 @@ export default function UserModal({ user, roles, onSave, onClose }: Props) {
         {/* Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+            <div className="ag-alert-red flex items-center gap-2 text-sm px-4 py-3">
               <AlertCircle className="w-4 h-4 shrink-0" /> {error}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--ag-text2)' }}>
+              Full Name
+            </label>
             <input
               type="text"
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="ag-input w-full px-3 py-2.5 text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--ag-text2)' }}>
+              Email
+            </label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="ag-input w-full px-3 py-2.5 text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password {isEdit && <span className="text-gray-400">(leave blank to keep current)</span>}
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--ag-text2)' }}>
+              Password{' '}
+              {isEdit && (
+                <span style={{ color: 'var(--ag-text3)' }}>(leave blank to keep current)</span>
+              )}
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={isEdit ? '••••••••' : ''}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="ag-input w-full px-3 py-2.5 text-sm"
             />
           </div>
 
           {/* Roles */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Roles</label>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ag-text2)' }}>
+              Roles
+            </label>
             <div className="space-y-2">
               {roles.map((role) => (
                 <label
                   key={role.id}
-                  className="flex items-center gap-3 p-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
+                  className="flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors"
+                  style={{
+                    border: '1px solid var(--ag-border)',
+                    background: selectedRoles.includes(role.id) ? 'var(--ag-accent-lo)' : 'var(--ag-surface2)',
+                  }}
                 >
                   <input
                     type="checkbox"
                     checked={selectedRoles.includes(role.id)}
                     onChange={() => toggleRole(role.id)}
-                    className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    className="w-4 h-4 rounded"
+                    style={{ accentColor: 'var(--ag-accent)' }}
                   />
                   <div>
-                    <span className="text-sm font-medium text-gray-900">{role.name}</span>
+                    <span className="text-sm font-medium" style={{ color: 'var(--ag-text)' }}>
+                      {role.name}
+                    </span>
                     {role.description && (
-                      <p className="text-xs text-gray-500">{role.description}</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--ag-text3)' }}>
+                        {role.description}
+                      </p>
                     )}
                   </div>
                 </label>
@@ -144,9 +166,12 @@ export default function UserModal({ user, roles, onSave, onClose }: Props) {
                 type="checkbox"
                 checked={isActive}
                 onChange={(e) => setIsActive(e.target.checked)}
-                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                className="w-4 h-4 rounded"
+                style={{ accentColor: 'var(--ag-accent)' }}
               />
-              <span className="text-sm text-gray-700">Account active</span>
+              <span className="text-sm" style={{ color: 'var(--ag-text2)' }}>
+                Account active
+              </span>
             </label>
           )}
 
@@ -155,14 +180,14 @@ export default function UserModal({ user, roles, onSave, onClose }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="ag-btn-ghost px-4 py-2 text-sm"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="ag-btn-primary px-4 py-2 text-sm"
             >
               {submitting ? 'Saving…' : isEdit ? 'Update User' : 'Create User'}
             </button>
