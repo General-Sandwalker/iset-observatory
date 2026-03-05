@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   BarChart3,
   PlusCircle,
@@ -10,6 +10,8 @@ import {
   PieChart,
   Radar,
   X,
+  Image,
+  FileJson,
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -112,6 +114,7 @@ export default function ChartBuilderPage() {
   const [viewingChart, setViewingChart] = useState<number | null>(null);
   const [viewData, setViewData] = useState<ChartApiData | null>(null);
   const [viewLoading, setViewLoading] = useState(false);
+  const viewChartRef = useRef<HTMLDivElement>(null);
 
   const selectedDataset = useMemo(() => datasets.find((d) => d.id === datasetId), [datasets, datasetId]);
   const columns: ColumnMapping[] = useMemo(() => selectedDataset?.column_mapping || [], [selectedDataset]);
@@ -179,6 +182,41 @@ export default function ChartBuilderPage() {
     } finally {
       setPreviewLoading(false);
     }
+  }
+
+  function exportChartPng() {
+    const canvas = viewChartRef.current?.querySelector('canvas') as HTMLCanvasElement | null;
+    if (!canvas) return;
+    const viewChart = charts.find((c) => c.id === viewingChart);
+    const tmp = document.createElement('canvas');
+    tmp.width = canvas.width; tmp.height = canvas.height;
+    const ctx = tmp.getContext('2d')!;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, tmp.width, tmp.height);
+    ctx.drawImage(canvas, 0, 0);
+    const a = document.createElement('a');
+    a.href = tmp.toDataURL('image/png');
+    a.download = `${(viewChart?.title || 'chart').replace(/\s+/g, '_')}.png`;
+    a.click();
+  }
+
+  function exportChartJson() {
+    const viewChart = charts.find((c) => c.id === viewingChart);
+    if (!viewChart || !viewData) return;
+    const payload = {
+      title: viewChart.title,
+      chartType: viewChart.chart_type,
+      config: viewChart.config,
+      data: viewData,
+      exportedAt: new Date().toISOString(),
+      source: 'ISET Observatory',
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${(viewChart.title || 'chart').replace(/\s+/g, '_')}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
   }
 
   async function handleDelete(id: number) {
@@ -361,23 +399,43 @@ export default function ChartBuilderPage() {
       {/* View modal */}
       {viewingChart && (
         <div className="ag-card p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
             <h2 className="text-base font-semibold" style={{ color: 'var(--ag-text)' }}>
               {charts.find((c) => c.id === viewingChart)?.title}
             </h2>
-            <button
-              onClick={() => { setViewingChart(null); setViewData(null); }}
-              className="ag-btn-ghost px-3 py-1.5 text-sm"
-            >
-              Close
-            </button>
+            <div className="flex items-center gap-2">
+              {viewData && !viewLoading && (
+                <>
+                  <button
+                    onClick={exportChartPng}
+                    className="ag-btn-ghost flex items-center gap-1.5 px-3 py-1.5 text-xs"
+                    title="Download as PNG image"
+                  >
+                    <Image className="w-3.5 h-3.5" /> PNG
+                  </button>
+                  <button
+                    onClick={exportChartJson}
+                    className="ag-btn-ghost flex items-center gap-1.5 px-3 py-1.5 text-xs"
+                    title="Export chart data as JSON"
+                  >
+                    <FileJson className="w-3.5 h-3.5" /> JSON
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => { setViewingChart(null); setViewData(null); }}
+                className="ag-btn-ghost px-3 py-1.5 text-sm"
+              >
+                Close
+              </button>
+            </div>
           </div>
           {viewLoading ? (
             <div className="flex items-center justify-center h-64">
               <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--ag-accent)' }} />
             </div>
           ) : viewData ? (
-            <div style={{ height: 400 }}>
+            <div ref={viewChartRef} style={{ height: 400 }}>
               {(() => {
                 const c = charts.find((ch) => ch.id === viewingChart);
                 return renderChartJS(c?.chart_type || 'bar', viewData, c?.title || '', c?.config?.xColumn || '', c?.config?.yColumn || '', c?.config?.aggregation || 'COUNT');

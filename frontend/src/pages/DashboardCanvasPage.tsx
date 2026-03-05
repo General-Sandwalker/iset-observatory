@@ -34,7 +34,6 @@ import {
 } from 'chart.js';
 import { Bar, Line, Pie, Doughnut, Radar as RadarChart, PolarArea } from 'react-chartjs-2';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import api from '../lib/api';
 import type { Dashboard, Chart, ChartType, DashboardLayoutItem } from '../lib/types';
 
@@ -130,6 +129,7 @@ function SortableChartCard({
   return (
     <div
       ref={setNodeRef}
+      data-chart-id={chartId}
       style={{ ...style, border: '1px solid var(--ag-border)', background: 'var(--ag-surface)' }}
       className="rounded-xl p-4 backdrop-blur transition-all"
     >
@@ -280,62 +280,75 @@ export default function DashboardCanvasPage() {
   async function exportPDF() {
     try {
       const doc = new jsPDF('landscape', 'mm', 'a4');
+      const pageW = 297; const pageH = 210;
+      const marginL = 14; const marginR = 14;
+      const usableW = pageW - marginL - marginR; // 269
+      const cols = 2;
+      const colGap = 8;
+      const imgW = (usableW - colGap * (cols - 1)) / cols; // ~130.5
+      const titleH = 12;  // space for chart title lines
+      const imgH = 75;
+      const rowH = titleH + imgH + 8;
+      const colXs = [marginL, marginL + imgW + colGap];
 
-      // Title
-      doc.setFontSize(22);
+      // Page header
+      doc.setFontSize(20);
       doc.setTextColor(30, 30, 60);
-      doc.text(activeDashboard?.title || 'Dashboard', 14, 18);
-
-      doc.setFontSize(9);
-      doc.setTextColor(120);
+      doc.text(activeDashboard?.title || 'Dashboard', marginL, 16);
+      doc.setFontSize(8.5);
+      doc.setTextColor(110);
       doc.text(
-        `Exported on ${new Date().toLocaleString()} · ${layoutItems.length} chart${layoutItems.length !== 1 ? 's' : ''}`,
-        14,
-        26,
+        `Exported ${new Date().toLocaleString()} \u00b7 ${layoutItems.length} chart${layoutItems.length !== 1 ? 's' : ''}`,
+        marginL, 23,
       );
 
-      let yPos = 34;
+      let col = 0;
+      let yRow = 30;
+
+      // Helper: render canvas with white background
+      function canvasToPng(canvas: HTMLCanvasElement): string {
+        const tmp = document.createElement('canvas');
+        tmp.width = canvas.width; tmp.height = canvas.height;
+        const ctx = tmp.getContext('2d')!;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, tmp.width, tmp.height);
+        ctx.drawImage(canvas, 0, 0);
+        return tmp.toDataURL('image/png');
+      }
 
       for (const item of layoutItems) {
         const chart = charts.find((c) => c.id === item.chartId);
-        const data = chartDataMap[item.chartId];
-        if (!chart || !data || data.labels.length === 0) continue;
+        const container = document.querySelector(`[data-chart-id="${item.chartId}"]`);
+        const canvas = container?.querySelector('canvas') as HTMLCanvasElement | null;
+        if (!chart || !canvas) continue;
 
-        if (yPos > 170) { doc.addPage(); yPos = 20; }
-
-        // Chart section heading
-        doc.setFontSize(13);
-        doc.setTextColor(30, 30, 60);
-        doc.text(chart.title, 14, yPos);
-
-        const meta: string[] = [];
-        if (chart.chart_type) meta.push(chart.chart_type);
-        if (chart.dataset_name) meta.push(chart.dataset_name);
-        if (meta.length) {
-          doc.setFontSize(8);
-          doc.setTextColor(100);
-          doc.text(meta.join(' · '), 14, yPos + 5);
+        // New page if needed
+        if (yRow + rowH > pageH - 10) {
+          doc.addPage();
+          col = 0;
+          yRow = 14;
         }
 
-        yPos += meta.length ? 9 : 6;
+        const x = colXs[col];
 
-        const tableBody = data.labels.slice(0, 30).map((label, i) => [
-          String(label),
-          String(data.values[i] ?? ''),
-        ]);
+        // Title
+        doc.setFontSize(10);
+        doc.setTextColor(30, 30, 60);
+        doc.text(chart.title, x, yRow + 5, { maxWidth: imgW });
+        doc.setFontSize(7.5);
+        doc.setTextColor(120);
+        const meta = [chart.chart_type, chart.dataset_name].filter(Boolean).join(' \u00b7 ');
+        if (meta) doc.text(meta, x, yRow + 10);
 
-        autoTable(doc, {
-          startY: yPos,
-          head: [['Label', 'Value']],
-          body: tableBody,
-          theme: 'striped',
-          styles: { fontSize: 8, cellPadding: 2 },
-          headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
-          alternateRowStyles: { fillColor: [240, 245, 255] },
-          margin: { left: 14, right: 14 },
-        });
+        // Chart image
+        const png = canvasToPng(canvas);
+        doc.addImage(png, 'PNG', x, yRow + titleH, imgW, imgH);
 
-        yPos = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14;
+        col++;
+        if (col >= cols) {
+          col = 0;
+          yRow += rowH;
+        }
       }
 
       doc.save(`${(activeDashboard?.title || 'dashboard').replace(/\s+/g, '_')}.pdf`);
