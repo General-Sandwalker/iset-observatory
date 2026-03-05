@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   Sun,
   Moon,
+  DatabaseZap,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -24,6 +25,7 @@ const navItems = [
   { to: '/users', label: 'Users', icon: Users },
   { to: '/roles', label: 'Roles', icon: Shield },
   { to: '/import', label: 'Data Import', icon: FileSpreadsheet },
+  { to: '/explore', label: 'DB Explorer', icon: DatabaseZap },
   { to: '/ai', label: 'AI Analysis', icon: BrainCircuit },
   { to: '/charts', label: 'Visualizations', icon: BarChart3 },
   { to: '/dashboards', label: 'Dashboards', icon: Columns3 },

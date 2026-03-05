@@ -173,3 +173,18 @@ export interface Dashboard {
   created_at: string;
   updated_at: string;
 }
+
+// ─── Database Explorer ────────────────────────────────────────────
+
+export interface TableColumn {
+  column_name: string;
+  data_type: string;
+  udt_name: string;
+}
+
+export interface TablePagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}

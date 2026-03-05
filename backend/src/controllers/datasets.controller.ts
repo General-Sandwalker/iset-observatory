@@ -194,6 +194,9 @@ export async function queryTable(req: Request, res: Response): Promise<void> {
     const page = parseInt(String(req.query.page || '1'), 10);
     const limit = Math.min(parseInt(String(req.query.limit || '50'), 10), 200);
     const offset = (page - 1) * limit;
+    const search = String(req.query.search || '').trim();
+    const sortParam = String(req.query.sort || '').trim();
+    const order = String(req.query.order || 'asc').toLowerCase() === 'desc' ? 'DESC' : 'ASC';
 
     // Get the table name from the dataset
     const dsResult = await pool.query('SELECT table_name FROM datasets WHERE id = $1', [id]);
@@ -202,7 +205,7 @@ export async function queryTable(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const tableName = dsResult.rows[0].table_name;
+    const tableName = dsResult.rows[0].table_name as string;
 
     // Ensure it's a dynamic table
     if (!tableName.startsWith('dyn_')) {
@@ -210,12 +213,37 @@ export async function queryTable(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const countResult = await pool.query(`SELECT COUNT(*) FROM "${tableName}"`);
+    // Fetch columns for search / sort validation
+    const colResult = await pool.query(
+      `SELECT column_name FROM information_schema.columns WHERE table_name = $1 ORDER BY ordinal_position`,
+      [tableName],
+    );
+    const validCols = colResult.rows.map((r) => r.column_name as string);
+
+    // Build WHERE clause for search (cast all text-ish columns)
+    const params: unknown[] = [];
+    let where = '';
+    if (search) {
+      const conditions = validCols
+        .filter((c) => c !== 'id')
+        .map((c) => `"${c}"::text ILIKE $${params.push('%' + search + '%')}`);
+      if (conditions.length) where = `WHERE ${conditions.join(' OR ')}`;
+    }
+
+    // Validate sort column
+    const sortCol = validCols.includes(sortParam) ? sortParam : 'id';
+
+    const countResult = await pool.query(
+      `SELECT COUNT(*) FROM "${tableName}" ${where}`,
+      params,
+    );
     const total = parseInt(countResult.rows[0].count, 10);
 
+    const offsetParam = params.push(limit);
+    const limitParam = params.push(offset);
     const dataResult = await pool.query(
-      `SELECT * FROM "${tableName}" ORDER BY id LIMIT $1 OFFSET $2`,
-      [limit, offset],
+      `SELECT * FROM "${tableName}" ${where} ORDER BY "${sortCol}" ${order} LIMIT $${offsetParam} OFFSET $${limitParam}`,
+      params,
     );
 
     res.json({
@@ -226,6 +254,237 @@ export async function queryTable(req: Request, res: Response): Promise<void> {
   } catch (error) {
     console.error('Query table error:', error);
     res.status(500).json({ success: false, message: 'Failed to query table.' });
+  }
+}
+
+// ─── Get schema (columns + types) ──────────────────────────────
+
+export async function getSchema(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const dsResult = await pool.query('SELECT table_name FROM datasets WHERE id = $1', [id]);
+    if (dsResult.rows.length === 0 || !dsResult.rows[0].table_name) {
+      res.status(404).json({ success: false, message: 'Dataset or table not found.' });
+      return;
+    }
+    const tbl = dsResult.rows[0].table_name as string;
+    const cols = await pool.query(
+      `SELECT column_name, data_type, udt_name
+       FROM information_schema.columns
+       WHERE table_name = $1
+       ORDER BY ordinal_position`,
+      [tbl],
+    );
+    res.json({ success: true, data: cols.rows });
+  } catch (error) {
+    console.error('Get schema error:', error);
+    res.status(500).json({ success: false, message: 'Failed to get schema.' });
+  }
+}
+
+// ─── Update a single row cell ───────────────────────────────────
+
+export async function updateRow(req: Request, res: Response): Promise<void> {
+  try {
+    const { id, rowId } = req.params;
+    const { column, value } = req.body as { column: string; value: unknown };
+
+    const dsResult = await pool.query('SELECT table_name FROM datasets WHERE id = $1', [id]);
+    if (dsResult.rows.length === 0 || !dsResult.rows[0].table_name) {
+      res.status(404).json({ success: false, message: 'Dataset not found.' });
+      return;
+    }
+    const tbl = dsResult.rows[0].table_name as string;
+    if (!tbl.startsWith('dyn_')) {
+      res.status(400).json({ success: false, message: 'Invalid table.' });
+      return;
+    }
+    // Validate column exists
+    const colCheck = await pool.query(
+      `SELECT column_name FROM information_schema.columns WHERE table_name=$1 AND column_name=$2`,
+      [tbl, column],
+    );
+    if (colCheck.rows.length === 0) {
+      res.status(400).json({ success: false, message: 'Column not found.' });
+      return;
+    }
+    const result = await pool.query(
+      `UPDATE "${tbl}" SET "${column}" = $1 WHERE id = $2 RETURNING *`,
+      [value, parseInt(rowId as string, 10)],
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ success: false, message: 'Row not found.' });
+      return;
+    }
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error('Update row error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update row.' });
+  }
+}
+
+// ─── Insert a new row ───────────────────────────────────────────
+
+export async function insertRow(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const rowData = req.body as Record<string, unknown>;
+
+    const dsResult = await pool.query('SELECT table_name FROM datasets WHERE id = $1', [id]);
+    if (dsResult.rows.length === 0 || !dsResult.rows[0].table_name) {
+      res.status(404).json({ success: false, message: 'Dataset not found.' });
+      return;
+    }
+    const tbl = dsResult.rows[0].table_name as string;
+    if (!tbl.startsWith('dyn_')) {
+      res.status(400).json({ success: false, message: 'Invalid table.' });
+      return;
+    }
+
+    // Get columns (excluding id)
+    const colResult = await pool.query(
+      `SELECT column_name FROM information_schema.columns
+       WHERE table_name = $1 AND column_name != 'id'
+       ORDER BY ordinal_position`,
+      [tbl],
+    );
+    const cols = colResult.rows.map((r) => r.column_name as string).filter((c) => c in rowData);
+    if (cols.length === 0) {
+      res.status(400).json({ success: false, message: 'No valid columns provided.' });
+      return;
+    }
+    const values = cols.map((c) => rowData[c]);
+    const colList = cols.map((c) => `"${c}"`).join(', ');
+    const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
+
+    const result = await pool.query(
+      `INSERT INTO "${tbl}" (${colList}) VALUES (${placeholders}) RETURNING *`,
+      values,
+    );
+
+    // Update row_count in datasets
+    await pool.query(`UPDATE datasets SET row_count = row_count + 1 WHERE id = $1`, [id]);
+
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error('Insert row error:', error);
+    res.status(500).json({ success: false, message: 'Failed to insert row.' });
+  }
+}
+
+// ─── Delete rows by ids ─────────────────────────────────────────
+
+export async function deleteRows(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { ids } = req.body as { ids: number[] };
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ success: false, message: 'ids array is required.' });
+      return;
+    }
+
+    const dsResult = await pool.query('SELECT table_name FROM datasets WHERE id = $1', [id]);
+    if (dsResult.rows.length === 0 || !dsResult.rows[0].table_name) {
+      res.status(404).json({ success: false, message: 'Dataset not found.' });
+      return;
+    }
+    const tbl = dsResult.rows[0].table_name as string;
+    if (!tbl.startsWith('dyn_')) {
+      res.status(400).json({ success: false, message: 'Invalid table.' });
+      return;
+    }
+
+    const placeholders = ids.map((_, i) => `$${i + 1}`).join(', ');
+    const result = await pool.query(
+      `DELETE FROM "${tbl}" WHERE id IN (${placeholders}) RETURNING id`,
+      ids,
+    );
+
+    // Update row_count
+    await pool.query(
+      `UPDATE datasets SET row_count = GREATEST(row_count - $1, 0) WHERE id = $2`,
+      [result.rowCount ?? 0, id],
+    );
+
+    res.json({ success: true, deleted: result.rowCount ?? 0 });
+  } catch (error) {
+    console.error('Delete rows error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete rows.' });
+  }
+}
+
+// ─── Rename column ──────────────────────────────────────────────
+
+export async function renameColumn(req: Request, res: Response): Promise<void> {
+  try {
+    const { id, colName } = req.params;
+    const { newName } = req.body as { newName: string };
+
+    if (!newName || !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(newName)) {
+      res.status(400).json({ success: false, message: 'Invalid column name.' });
+      return;
+    }
+
+    const dsResult = await pool.query('SELECT table_name, column_mapping FROM datasets WHERE id = $1', [id]);
+    if (dsResult.rows.length === 0 || !dsResult.rows[0].table_name) {
+      res.status(404).json({ success: false, message: 'Dataset not found.' });
+      return;
+    }
+    const tbl = dsResult.rows[0].table_name as string;
+    if (!tbl.startsWith('dyn_')) {
+      res.status(400).json({ success: false, message: 'Invalid table.' });
+      return;
+    }
+
+    await pool.query(`ALTER TABLE "${tbl}" RENAME COLUMN "${colName}" TO "${newName}"`);
+
+    // Update column_mapping in datasets if present
+    const mapping = dsResult.rows[0].column_mapping as Array<{ columnName: string }> | null;
+    if (mapping) {
+      const updated = mapping.map((m) => m.columnName === colName ? { ...m, columnName: newName } : m);
+      await pool.query(`UPDATE datasets SET column_mapping = $1 WHERE id = $2`, [JSON.stringify(updated), id]);
+    }
+
+    res.json({ success: true, message: 'Column renamed.' });
+  } catch (error) {
+    console.error('Rename column error:', error);
+    res.status(500).json({ success: false, message: 'Failed to rename column.' });
+  }
+}
+
+// ─── Change column type ─────────────────────────────────────────
+
+export async function changeColumnType(req: Request, res: Response): Promise<void> {
+  try {
+    const { id, colName } = req.params;
+    const { newType } = req.body as { newType: string };
+
+    const allowed = ['TEXT', 'INTEGER', 'NUMERIC', 'DATE', 'BOOLEAN'];
+    if (!allowed.includes(newType?.toUpperCase())) {
+      res.status(400).json({ success: false, message: 'Invalid type. Allowed: ' + allowed.join(', ') });
+      return;
+    }
+
+    const dsResult = await pool.query('SELECT table_name FROM datasets WHERE id = $1', [id]);
+    if (dsResult.rows.length === 0 || !dsResult.rows[0].table_name) {
+      res.status(404).json({ success: false, message: 'Dataset not found.' });
+      return;
+    }
+    const tbl = dsResult.rows[0].table_name as string;
+    if (!tbl.startsWith('dyn_')) {
+      res.status(400).json({ success: false, message: 'Invalid table.' });
+      return;
+    }
+
+    await pool.query(
+      `ALTER TABLE "${tbl}" ALTER COLUMN "${colName}" TYPE ${newType} USING "${colName}"::${newType}`,
+    );
+
+    res.json({ success: true, message: 'Column type changed.' });
+  } catch (error) {
+    console.error('Change column type error:', error);
+    res.status(500).json({ success: false, message: 'Failed to change column type.' });
   }
 }
 

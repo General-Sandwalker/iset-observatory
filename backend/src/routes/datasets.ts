@@ -9,6 +9,12 @@ import {
   getDataset,
   queryTable,
   deleteDataset,
+  getSchema,
+  updateRow,
+  insertRow,
+  deleteRows,
+  renameColumn,
+  changeColumnType,
 } from '../controllers/datasets.controller';
 
 const router = Router();
@@ -36,5 +42,17 @@ router.get('/:id/data', requirePermission('data.view'), queryTable);
 
 // Delete dataset + table  (DELETE /api/datasets/:id)
 router.delete('/:id', requirePermission('data.delete'), deleteDataset);
+
+// Schema (columns + types)  (GET /api/datasets/:id/schema)
+router.get('/:id/schema', requirePermission('data.view'), getSchema);
+
+// Row operations
+router.patch('/:id/rows/:rowId', requirePermission('data.import'), updateRow);  // inline edit
+router.post('/:id/rows', requirePermission('data.import'), insertRow);           // add row
+router.delete('/:id/rows', requirePermission('data.delete'), deleteRows);        // multi-delete
+
+// Column schema operations
+router.patch('/:id/columns/:colName/rename', requirePermission('data.import'), renameColumn);
+router.patch('/:id/columns/:colName/type', requirePermission('data.import'), changeColumnType);
 
 export default router;
