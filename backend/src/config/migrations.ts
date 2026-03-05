@@ -184,6 +184,13 @@ const migrations = [
       );
     `,
   },
+  {
+    name: '008_charts_nullable_dataset',
+    sql: `
+      ALTER TABLE charts
+        ALTER COLUMN dataset_id DROP NOT NULL;
+    `,
+  },
 ];
 
 export async function runMigrations(): Promise<void> {

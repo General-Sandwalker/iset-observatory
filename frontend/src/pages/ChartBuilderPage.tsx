@@ -130,7 +130,7 @@ export default function ChartBuilderPage() {
 
   function openEdit(chart: Chart) {
     setEditingId(chart.id); setTitle(chart.title); setChartType(chart.chart_type);
-    setDatasetId(chart.dataset_id); setXColumn(chart.config?.xColumn || '');
+    setDatasetId(chart.dataset_id ?? null); setXColumn(chart.config?.xColumn || '');
     setYColumn(chart.config?.yColumn || ''); setAggregation(chart.config?.aggregation || 'COUNT');
     setShowBuilder(true); setPreviewData(null);
   }
@@ -415,7 +415,9 @@ export default function ChartBuilderPage() {
                 <div>
                   <h3 className="text-sm font-medium" style={{ color: 'var(--ag-text)' }}>{chart.title}</h3>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--ag-text3)' }}>
-                    {chart.dataset_name || `Dataset #${chart.dataset_id}`} · {chart.chart_type}
+                    {chart.dataset_name
+                      ? `${chart.dataset_name} · ${chart.chart_type}`
+                      : `AI Query · ${chart.chart_type}`}
                   </p>
                 </div>
                 <span
@@ -426,9 +428,12 @@ export default function ChartBuilderPage() {
                 </span>
               </div>
               <p className="text-xs mb-3" style={{ color: 'var(--ag-text3)' }}>
-                {chart.config?.xColumn && (
-                  <>X: {chart.config.xColumn}{chart.config.yColumn ? ` · Y: ${chart.config.aggregation}(${chart.config.yColumn})` : ' · COUNT'}</>
-                )}
+                {chart.config?.sql
+                  ? <span className="font-mono truncate block max-w-[28ch]" title={chart.config.sql}>SQL: {chart.config.sql.slice(0, 40)}…</span>
+                  : chart.config?.xColumn && (
+                      <>X: {chart.config.xColumn}{chart.config.yColumn ? ` · Y: ${chart.config.aggregation}(${chart.config.yColumn})` : ' · COUNT'}</>
+                    )
+                }
               </p>
               <div className="flex gap-2">
                 <button
@@ -437,12 +442,14 @@ export default function ChartBuilderPage() {
                 >
                   <Eye className="w-3.5 h-3.5" /> View
                 </button>
-                <button
-                  onClick={() => openEdit(chart)}
-                  className="ag-btn-ghost flex items-center gap-1 px-2.5 py-1.5 text-xs"
-                >
-                  <BarChart3 className="w-3.5 h-3.5" /> Edit
-                </button>
+                {chart.dataset_id && (
+                  <button
+                    onClick={() => openEdit(chart)}
+                    className="ag-btn-ghost flex items-center gap-1 px-2.5 py-1.5 text-xs"
+                  >
+                    <BarChart3 className="w-3.5 h-3.5" /> Edit
+                  </button>
+                )}
                 <button
                   onClick={() => handleDelete(chart.id)}
                   className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg transition-colors ml-auto"

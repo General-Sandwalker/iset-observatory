@@ -7,15 +7,23 @@ export async function createChart(req: Request, res: Response): Promise<void> {
   try {
     const { title, chartType, datasetId, config: chartConfig } = req.body;
 
-    if (!title || !chartType || !datasetId) {
-      res.status(400).json({ success: false, message: 'title, chartType, and datasetId are required.' });
+    if (!title || !chartType) {
+      res.status(400).json({ success: false, message: 'title and chartType are required.' });
+      return;
+    }
+
+    // AI charts have no dataset — they store raw SQL in config.sql
+    const hasDataset = datasetId != null;
+    const hasSql = chartConfig?.sql;
+    if (!hasDataset && !hasSql) {
+      res.status(400).json({ success: false, message: 'Either datasetId or config.sql is required.' });
       return;
     }
 
     const result = await pool.query(
       `INSERT INTO charts (title, chart_type, dataset_id, config, created_by)
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [title, chartType, datasetId, JSON.stringify(chartConfig || {}), req.user!.id],
+      [title, chartType, hasDataset ? datasetId : null, JSON.stringify(chartConfig || {}), req.user!.id],
     );
 
     res.status(201).json({ success: true, data: result.rows[0] });
@@ -32,7 +40,7 @@ export async function listCharts(_req: Request, res: Response): Promise<void> {
     const result = await pool.query(
       `SELECT c.*, d.name AS dataset_name, d.table_name, d.column_mapping
        FROM charts c
-       JOIN datasets d ON d.id = c.dataset_id
+       LEFT JOIN datasets d ON d.id = c.dataset_id
        ORDER BY c.created_at DESC`,
     );
     res.json({ success: true, data: result.rows });
@@ -49,7 +57,7 @@ export async function getChart(req: Request, res: Response): Promise<void> {
     const result = await pool.query(
       `SELECT c.*, d.name AS dataset_name, d.table_name, d.column_mapping
        FROM charts c
-       JOIN datasets d ON d.id = c.dataset_id
+       LEFT JOIN datasets d ON d.id = c.dataset_id
        WHERE c.id = $1`,
       [req.params.id],
     );
@@ -125,7 +133,7 @@ export async function getChartData(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
 
     const chartResult = await pool.query(
-      `SELECT c.config, d.table_name FROM charts c JOIN datasets d ON d.id = c.dataset_id WHERE c.id = $1`,
+      `SELECT c.config, d.table_name FROM charts c LEFT JOIN datasets d ON d.id = c.dataset_id WHERE c.id = $1`,
       [id],
     );
     if (chartResult.rows.length === 0) {
@@ -135,6 +143,18 @@ export async function getChartData(req: Request, res: Response): Promise<void> {
 
     const { config: cfg, table_name: tableName } = chartResult.rows[0];
 
+    // ── AI-saved chart: config has raw SQL ──────────────────────
+    if (cfg.sql) {
+      const dataResult = await pool.query(cfg.sql);
+      const labelCol: string = cfg.labelCol || Object.keys(dataResult.rows[0] || {})[0];
+      const valueCol: string = cfg.valueCol || Object.keys(dataResult.rows[0] || {})[1];
+      const labels = dataResult.rows.map((r: Record<string, unknown>) => String(r[labelCol] ?? ''));
+      const values = dataResult.rows.map((r: Record<string, unknown>) => parseFloat(r[valueCol] as string) || 0);
+      res.json({ success: true, data: { labels, values } });
+      return;
+    }
+
+    // ── Dataset-backed chart ─────────────────────────────────────
     if (!tableName || !tableName.startsWith('dyn_')) {
       res.status(400).json({ success: false, message: 'Invalid dynamic table.' });
       return;

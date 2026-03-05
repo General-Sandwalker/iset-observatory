@@ -13,6 +13,8 @@ import {
   Code,
   BarChart3,
   X,
+  Save,
+  CheckCircle,
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -58,7 +60,7 @@ function isNumeric(val: unknown): boolean {
   return val !== null && val !== undefined && val !== '' && !isNaN(Number(val));
 }
 
-function InlineChart({ data, onClose }: { data: Record<string, unknown>[]; onClose: () => void }) {
+function InlineChart({ data, sql, onClose }: { data: Record<string, unknown>[]; sql?: string; onClose: () => void }) {
   const columns = Object.keys(data[0] || {});
   const numericCols = columns.filter((c) => data.slice(0, 10).every((r) => isNumeric(r[c])));
   const labelCols = columns.filter((c) => !numericCols.includes(c));
@@ -66,6 +68,28 @@ function InlineChart({ data, onClose }: { data: Record<string, unknown>[]; onClo
   const [chartType, setChartType] = useState<MiniChartType>('bar');
   const [labelCol, setLabelCol] = useState(labelCols[0] || columns[0]);
   const [valueCol, setValueCol] = useState(numericCols[0] || columns[1] || columns[0]);
+  const [saveTitle, setSaveTitle] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  async function handleSave() {
+    if (!saveTitle.trim() || !sql) return;
+    setSaving(true);
+    try {
+      await api.post('/charts', {
+        title: saveTitle.trim(),
+        chartType: chartType === 'horizontalBar' ? 'horizontalBar' : chartType,
+        config: { sql, labelCol, valueCol },
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+      setSaveTitle('');
+    } catch {
+      alert('Failed to save chart.');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   const labels = data.map((r) => String(r[labelCol] ?? ''));
   const values = data.map((r) => Number(r[valueCol] ?? 0));
@@ -132,6 +156,29 @@ function InlineChart({ data, onClose }: { data: Record<string, unknown>[]; onClo
         {chartType === 'pie' && <Pie data={chartData} options={{ ...baseOpts, plugins: { legend: { position: 'right' } } }} />}
         {chartType === 'doughnut' && <Doughnut data={chartData} options={{ ...baseOpts, plugins: { legend: { position: 'right' } } }} />}
       </div>
+      {/* Save to Charts */}
+      {sql && (
+        <div className="flex items-center gap-2 mt-3">
+          <input
+            value={saveTitle}
+            onChange={(e) => setSaveTitle(e.target.value)}
+            placeholder="Chart title to save…"
+            className="ag-input flex-1 px-3 py-1.5 text-xs"
+            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+          />
+          <button
+            onClick={handleSave}
+            disabled={!saveTitle.trim() || saving || saved}
+            className="ag-btn-primary flex items-center gap-1.5 px-3 py-1.5 text-xs disabled:opacity-50"
+          >
+            {saved
+              ? <><CheckCircle className="w-3.5 h-3.5" /> Saved!</>
+              : saving
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <><Save className="w-3.5 h-3.5" /> Save to Charts</>}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -458,7 +505,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 
         {/* Inline chart */}
         {hasResults && showChart && (
-          <InlineChart data={message.data!} onClose={() => { setShowChart(false); setShowData(true); }} />
+          <InlineChart data={message.data!} sql={message.sql} onClose={() => { setShowChart(false); setShowData(true); }} />
         )}
       </div>
     </div>

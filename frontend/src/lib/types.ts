@@ -131,9 +131,12 @@ export type ChartType = 'bar' | 'horizontalBar' | 'line' | 'pie' | 'doughnut' | 
 export type AggregationType = 'COUNT' | 'SUM' | 'AVG' | 'MIN' | 'MAX';
 
 export interface ChartConfig {
-  xColumn: string;
-  yColumn: string;
-  aggregation: AggregationType;
+  xColumn?: string;
+  yColumn?: string;
+  aggregation?: AggregationType;
+  sql?: string;
+  labelCol?: string;
+  valueCol?: string;
   colors?: string[];
   showLegend?: boolean;
   showGrid?: boolean;
@@ -143,7 +146,7 @@ export interface Chart {
   id: number;
   title: string;
   chart_type: ChartType;
-  dataset_id: number;
+  dataset_id?: number | null;
   config: ChartConfig;
   dataset_name?: string;
   table_name?: string;
