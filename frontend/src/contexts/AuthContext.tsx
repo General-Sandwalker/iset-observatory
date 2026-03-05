@@ -12,6 +12,7 @@ import type { User, AuthState, LoginCredentials } from '../lib/types';
 interface AuthContextValue extends AuthState {
   login: (creds: LoginCredentials) => Promise<void>;
   logout: () => void;
+  updateUser: (patch: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -71,8 +72,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ user: null, token: null, isAuthenticated: false, isLoading: false });
   }, []);
 
+  const updateUser = useCallback((patch: Partial<User>) => {
+    setState((s) => s.user ? { ...s, user: { ...s.user, ...patch } } : s);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ ...state, login, logout }}>
+    <AuthContext.Provider value={{ ...state, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

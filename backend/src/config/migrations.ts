@@ -152,6 +152,12 @@ const migrations = [
       );
     `,
   },
+  {
+    name: '005_user_preferences',
+    sql: `
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences JSONB NOT NULL DEFAULT '{}';
+    `,
+  },
 ];
 
 export async function runMigrations(): Promise<void> {

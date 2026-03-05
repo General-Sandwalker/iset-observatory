@@ -11,6 +11,7 @@ import AIAnalysisPage from './pages/AIAnalysisPage';
 import SurveyGeneratorPage from './pages/SurveyGeneratorPage';
 import ChartBuilderPage from './pages/ChartBuilderPage';
 import DashboardCanvasPage from './pages/DashboardCanvasPage';
+import SettingsPage from './pages/SettingsPage';
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
             <Route path="charts" element={<ChartBuilderPage />} />
             <Route path="dashboards" element={<DashboardCanvasPage />} />
             <Route path="surveys" element={<SurveyGeneratorPage />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>
       </AuthProvider>

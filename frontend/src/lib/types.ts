@@ -11,6 +11,7 @@ export interface User {
   created_at?: string;
   updated_at?: string;
   roles?: Role[];
+  preferences?: Record<string, unknown>;
 }
 
 export interface Role {
