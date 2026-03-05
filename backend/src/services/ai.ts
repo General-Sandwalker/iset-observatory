@@ -1,19 +1,19 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
 import { config } from '../config';
 import pool from '../config/database';
 
-// ─── Gemini client singleton ─────────────────────────────────────
+// ─── Groq client singleton ───────────────────────────────────────
 
-let genAI: GoogleGenerativeAI | null = null;
+let groqClient: Groq | null = null;
 
-function getGenAI(): GoogleGenerativeAI {
-  if (!config.gemini.apiKey) {
-    throw new Error('GEMINI_API_KEY is not configured. Set it in your .env file.');
+function getGroq(): Groq {
+  if (!config.groq.apiKey) {
+    throw new Error('GROQ_API_KEY is not configured. Set it in your .env file.');
   }
-  if (!genAI) {
-    genAI = new GoogleGenerativeAI(config.gemini.apiKey);
+  if (!groqClient) {
+    groqClient = new Groq({ apiKey: config.groq.apiKey });
   }
-  return genAI;
+  return groqClient;
 }
 
 // ─── Helpers: get dynamic-table schema for prompt context ────────
@@ -86,9 +86,7 @@ export interface NLQueryResult {
 }
 
 export async function naturalLanguageToSQL(question: string): Promise<NLQueryResult> {
-  const ai = getGenAI();
-  const model = ai.getGenerativeModel({ model: config.gemini.model });
-
+  const groq = getGroq();
   const schema = await getDynamicTablesSchema();
 
   const prompt = `You are a PostgreSQL expert. Given the following database schema of dynamic tables, convert the user's natural language question into a READ-ONLY SQL query.
@@ -108,8 +106,13 @@ RULES:
 
 USER QUESTION: ${question}`;
 
-  const result = await withRetry(() => model.generateContent(prompt));
-  const text = result.response.text().trim();
+  const completion = await withRetry(() =>
+    groq.chat.completions.create({
+      model: config.groq.model,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  );
+  const text = (completion.choices[0].message.content ?? '').trim();
 
   // Parse AI response
   let parsed: { sql: string; explanation: string };
@@ -171,8 +174,7 @@ export interface GeneratedSurvey {
 }
 
 export async function generateSurvey(goal: string, context?: string): Promise<GeneratedSurvey> {
-  const ai = getGenAI();
-  const model = ai.getGenerativeModel({ model: config.gemini.model });
+  const groq = getGroq();
 
   const prompt = `You are a survey design expert for a higher education institute (ISET Tozeur, Tunisia). Generate a professional survey based on the user's goal.
 
@@ -197,8 +199,13 @@ RULES:
 4. Make surveys professional, clear, and suitable for academic contexts.
 5. Do NOT include markdown code fences. Return ONLY valid JSON.`;
 
-  const result = await withRetry(() => model.generateContent(prompt));
-  const text = result.response.text().trim();
+  const completion = await withRetry(() =>
+    groq.chat.completions.create({
+      model: config.groq.model,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  );
+  const text = (completion.choices[0].message.content ?? '').trim();
 
   let parsed: Omit<GeneratedSurvey, 'goal'>;
   try {

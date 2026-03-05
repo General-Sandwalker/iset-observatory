@@ -41,8 +41,8 @@ services:
       DB_NAME: ${DB_NAME:-observatory_db}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       CORS_ORIGIN: http://localhost:5173
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-1.5-flash}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
       SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-admin@iset-tozeur.tn}
       SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-Admin@123!}
     ports:
