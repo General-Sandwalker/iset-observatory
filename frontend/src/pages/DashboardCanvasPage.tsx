@@ -279,36 +279,20 @@ export default function DashboardCanvasPage() {
 
   async function exportPDF() {
     try {
-      const doc = new jsPDF('landscape', 'mm', 'a4');
-      const pageW = 297; const pageH = 210;
-      const marginL = 14; const marginR = 14;
-      const usableW = pageW - marginL - marginR; // 269
-      const cols = 2;
-      const colGap = 8;
-      const imgW = (usableW - colGap * (cols - 1)) / cols; // ~130.5
-      const titleH = 12;  // space for chart title lines
-      const imgH = 75;
-      const rowH = titleH + imgH + 8;
-      const colXs = [marginL, marginL + imgW + colGap];
+      const doc = new jsPDF('portrait', 'mm', 'a4');
+      const pageW = 210;
+      const pageH = 297;
+      const marginL = 18;
+      const marginR = 18;
+      const usableW = pageW - marginL - marginR; // 174 mm
+      const dashTitle = activeDashboard?.title || 'Dashboard';
+      const exportDate = new Date().toLocaleString();
 
-      // Page header
-      doc.setFontSize(20);
-      doc.setTextColor(30, 30, 60);
-      doc.text(activeDashboard?.title || 'Dashboard', marginL, 16);
-      doc.setFontSize(8.5);
-      doc.setTextColor(110);
-      doc.text(
-        `Exported ${new Date().toLocaleString()} \u00b7 ${layoutItems.length} chart${layoutItems.length !== 1 ? 's' : ''}`,
-        marginL, 23,
-      );
-
-      let col = 0;
-      let yRow = 30;
-
-      // Helper: render canvas with white background
+      // ── Helper: render canvas onto white background → PNG dataURL ──
       function canvasToPng(canvas: HTMLCanvasElement): string {
         const tmp = document.createElement('canvas');
-        tmp.width = canvas.width; tmp.height = canvas.height;
+        tmp.width = canvas.width;
+        tmp.height = canvas.height;
         const ctx = tmp.getContext('2d')!;
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, tmp.width, tmp.height);
@@ -316,42 +300,104 @@ export default function DashboardCanvasPage() {
         return tmp.toDataURL('image/png');
       }
 
+      // ── Collect valid chart entries ─────────────────────────────────
+      const entries: { chart: (typeof charts)[0]; png: string }[] = [];
       for (const item of layoutItems) {
         const chart = charts.find((c) => c.id === item.chartId);
         const container = document.querySelector(`[data-chart-id="${item.chartId}"]`);
         const canvas = container?.querySelector('canvas') as HTMLCanvasElement | null;
         if (!chart || !canvas) continue;
-
-        // New page if needed
-        if (yRow + rowH > pageH - 10) {
-          doc.addPage();
-          col = 0;
-          yRow = 14;
-        }
-
-        const x = colXs[col];
-
-        // Title
-        doc.setFontSize(10);
-        doc.setTextColor(30, 30, 60);
-        doc.text(chart.title, x, yRow + 5, { maxWidth: imgW });
-        doc.setFontSize(7.5);
-        doc.setTextColor(120);
-        const meta = [chart.chart_type, chart.dataset_name].filter(Boolean).join(' \u00b7 ');
-        if (meta) doc.text(meta, x, yRow + 10);
-
-        // Chart image
-        const png = canvasToPng(canvas);
-        doc.addImage(png, 'PNG', x, yRow + titleH, imgW, imgH);
-
-        col++;
-        if (col >= cols) {
-          col = 0;
-          yRow += rowH;
-        }
+        entries.push({ chart, png: canvasToPng(canvas) });
       }
 
-      doc.save(`${(activeDashboard?.title || 'dashboard').replace(/\s+/g, '_')}.pdf`);
+      // ── Page 1: Cover / Report header ──────────────────────────────
+      // Accent bar at top
+      doc.setFillColor(59, 130, 246);
+      doc.rect(0, 0, pageW, 38, 'F');
+
+      // Dashboard title
+      doc.setFontSize(22);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.text(dashTitle, marginL, 22);
+
+      // Subtitle row
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('ISET Tozeur — Adaptive Digital Observatory', marginL, 31);
+
+      // Meta row below bar
+      doc.setTextColor(90, 90, 110);
+      doc.setFontSize(8.5);
+      doc.text(`Generated: ${exportDate}   ·   ${entries.length} chart${entries.length !== 1 ? 's' : ''}`, marginL, 47);
+
+      // Divider
+      doc.setDrawColor(220, 220, 235);
+      doc.setLineWidth(0.4);
+      doc.line(marginL, 50, pageW - marginR, 50);
+
+      // ── Charts: one per page section, full width ───────────────────
+      // Two charts per page stacked vertically on the first page,
+      // then fresh pages for the rest.
+      const imgH = 88; // image height in mm
+      const titleBlockH = 14; // space for chart title above image
+      const sectionH = titleBlockH + imgH + 10; // total height per chart block
+
+      let y = 56; // start Y on first page
+      let pageIndex = 0;
+
+      for (let i = 0; i < entries.length; i++) {
+        const { chart, png } = entries[i];
+
+        // Check if this chart fits on the current page
+        if (y + sectionH > pageH - 12) {
+          doc.addPage();
+          pageIndex++;
+
+          // Thin accent bar on continued pages
+          doc.setFillColor(59, 130, 246);
+          doc.rect(0, 0, pageW, 10, 'F');
+          doc.setFontSize(7.5);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(255, 255, 255);
+          doc.text(`${dashTitle} (continued)`, marginL, 7);
+
+          y = 18;
+        }
+
+        // Chart title
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(25, 25, 50);
+        doc.text(chart.title, marginL, y + 6, { maxWidth: usableW });
+
+        // Chart meta (type · dataset)
+        const meta = [chart.chart_type, chart.dataset_name].filter(Boolean).join('  ·  ');
+        if (meta) {
+          doc.setFontSize(7.5);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(130, 130, 150);
+          doc.text(meta.toUpperCase(), marginL, y + 11);
+        }
+
+        // Thin separator under title
+        doc.setDrawColor(235, 235, 245);
+        doc.setLineWidth(0.3);
+        doc.line(marginL, y + titleBlockH - 2, pageW - marginR, y + titleBlockH - 2);
+
+        // Chart image
+        doc.addImage(png, 'PNG', marginL, y + titleBlockH, usableW, imgH);
+
+        // Page number in footer
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(180);
+        doc.text(`Page ${pageIndex + 1}`, pageW - marginR, pageH - 8, { align: 'right' });
+
+        y += sectionH;
+      }
+
+      doc.save(`${dashTitle.replace(/\s+/g, '_')}_report.pdf`);
     } catch (err) {
       console.error('PDF export error:', err);
       alert('Failed to export PDF. Check the browser console for details.');
