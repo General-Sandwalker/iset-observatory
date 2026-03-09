@@ -1,11 +1,17 @@
 import { Pool } from 'pg';
 import { config } from './index';
 
-// Railway (and most PaaS) supplies a single DATABASE_URL.
-// Fall back to individual fields for local Docker Compose.
-const pool = process.env.DATABASE_URL
+// Railway may inject the connection string under different names.
+// Check all common ones; fall back to individual fields for local Docker.
+const connectionString =
+  process.env.DATABASE_URL ||
+  process.env.DATABASE_PRIVATE_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.POSTGRES_PRIVATE_URL;
+
+const pool = connectionString
   ? new Pool({
-      connectionString: process.env.DATABASE_URL,
+      connectionString,
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
     })
   : new Pool({

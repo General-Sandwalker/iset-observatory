@@ -29,15 +29,17 @@ This guide covers deploying the **ISET Observatory** platform with:
 1. In the same project, click **+ New Service → GitHub Repo** and choose this repository.
 2. Railway will detect `railway.toml` and use `backend/Dockerfile` automatically.
 
-### 1.3 Link DATABASE_URL
+### 1.3 Link the Database Connection String
 
-The server uses `DATABASE_URL` (a single connection string) — **do not** set `DATABASE_HOST`, `DATABASE_PORT`, etc. manually.
+The server accepts any of these variable names (checked in order):
+`DATABASE_URL`, `DATABASE_PRIVATE_URL`, `POSTGRES_URL`, `POSTGRES_PRIVATE_URL`
 
 1. Go to the **backend service → Variables tab**.
 2. Click **+ Add Variable Reference**.
-3. Select the PostgreSQL service and choose `DATABASE_URL`.
+3. Select the PostgreSQL service.
+4. Choose **`DATABASE_PRIVATE_URL`** — this uses the internal Railway network (faster, no egress cost).
 
-Railway will inject the full connection string (e.g. `postgresql://user:pass@postgres.railway.internal:5432/railway`) automatically. The internal hostname `postgres.railway.internal` is only reachable within the Railway project — this is the correct host.
+> **Do not** set `DATABASE_HOST` to the connection string. Only set the single URL variable above. The individual `DATABASE_HOST / PORT / USER / PASSWORD / NAME` vars are for local Docker only and are ignored when a URL variable is present.
 
 ### 1.4 Set the Remaining Environment Variables
 
