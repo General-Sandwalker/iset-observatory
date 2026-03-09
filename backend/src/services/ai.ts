@@ -162,7 +162,7 @@ RULES:
    - "explanation": brief human-friendly explanation of what the query does (string)
 4. Do NOT include markdown code fences.
 5. If the question cannot be answered with the available tables, set "sql" to "" and explain why in "explanation".
-6. Limit results to 200 rows maximum.
+6. Limit results to 1000 rows maximum.
 
 USER QUESTION: ${question}`;
 

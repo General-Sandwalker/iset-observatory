@@ -527,7 +527,7 @@ function ResultTable({ data }: { data: Record<string, unknown>[] }) {
           </tr>
         </thead>
         <tbody>
-          {data.slice(0, 50).map((row, ri) => (
+          {data.slice(0, 500).map((row, ri) => (
             <tr key={ri} className="ag-table-row">
               {columns.map((c) => (
                 <td key={c} className="px-3 py-1.5 whitespace-nowrap max-w-[200px] truncate"
@@ -539,9 +539,9 @@ function ResultTable({ data }: { data: Record<string, unknown>[] }) {
           ))}
         </tbody>
       </table>
-      {data.length > 50 && (
+      {data.length > 500 && (
         <p className="text-xs text-center py-2" style={{ color: 'var(--ag-text3)' }}>
-          Showing 50 of {data.length} rows
+          Showing 500 of {data.length} rows
         </p>
       )}
     </div>

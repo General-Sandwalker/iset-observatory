@@ -180,7 +180,7 @@ export async function getChartData(req: Request, res: Response): Promise<void> {
              WHERE "${xCol}" IS NOT NULL
              GROUP BY "${xCol}"
              ORDER BY value DESC
-             LIMIT 50`;
+             LIMIT 1000`;
     } else {
       // COUNT by X  (e.g. COUNT(*) GROUP BY department)
       sql = `SELECT "${xCol}" AS label, COUNT(*) AS value
@@ -188,7 +188,7 @@ export async function getChartData(req: Request, res: Response): Promise<void> {
              WHERE "${xCol}" IS NOT NULL
              GROUP BY "${xCol}"
              ORDER BY value DESC
-             LIMIT 50`;
+             LIMIT 1000`;
     }
 
     const dataResult = await pool.query(sql);
