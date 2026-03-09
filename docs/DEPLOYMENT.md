@@ -16,21 +16,32 @@ This guide covers deploying the **ISET Observatory** platform with:
 
 ## 1. Deploy the Backend on Railway
 
-### 1.1 Create a New Project
+> **Important:** The PostgreSQL database service must be created **before** the backend service deploys. The server will crash on startup if `DATABASE_URL` is not set, because it runs migrations immediately.
+
+### 1.1 Create the PostgreSQL Service First
 
 1. Go to [railway.app](https://railway.app) and click **New Project**.
-2. Select **Deploy from GitHub Repo** and choose this repository.
-3. Railway will detect `railway.toml` and use `backend/Dockerfile` automatically.
+2. Click **+ New Service → Database → PostgreSQL**.
+3. Wait for it to finish provisioning (a few seconds).
 
-### 1.2 Add a PostgreSQL Database
+### 1.2 Add the Backend Service
 
-1. Inside your Railway project, click **+ New Service → Database → PostgreSQL**.
-2. Railway will provision a PostgreSQL instance and expose a `DATABASE_URL` variable automatically.
-3. In your **backend service** settings, make sure the `DATABASE_URL` variable is linked or manually copy it from the database service.
+1. In the same project, click **+ New Service → GitHub Repo** and choose this repository.
+2. Railway will detect `railway.toml` and use `backend/Dockerfile` automatically.
 
-### 1.3 Set Environment Variables
+### 1.3 Link DATABASE_URL
 
-In the backend service's **Variables** tab, add the following:
+The server uses `DATABASE_URL` (a single connection string) — **do not** set `DB_HOST`, `DB_PORT`, etc. manually.
+
+1. Go to the **backend service → Variables tab**.
+2. Click **+ Add Variable Reference**.
+3. Select the PostgreSQL service and choose `DATABASE_URL`.
+
+Railway will inject the full connection string (e.g. `postgresql://user:pass@postgres.railway.internal:5432/railway`) automatically. The internal hostname `postgres.railway.internal` is only reachable within the Railway project — this is the correct host.
+
+### 1.4 Set the Remaining Environment Variables
+
+In the backend service's **Variables** tab, add the following manually:
 
 | Variable | Value |
 |---|---|
@@ -40,14 +51,12 @@ In the backend service's **Variables** tab, add the following:
 | `CORS_ORIGIN` | `https://your-app.vercel.app` (update after Vercel deploy) |
 | `SUPER_ADMIN_EMAIL` | Email for the first admin account |
 | `SUPER_ADMIN_PASSWORD` | Password for the first admin account |
-| `DATABASE_URL` | Auto-provided by Railway PostgreSQL plugin |
 
-> **Note:** `DATABASE_URL` is usually injected automatically when you link the PostgreSQL service. If not, copy it manually from the PostgreSQL service's **Connect** tab.
+### 1.5 Verify the Deploy
 
-### 1.4 Verify the Deploy
-
-- Railway will build the Docker image and start the server.
-- Check the **Logs** tab — you should see `Server running on port ...` and migration messages.
+- Railway will build the Docker image, run migrations, and start the server.
+- The first deploy runs all 8+ migrations — this can take up to a minute. The healthcheck timeout is set to 120 seconds to accommodate this.
+- Check the **Logs** tab — you should see `Connected to PostgreSQL`, migration messages, and `Server running on port ...`.
 - The health endpoint should return 200: `https://<your-backend>.up.railway.app/api/health`
 
 ---
