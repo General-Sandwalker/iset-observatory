@@ -18,7 +18,7 @@ const app = express();
 
 // --------------- Middleware ---------------
 // CORS_ORIGIN may be comma-separated for multiple allowed origins
-app.use(cors({
+const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
     const allowed = (config.cors.origin || '').split(',').map((o) => o.trim());
     if (!origin || allowed.includes('*') || allowed.includes(origin)) {
@@ -28,7 +28,13 @@ app.use(cors({
     }
   },
   credentials: true,
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+// Handle preflight requests for all routes
+app.options('*', cors(corsOptions));
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
