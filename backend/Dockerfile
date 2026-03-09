@@ -1,9 +1,9 @@
 # ── Stage 1: Build ───────────────────────────────────────────
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
+COPY backend/package*.json ./
 RUN npm ci
-COPY . .
+COPY backend/ .
 RUN npm run build
 
 # ── Stage 2: Production runtime ──────────────────────────────
