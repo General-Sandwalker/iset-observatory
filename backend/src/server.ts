@@ -49,10 +49,17 @@ app.use(errorHandler);
 
 // --------------- Start -------------------
 async function start() {
-  await runMigrations();
+  // Listen first so Railway health checks pass immediately
   app.listen(config.port, () => {
     console.log(`🚀 Server running on port ${config.port} [${config.nodeEnv}]`);
   });
+  // Run migrations after server is accepting connections
+  try {
+    await runMigrations();
+  } catch (err) {
+    console.error('❌ Migration failed:', err);
+    process.exit(1);
+  }
 }
 
 start().catch((err) => {
