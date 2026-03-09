@@ -9,7 +9,7 @@ RUN npm run build
 # ── Stage 2: Production runtime ──────────────────────────────
 FROM node:20-alpine
 WORKDIR /app
-COPY package*.json ./
+COPY --from=builder /app/package*.json ./
 RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 EXPOSE 5000
