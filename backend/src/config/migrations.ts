@@ -1,6 +1,24 @@
+import bcrypt from 'bcryptjs';
 import pool from './database';
 
 const migrations = [
+  {
+    name: '001_base_schema',
+    sql: `
+      CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+      CREATE TABLE IF NOT EXISTS users (
+          id            SERIAL PRIMARY KEY,
+          email         VARCHAR(255) UNIQUE NOT NULL,
+          password_hash VARCHAR(255) NOT NULL,
+          full_name     VARCHAR(255) NOT NULL,
+          role          VARCHAR(50)  NOT NULL DEFAULT 'viewer',
+          is_active     BOOLEAN      NOT NULL DEFAULT true,
+          created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+          updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+      );
+    `,
+  },
   {
     name: '002_rbac_schema',
     sql: `
@@ -210,5 +228,20 @@ export async function runMigrations(): Promise<void> {
     await pool.query(m.sql);
     await pool.query('INSERT INTO _migrations (name) VALUES ($1)', [m.name]);
     console.log(`✅ Migration applied: ${m.name}`);
+  }
+
+  // Seed super admin from env vars if no super_admin exists
+  const adminEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@iset-tozeur.tn';
+  const adminPassword = process.env.SUPER_ADMIN_PASSWORD || 'Admin@123!';
+  const existing = await pool.query(`SELECT 1 FROM users WHERE role = 'super_admin'`);
+  if (existing.rows.length === 0) {
+    const hash = await bcrypt.hash(adminPassword, 10);
+    await pool.query(
+      `INSERT INTO users (email, password_hash, full_name, role)
+       VALUES ($1, $2, 'Super Administrator', 'super_admin')
+       ON CONFLICT (email) DO NOTHING`,
+      [adminEmail, hash]
+    );
+    console.log(`✅ Super admin seeded: ${adminEmail}`);
   }
 }
