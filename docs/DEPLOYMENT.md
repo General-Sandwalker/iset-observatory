@@ -31,7 +31,7 @@ This guide covers deploying the **ISET Observatory** platform with:
 
 ### 1.3 Link DATABASE_URL
 
-The server uses `DATABASE_URL` (a single connection string) — **do not** set `DB_HOST`, `DB_PORT`, etc. manually.
+The server uses `DATABASE_URL` (a single connection string) — **do not** set `DATABASE_HOST`, `DATABASE_PORT`, etc. manually.
 
 1. Go to the **backend service → Variables tab**.
 2. Click **+ Add Variable Reference**.
@@ -123,11 +123,11 @@ NODE_ENV=development
 PORT=5000
 
 # Individual vars (Docker / local)
-DB_HOST=postgres
-DB_PORT=5432
-DB_NAME=observatory
-DB_USER=observatory_user
-DB_PASSWORD=your_password
+DATABASE_HOST=postgres
+DATABASE_PORT=5432
+DATABASE_NAME=observatory
+DATABASE_USER=observatory_user
+DATABASE_PASSWORD=your_password
 
 # Or single URL (Railway / PaaS)
 DATABASE_URL=postgresql://user:password@host:5432/dbname
