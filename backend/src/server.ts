@@ -17,7 +17,18 @@ import surveysRouter from './routes/surveys';
 const app = express();
 
 // --------------- Middleware ---------------
-app.use(cors({ origin: config.cors.origin, credentials: true }));
+// CORS_ORIGIN may be comma-separated for multiple allowed origins
+app.use(cors({
+  origin: (origin, callback) => {
+    const allowed = (config.cors.origin || '').split(',').map((o) => o.trim());
+    if (!origin || allowed.includes('*') || allowed.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origin ${origin} not allowed`));
+    }
+  },
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
