@@ -21,14 +21,19 @@ const app = express();
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
     const rawOrigin = config.cors.origin || '';
-    const allowed = rawOrigin.split(',').map((o) => o.trim()).filter(Boolean);
-    console.log(`[CORS] request origin="${origin}" allowed=${JSON.stringify(allowed)}`);
+    // Normalise: trim whitespace and trailing slashes
+    const allowed = rawOrigin
+      .split(',')
+      .map((o) => o.trim().replace(/\/+$/, ''))
+      .filter(Boolean);
+    // Normalise the request origin the same way
+    const normalised = origin ? origin.replace(/\/+$/, '') : '';
+    console.log(`[CORS] origin="${normalised}" allowed=${JSON.stringify(allowed)}`);
     // No origin = same-origin / server-to-server — always allow
-    if (!origin) return callback(null, true);
-    if (allowed.includes('*') || allowed.includes(origin)) {
+    if (!normalised || normalised === 'undefined') return callback(null, true);
+    if (allowed.includes('*') || allowed.includes(normalised)) {
       callback(null, true);
     } else {
-      // Use false (not an Error) so the response still carries CORS headers
       callback(null, false);
     }
   },
