@@ -20,11 +20,16 @@ const app = express();
 // CORS_ORIGIN may be comma-separated for multiple allowed origins
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
-    const allowed = (config.cors.origin || '').split(',').map((o) => o.trim());
-    if (!origin || allowed.includes('*') || allowed.includes(origin)) {
+    const rawOrigin = config.cors.origin || '';
+    const allowed = rawOrigin.split(',').map((o) => o.trim()).filter(Boolean);
+    console.log(`[CORS] request origin="${origin}" allowed=${JSON.stringify(allowed)}`);
+    // No origin = same-origin / server-to-server — always allow
+    if (!origin) return callback(null, true);
+    if (allowed.includes('*') || allowed.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error(`CORS: origin ${origin} not allowed`));
+      // Use false (not an Error) so the response still carries CORS headers
+      callback(null, false);
     }
   },
   credentials: true,
