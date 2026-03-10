@@ -225,23 +225,32 @@ export async function runMigrations(): Promise<void> {
     if (existing.rows.length > 0) continue;
 
     console.log(`⏳ Running migration: ${m.name}`);
-    await pool.query(m.sql);
-    await pool.query('INSERT INTO _migrations (name) VALUES ($1)', [m.name]);
-    console.log(`✅ Migration applied: ${m.name}`);
+    try {
+      await pool.query(m.sql);
+      await pool.query('INSERT INTO _migrations (name) VALUES ($1)', [m.name]);
+      console.log(`✅ Migration applied: ${m.name}`);
+    } catch (err) {
+      console.error(`❌ Migration failed: ${m.name}`, err);
+      // Continue to next migration — do not abort entire startup
+    }
   }
 
   // Seed super admin from env vars if no super_admin exists
-  const adminEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@iset-tozeur.tn';
-  const adminPassword = process.env.SUPER_ADMIN_PASSWORD || 'Admin@123!';
-  const existing = await pool.query(`SELECT 1 FROM users WHERE role = 'super_admin'`);
-  if (existing.rows.length === 0) {
-    const hash = await bcrypt.hash(adminPassword, 10);
-    await pool.query(
-      `INSERT INTO users (email, password_hash, full_name, role)
-       VALUES ($1, $2, 'Super Administrator', 'super_admin')
-       ON CONFLICT (email) DO NOTHING`,
-      [adminEmail, hash]
-    );
-    console.log(`✅ Super admin seeded: ${adminEmail}`);
+  try {
+    const adminEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@iset-tozeur.tn';
+    const adminPassword = process.env.SUPER_ADMIN_PASSWORD || 'Admin@123!';
+    const existing = await pool.query(`SELECT 1 FROM users WHERE role = 'super_admin'`);
+    if (existing.rows.length === 0) {
+      const hash = await bcrypt.hash(adminPassword, 10);
+      await pool.query(
+        `INSERT INTO users (email, password_hash, full_name, role)
+         VALUES ($1, $2, 'Super Administrator', 'super_admin')
+         ON CONFLICT (email) DO NOTHING`,
+        [adminEmail, hash]
+      );
+      console.log(`✅ Super admin seeded: ${adminEmail}`);
+    }
+  } catch (err) {
+    console.error('❌ Super admin seed failed:', err);
   }
 }

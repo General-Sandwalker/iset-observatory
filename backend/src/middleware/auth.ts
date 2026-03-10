@@ -79,8 +79,13 @@ export function requirePermission(...requiredPermissions: string[]) {
 
       next();
     } catch (error) {
-      console.error('Permission check error:', error);
-      res.status(500).json({ success: false, message: 'Internal server error.' });
+      // RBAC tables may not exist yet during first migration — fall back to role check
+      console.error('Permission check error (falling back to role check):', error);
+      if (req.user?.role === 'super_admin' || req.user?.role === 'admin') {
+        next();
+      } else {
+        res.status(403).json({ success: false, message: 'Insufficient permissions.' });
+      }
     }
   };
 }
