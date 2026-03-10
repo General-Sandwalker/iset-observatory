@@ -61,6 +61,11 @@ export function requirePermission(...requiredPermissions: string[]) {
       return;
     }
 
+    // Super admin always has all permissions
+    if (req.user.role === 'super_admin') {
+      return next();
+    }
+
     try {
       const result = await pool.query(
         `SELECT DISTINCT p.name

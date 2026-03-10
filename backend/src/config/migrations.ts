@@ -250,6 +250,13 @@ export async function runMigrations(): Promise<void> {
       );
       console.log(`✅ Super admin seeded: ${adminEmail}`);
     }
+    // Ensure super_admin user is linked to super_admin role in user_roles
+    await pool.query(`
+      INSERT INTO user_roles (user_id, role_id)
+      SELECT u.id, r.id FROM users u, roles r
+      WHERE u.role = 'super_admin' AND r.name = 'super_admin'
+      ON CONFLICT DO NOTHING
+    `);
   } catch (err) {
     console.error('❌ Super admin seed failed:', err);
   }
