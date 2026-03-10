@@ -187,7 +187,7 @@ export default function UsersPage() {
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
-                    {user.id !== currentUserId && (
+                    {user.id !== currentUserId && (user.role || user.legacy_role) !== 'super_admin' && (
                       <button
                         onClick={() => handleDelete(user)}
                         className="p-1.5 rounded-lg transition-colors"
