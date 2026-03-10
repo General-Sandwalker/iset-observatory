@@ -98,9 +98,116 @@ Click **Deploy**. Vercel will build the Vite app and serve it via CDN.
 
 ---
 
-## 4. Local Development
+## 4. Self-Hosted with Docker Compose
 
-Use Docker Compose for local development:
+Deploy the entire stack on any Linux server (VPS, on-premise, local network) using Docker Compose — no cloud accounts required.
+
+### 4.1 Prerequisites
+
+- Docker Engine 24+ and Docker Compose v2
+- Git
+- A server or VPS with ports **5173** and **5000** accessible (or reverse-proxy them via Nginx/Caddy)
+
+### 4.2 Clone and Configure
+
+```bash
+git clone https://github.com/General-Sandwalker/iset-observatory.git
+cd iset-observatory
+
+cp .env.example .env
+```
+
+Open `.env` and set the required values:
+
+```env
+# Database — used internally by Docker Compose
+DATABASE_HOST=db
+DATABASE_PORT=5432
+DATABASE_NAME=observatory_db
+DATABASE_USER=observatory
+DATABASE_PASSWORD=change_me_strong_password
+
+# Security
+JWT_SECRET=change_me_to_a_long_random_string
+
+# AI
+GROQ_API_KEY=gsk_...your_groq_api_key...
+
+# First admin account (created automatically on first boot)
+SUPER_ADMIN_EMAIL=admin@your-domain.com
+SUPER_ADMIN_PASSWORD=Admin@SecurePassword1!
+
+# CORS — set to the URL users will access the frontend from
+CORS_ORIGIN=http://your-server-ip:5173
+```
+
+Generate a strong JWT secret:
+```bash
+openssl rand -hex 64
+```
+
+### 4.3 Build and Start
+
+```bash
+docker compose up --build -d
+```
+
+This starts three services:
+| Service | Container | Port |
+|---|---|---|
+| PostgreSQL 15 | `db` | 5432 (internal) |
+| Backend API | `backend` | 5000 |
+| Frontend (Vite preview) | `frontend` | 5173 |
+
+### 4.4 Verify the Deployment
+
+```bash
+# Check all containers are running
+docker compose ps
+
+# Watch backend logs (migrations + startup)
+docker compose logs -f backend
+
+# Health check
+curl http://localhost:5000/api/health
+```
+
+You should see `{"status":"ok"}` from the health endpoint.
+
+Open **http://localhost:5173** in a browser and log in with your `SUPER_ADMIN_EMAIL` / `SUPER_ADMIN_PASSWORD`.
+
+### 4.5 Managing the Stack
+
+```bash
+# Stop (data is preserved)
+docker compose down
+
+# Stop AND wipe all data (PostgreSQL volume deleted)
+docker compose down -v
+
+# Restart after a code update
+git pull
+docker compose up --build -d
+
+# View live logs
+docker compose logs -f
+
+# Run a one-off command (e.g. psql)
+docker compose exec db psql -U observatory -d observatory_db
+```
+
+### 4.6 Production Tips
+
+- **Reverse proxy**: Put Nginx or Caddy in front of ports 5000 and 5173 with TLS certificates (Let's Encrypt).
+- **Persistent backups**: The PostgreSQL data lives in the `pg_data` Docker volume. Back it up with `pg_dump`.
+- **Firewall**: Only expose the proxy ports externally; keep 5432 private.
+- **Updates**: Pull the latest code, rebuild with `docker compose up --build -d`.
+
+---
+
+## 5. Local Development
+
+For a hot-reloading development environment, use Docker Compose the same way — the `frontend` service runs the Vite dev server with HMR and the `backend` service reloads on file changes via `ts-node-dev`.
 
 ```bash
 cp .env.example .env
@@ -108,15 +215,15 @@ cp .env.example .env
 docker compose up --build
 ```
 
-- Frontend: http://localhost:5173
+- Frontend (Vite HMR): http://localhost:5173
 - Backend API: http://localhost:5000/api
-- PostgreSQL: localhost:5432
+- PostgreSQL: localhost:5432 (connect with any DB client)
 
 See `.env.example` and `frontend/.env.example` for all available configuration variables.
 
 ---
 
-## 5. Environment Variable Reference
+## 6. Environment Variable Reference
 
 ### Backend (`.env`)
 
