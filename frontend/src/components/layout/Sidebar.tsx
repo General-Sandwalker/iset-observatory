@@ -1,174 +1,120 @@
 import { NavLink } from 'react-router-dom';
 import {
-  Activity,
-  LayoutDashboard,
+  ChartBar,
+  ChartPieSlice,
+  ChartLine,
+  Database,
+  Gauge,
+  Brain,
+  SquaresFour,
+  ClipboardText,
   Users,
-  Shield,
-  FileSpreadsheet,
-  BrainCircuit,
-  BarChart3,
-  Columns3,
-  ClipboardList,
-  Settings,
-  LogOut,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Sun,
-  Moon,
-  DatabaseZap,
-} from 'lucide-react';
+  ShieldCheck,
+  Gear,
+  SignOut,
+  List,
+  X,
+  RocketLaunch,
+} from '@phosphor-icons/react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useTheme } from '../../contexts/ThemeContext';
 import { useState } from 'react';
 
 const navGroups = [
   {
     label: 'Overview',
-    items: [{ to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }],
+    items: [{ to: '/dashboard', label: 'Dashboard', icon: Gauge }],
   },
   {
     label: 'Data',
     items: [
-      { to: '/import', label: 'Data Import', icon: FileSpreadsheet },
-      { to: '/explore', label: 'DB Explorer', icon: DatabaseZap },
-      { to: '/ai', label: 'AI Analysis', icon: BrainCircuit },
+      { to: '/import', label: 'Data Import', icon: Database },
+      { to: '/explore', label: 'Explorer', icon: SquaresFour },
+      { to: '/ai', label: 'AI Analysis', icon: Brain },
     ],
   },
   {
-    label: 'Visualize',
+    label: 'Analytics',
     items: [
-      { to: '/charts', label: 'Charts', icon: BarChart3 },
-      { to: '/dashboards', label: 'Dashboards', icon: Columns3 },
+      { to: '/charts', label: 'Charts', icon: ChartBar },
+      { to: '/dashboards', label: 'Dashboards', icon: ChartPieSlice },
+      { to: '/surveys', label: 'Survey Manager', icon: ClipboardText },
     ],
   },
   {
-    label: 'Tools',
-    items: [{ to: '/surveys', label: 'Surveys', icon: ClipboardList }],
-  },
-  {
-    label: 'Admin',
+    label: 'Administration',
     items: [
       { to: '/users', label: 'Users', icon: Users },
-      { to: '/roles', label: 'Roles', icon: Shield },
-      { to: '/settings', label: 'Settings', icon: Settings },
+      { to: '/roles', label: 'Roles', icon: ShieldCheck },
+      { to: '/settings', label: 'Settings', icon: Gear },
     ],
   },
 ];
 
 function initials(name: string) {
-  return name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 }
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
 
   return (
     <aside
-      className={`ag-sidebar flex flex-col h-screen shrink-0 transition-all duration-300 ${
-        collapsed ? 'w-[68px]' : 'w-[220px]'
+      className={`ag-sidebar flex h-screen shrink-0 flex-col transition-all duration-300 ${
+        collapsed ? 'w-[84px]' : 'w-[278px]'
       }`}
-      style={{ borderRight: '1px solid var(--ag-side-border)' }}
     >
-      {/* ── Brand ── */}
-      {collapsed ? (
-        <div className="flex items-center justify-center py-4 shrink-0">
-          <button
-            onClick={() => setCollapsed(false)}
-            className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors hover:bg-white/10"
-            style={{ color: 'var(--ag-text3)' }}
-            title="Expand"
-          >
-            <PanelLeftOpen className="w-4 h-4" />
-          </button>
-        </div>
-      ) : (
-        <div className="flex items-center gap-2.5 px-3.5 py-4 shrink-0">
-          <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-            style={{
-              background: 'linear-gradient(135deg, var(--ag-accent) 0%, var(--ag-accent2, var(--ag-accent)) 100%)',
-              boxShadow: '0 2px 8px color-mix(in srgb, var(--ag-accent) 40%, transparent)',
-            }}
-          >
-            <Activity className="w-4 h-4 text-white" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-bold tracking-tight leading-none text-white truncate">
-              Observatory
-            </p>
-            <p className="text-[10px] leading-none mt-0.5 truncate" style={{ color: 'var(--ag-text3)' }}>
-              ISET Tozeur
-            </p>
+      <div className="px-3 pt-4 pb-3 border-b border-white/10">
+        <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} gap-2`}>
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-slate-950 shadow-lg shadow-teal-900/35">
+              <ChartLine size={22} weight="duotone" />
+            </div>
+            {!collapsed && (
+              <div className="min-w-0">
+                <p className="text-white font-semibold tracking-tight text-sm truncate">ISET Observatory</p>
+                <p className="text-slate-300 text-xs truncate">Analytics Workspace</p>
+              </div>
+            )}
           </div>
           <button
-            onClick={() => setCollapsed(true)}
-            className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-white/10"
-            style={{ color: 'var(--ag-text3)' }}
-            title="Collapse"
+            onClick={() => setCollapsed((v) => !v)}
+            className="btn btn-ghost btn-square btn-sm text-slate-300 hover:text-white"
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            <PanelLeftClose className="w-3.5 h-3.5" />
+            {collapsed ? <List size={18} /> : <X size={18} />}
           </button>
         </div>
-      )}
+      </div>
 
-      {/* ── Nav ── */}
-      <nav className="flex-1 overflow-y-auto py-2 space-y-4 px-2">
+      <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-5">
         {navGroups.map((group) => (
           <div key={group.label}>
-            {!collapsed && (
-              <p
-                className="text-[10px] font-semibold uppercase tracking-widest px-2 mb-1"
-                style={{ color: 'var(--ag-text3)', opacity: 0.5 }}
-              >
-                {group.label}
-              </p>
-            )}
-            <div className="space-y-0.5">
+            {!collapsed && <p className="px-3 pb-2 text-[11px] uppercase tracking-[0.16em] text-slate-400">{group.label}</p>}
+            <div className="space-y-1.5">
               {group.items.map(({ to, label, icon: Icon }) => (
                 <NavLink
                   key={to}
                   to={to}
                   end
                   title={collapsed ? label : undefined}
-                  className="relative flex items-center rounded-xl text-[13px] font-medium transition-all duration-150 group"
-                  style={({ isActive }) => ({
-                    gap: '0.625rem',
-                    padding: collapsed ? '0.5rem' : '0.45rem 0.625rem',
-                    justifyContent: collapsed ? 'center' : undefined,
-                    ...(isActive
-                      ? {
-                          background: 'var(--ag-accent-lo)',
-                          color: 'var(--ag-accent)',
-                          boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--ag-accent) 25%, transparent)',
-                        }
-                      : { color: 'var(--ag-text3)' }),
-                  })}
+                  className={({ isActive }) =>
+                    `group flex items-center rounded-xl transition-all duration-150 ${
+                      collapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5'
+                    } ${
+                      isActive
+                        ? 'bg-gradient-to-r from-teal-400/30 to-cyan-400/25 text-white shadow-[inset_0_0_0_1px_rgba(45,212,191,0.35)]'
+                        : 'text-slate-200 hover:bg-white/8 hover:text-white'
+                    }`
+                  }
                 >
-                  {({ isActive }) => (
-                    <>
-                      {isActive && !collapsed && (
-                        <span
-                          className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-full"
-                          style={{ background: 'var(--ag-accent)' }}
-                        />
-                      )}
-                      <Icon
-                        className="shrink-0"
-                        style={{
-                          width: '1rem',
-                          height: '1rem',
-                          color: isActive ? 'var(--ag-accent)' : 'inherit',
-                        }}
-                      />
-                      {!collapsed && (
-                        <span className={isActive ? 'text-white' : 'group-hover:text-white/90 transition-colors'}>
-                          {label}
-                        </span>
-                      )}
-                    </>
-                  )}
+                  <Icon size={18} weight="duotone" className="shrink-0" />
+                  {!collapsed && <span className="text-sm font-medium truncate">{label}</span>}
                 </NavLink>
               ))}
             </div>
@@ -176,58 +122,32 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* ── Bottom ── */}
-      <div
-        className="shrink-0 px-2 py-3 space-y-0.5"
-        style={{ borderTop: '1px solid var(--ag-side-border)' }}
-      >
-        {/* Theme */}
-        <button
-          onClick={toggleTheme}
-          className={`flex items-center gap-2.5 w-full rounded-xl text-[13px] transition-colors hover:bg-white/10 hover:text-white ${
-            collapsed ? 'justify-center p-2' : 'px-2.5 py-2'
-          }`}
-          style={{ color: 'var(--ag-text3)' }}
-          title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-        >
-          {theme === 'dark' ? <Sun className="w-4 h-4 shrink-0" /> : <Moon className="w-4 h-4 shrink-0" />}
-          {!collapsed && <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>}
-        </button>
-
-        {/* User */}
+      <div className="p-3 border-t border-white/10 space-y-2.5">
         {user && (
-          <div className={`flex items-center gap-2.5 rounded-xl py-2 ${collapsed ? 'justify-center px-2' : 'px-2.5'}`}>
-            <div
-              className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center text-[11px] font-bold text-white"
-              style={{
-                background: 'linear-gradient(135deg, var(--ag-accent), var(--ag-accent2, var(--ag-accent)))',
-              }}
-            >
-              {initials(user.fullName || user.full_name || user.email)}
-            </div>
-            {!collapsed && (
-              <div className="min-w-0 flex-1">
-                <p className="text-[12px] font-medium leading-none text-white/80 truncate">
-                  {user.fullName || user.full_name}
-                </p>
-                <p className="text-[10px] leading-none mt-0.5 truncate capitalize" style={{ color: 'var(--ag-text3)' }}>
-                  {user.role}
-                </p>
+          <div className={`rounded-xl border border-white/10 bg-white/5 px-2.5 py-2 ${collapsed ? 'text-center' : ''}`}>
+            <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2.5'}`}>
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-teal-300 to-cyan-400 text-slate-950 font-bold flex items-center justify-center text-xs shrink-0">
+                {initials(user.fullName || user.full_name || user.email)}
               </div>
-            )}
+              {!collapsed && (
+                <div className="min-w-0">
+                  <p className="text-sm text-white font-semibold truncate">{user.fullName || user.full_name}</p>
+                  <div className="inline-flex items-center gap-1 text-xs text-slate-300 capitalize truncate">
+                    <RocketLaunch size={12} weight="fill" />
+                    {user.role}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Logout */}
         <button
           onClick={logout}
-          className={`flex items-center gap-2.5 w-full rounded-xl text-[13px] transition-colors hover:bg-red-500/10 hover:text-red-400 ${
-            collapsed ? 'justify-center p-2' : 'px-2.5 py-2'
-          }`}
-          style={{ color: 'var(--ag-text3)' }}
+          className={`btn btn-ghost w-full text-red-300 hover:bg-red-500/15 hover:text-red-200 ${collapsed ? 'btn-square mx-auto' : 'justify-start'}`}
           title="Sign out"
         >
-          <LogOut className="w-4 h-4 shrink-0" />
+          <SignOut size={18} weight="duotone" />
           {!collapsed && <span>Sign out</span>}
         </button>
       </div>

@@ -209,6 +209,35 @@ const migrations = [
         ALTER COLUMN dataset_id DROP NOT NULL;
     `,
   },
+  {
+    name: '009_survey_lifecycle',
+    sql: `
+      ALTER TABLE surveys
+        ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'draft';
+
+      ALTER TABLE surveys
+        ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ;
+
+      ALTER TABLE surveys
+        ADD COLUMN IF NOT EXISTS public_token VARCHAR(64);
+
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1
+          FROM pg_constraint
+          WHERE conname = 'surveys_status_check'
+        ) THEN
+          ALTER TABLE surveys
+            ADD CONSTRAINT surveys_status_check
+            CHECK (status IN ('draft', 'published', 'archived'));
+        END IF;
+      END $$;
+
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_surveys_public_token
+        ON surveys (public_token);
+    `,
+  },
 ];
 
 export async function runMigrations(): Promise<void> {

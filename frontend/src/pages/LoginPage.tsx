@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { ShieldCheck, SignIn, WarningCircle, ArrowLeft, ChartLineUp } from '@phosphor-icons/react';
 import { useAuth } from '../contexts/AuthContext';
-import { Activity, LogIn, AlertCircle } from 'lucide-react';
-import { Navigate } from 'react-router-dom';
 
 export default function LoginPage() {
+  const navigate = useNavigate();
   const { login, isAuthenticated, isLoading } = useAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -12,9 +14,8 @@ export default function LoginPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--ag-bg)' }}>
-        <div className="w-8 h-8 rounded-full border-2 border-transparent animate-spin"
-          style={{ borderTopColor: 'var(--ag-accent)' }} />
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="loading loading-spinner loading-lg text-primary" />
       </div>
     );
   }
@@ -28,105 +29,101 @@ export default function LoginPage() {
     try {
       await login({ email, password });
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      setError(err.response?.data?.message || 'Authentication failed. Please verify your credentials.');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-4"
-      style={{ background: 'var(--ag-bg)' }}
-    >
-      {/* Aerogel ambient glow */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            'radial-gradient(ellipse 60% 55% at 50% 40%, rgba(96 165 250 / 0.08) 0%, transparent 70%)',
-        }}
-      />
-
-      <div className="w-full max-w-md relative z-10">
-        {/* Logo / title */}
-        <div className="text-center mb-8">
-          <div
-            className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4"
-            style={{ background: 'var(--ag-accent-lo)', boxShadow: '0 0 0 1px var(--ag-accent)' }}
-          >
-            <Activity className="w-7 h-7" style={{ color: 'var(--ag-accent)' }} />
+    <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-10 flex items-center">
+      <div className="mx-auto w-full max-w-6xl grid lg:grid-cols-2 gap-8">
+        <section className="hidden lg:flex ag-card p-8 xl:p-10 flex-col justify-between bg-gradient-to-br from-base-100/90 to-base-200/70">
+          <div>
+            <button onClick={() => navigate('/')} className="btn btn-ghost btn-sm rounded-xl px-2 -ml-2">
+              <ArrowLeft size={16} />
+              Back to landing
+            </button>
+            <div className="mt-10">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-500/20 text-teal-500 dark:text-teal-300">
+                <ChartLineUp size={24} weight="duotone" />
+              </div>
+              <h1 className="mt-6 text-4xl font-semibold leading-tight">Observatory Control Center</h1>
+              <p className="mt-4 text-base-content/70 leading-relaxed max-w-md">
+                Monitor institutional indicators, query data with AI, and publish dashboard-ready intelligence from one workspace.
+              </p>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--ag-text)' }}>
-            ISET Observatory
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--ag-text2)' }}>
-            Sign in to access your dashboard
-          </p>
-        </div>
 
-        {/* Card */}
-        <div className="ag-card p-8">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-2xl border border-base-300 bg-base-100/80 p-4">
+              <p className="text-2xl font-semibold">99.9%</p>
+              <p className="text-xs text-base-content/65 mt-1">Service reliability target</p>
+            </div>
+            <div className="rounded-2xl border border-base-300 bg-base-100/80 p-4">
+              <p className="text-2xl font-semibold">RBAC</p>
+              <p className="text-xs text-base-content/65 mt-1">Role-governed access model</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="ag-card p-6 sm:p-8 lg:p-10">
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 text-slate-900 flex items-center justify-center shadow-lg shadow-teal-700/35">
+              <ShieldCheck size={22} weight="duotone" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-semibold">Sign in</h2>
+              <p className="text-sm text-base-content/70">Use your authorized account to continue</p>
+            </div>
+          </div>
+
           {error && (
-            <div className="ag-alert-red flex items-center gap-2 text-sm px-4 py-3 mb-6">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+            <div className="mt-6 rounded-xl border border-error/40 bg-error/10 text-error px-4 py-3 flex items-center gap-2 text-sm">
+              <WarningCircle size={18} weight="fill" />
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="mt-7 space-y-4">
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium mb-1.5"
-                style={{ color: 'var(--ag-text2)' }}
-              >
-                Email
+              <label htmlFor="email" className="label px-0 pb-1">
+                <span className="label-text font-medium">Email</span>
               </label>
               <input
                 id="email"
                 type="email"
                 required
+                className="input input-bordered w-full rounded-xl"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@iset-tozeur.tn"
-                className="ag-input w-full px-3 py-2.5 text-sm"
               />
             </div>
 
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium mb-1.5"
-                style={{ color: 'var(--ag-text2)' }}
-              >
-                Password
+              <label htmlFor="password" className="label px-0 pb-1">
+                <span className="label-text font-medium">Password</span>
               </label>
               <input
                 id="password"
                 type="password"
                 required
+                className="input input-bordered w-full rounded-xl"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="ag-input w-full px-3 py-2.5 text-sm"
+                placeholder="Enter password"
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="ag-btn-primary w-full flex items-center justify-center gap-2 py-2.5 text-sm"
-            >
-              <LogIn className="w-4 h-4" />
-              {submitting ? 'Signing in…' : 'Sign in'}
+            <button type="submit" disabled={submitting} className="btn btn-primary w-full rounded-xl mt-1">
+              <SignIn size={18} weight="duotone" />
+              {submitting ? 'Signing in...' : 'Continue to dashboard'}
             </button>
           </form>
-        </div>
 
-        <p className="text-center text-xs mt-6" style={{ color: 'var(--ag-text3)' }}>
-          ISET Tozeur — Adaptive Digital Observatory
-        </p>
+          <p className="mt-6 text-center text-xs text-base-content/60">Protected institutional workspace • ISET Tozeur</p>
+        </section>
       </div>
     </div>
   );

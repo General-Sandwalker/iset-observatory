@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import {
   Shield, Plus, Pencil, Trash2, Lock, CheckCircle, AlertCircle, X, ChevronDown, ChevronUp,
 } from 'lucide-react';
+import { ShieldCheckered } from '@phosphor-icons/react';
 import api from '../lib/api';
 import type { Role, Permission } from '../lib/types';
+import PageHeader from '../components/layout/PageHeader';
 
 export default function RolesPage() {
   const [roles, setRoles] = useState<Role[]>([]);
@@ -65,19 +67,20 @@ export default function RolesPage() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Shield className="w-6 h-6" style={{ color: 'var(--ag-accent)' }} />
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--ag-text)' }}>Roles & Permissions</h1>
-        </div>
-        <button
-          onClick={() => { setEditingRole(null); setModalOpen(true); }}
-          className="ag-btn-primary flex items-center gap-2 px-4 py-2 text-sm"
-        >
-          <Plus className="w-4 h-4" /> Create Role
-        </button>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        icon={<ShieldCheckered size={22} weight="duotone" />}
+        title="Roles and Permissions"
+        subtitle="Define access policies and permission scopes."
+        actions={
+          <button
+            onClick={() => { setEditingRole(null); setModalOpen(true); }}
+            className="btn btn-primary rounded-xl"
+          >
+            <Plus className="w-4 h-4" /> Create Role
+          </button>
+        }
+      />
 
       {error && (
         <div className="ag-alert-red flex items-center gap-2 text-sm px-4 py-3 mb-4">

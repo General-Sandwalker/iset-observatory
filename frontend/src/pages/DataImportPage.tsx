@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { UploadSimple } from '@phosphor-icons/react';
 import {
   Upload,
   FileSpreadsheet,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 import api from '../lib/api';
 import type { Dataset, ColumnMapping, ParsedPreview } from '../lib/types';
+import PageHeader from '../components/layout/PageHeader';
 
 const COLUMN_TYPES = ['TEXT', 'INTEGER', 'NUMERIC', 'DATE', 'BOOLEAN'] as const;
 
@@ -171,12 +173,11 @@ export default function DataImportPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold" style={{ color: 'var(--ag-text)' }}>Data Import</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--ag-text2)' }}>
-          Upload CSV or Excel files, map columns, and import into the database.
-        </p>
-      </div>
+      <PageHeader
+        icon={<UploadSimple size={22} weight="duotone" />}
+        title="Data Import"
+        subtitle="Upload CSV or Excel files, map columns, and publish clean datasets."
+      />
 
       {/* Upload zone */}
       <div

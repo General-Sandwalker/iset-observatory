@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Users, Plus, Pencil, Trash2, Shield, Search,
+  Plus, Pencil, Trash2, Shield, Search,
   CheckCircle, XCircle, AlertCircle,
 } from 'lucide-react';
+import { UsersThree } from '@phosphor-icons/react';
 import api from '../lib/api';
 import type { User, Role } from '../lib/types';
 import UserModal from '../components/layout/UserModal';
 import { useAuth } from '../contexts/AuthContext';
+import PageHeader from '../components/layout/PageHeader';
 
 export default function UsersPage() {
   const { user: currentUser } = useAuth();
@@ -88,22 +90,20 @@ export default function UsersPage() {
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Users className="w-6 h-6" style={{ color: 'var(--ag-accent)' }} />
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--ag-text)' }}>
-            User Management
-          </h1>
-        </div>
-        <button
-          onClick={() => { setEditingUser(null); setModalOpen(true); }}
-          className="ag-btn-primary flex items-center gap-2 px-4 py-2 text-sm"
-        >
-          <Plus className="w-4 h-4" /> Add User
-        </button>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        icon={<UsersThree size={22} weight="duotone" />}
+        title="User Management"
+        subtitle="Manage platform accounts and role assignments."
+        actions={
+          <button
+            onClick={() => { setEditingUser(null); setModalOpen(true); }}
+            className="btn btn-primary rounded-xl"
+          >
+            <Plus className="w-4 h-4" /> Add User
+          </button>
+        }
+      />
 
       {/* Alerts */}
       {error && (

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { AppWindow } from '@phosphor-icons/react';
 import {
   LayoutDashboard,
   PlusCircle,
@@ -36,6 +37,7 @@ import { Bar, Line, Pie, Doughnut, Radar as RadarChart, PolarArea } from 'react-
 import jsPDF from 'jspdf';
 import api from '../lib/api';
 import type { Dashboard, Chart, ChartType, DashboardLayoutItem } from '../lib/types';
+import PageHeader from '../components/layout/PageHeader';
 
 interface ChartApiData { labels: string[]; values: number[] }
 
@@ -559,20 +561,16 @@ export default function DashboardCanvasPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--ag-text)' }}>
-            <LayoutDashboard className="w-7 h-7" style={{ color: 'var(--ag-accent)' }} />
-            Dashboards
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--ag-text2)' }}>
-            Compose multi-chart dashboards with drag-and-drop
-          </p>
-        </div>
-        <button onClick={() => setShowCreate(true)} className="ag-btn-primary flex items-center gap-2 px-4 py-2 text-sm">
-          <PlusCircle className="w-4 h-4" /> New Dashboard
-        </button>
-      </div>
+      <PageHeader
+        icon={<AppWindow size={22} weight="duotone" />}
+        title="Dashboards"
+        subtitle="Compose multi-chart dashboards with drag-and-drop."
+        actions={
+          <button onClick={() => setShowCreate(true)} className="btn btn-primary rounded-xl">
+            <PlusCircle className="w-4 h-4" /> New Dashboard
+          </button>
+        }
+      />
 
       {showCreate && (
         <div className="ag-card p-6 space-y-4">

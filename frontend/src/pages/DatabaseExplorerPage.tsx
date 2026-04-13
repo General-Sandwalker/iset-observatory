@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Database as DatabaseIcon } from '@phosphor-icons/react';
 import {
   Database,
   Table2,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 import api from '../lib/api';
 import type { Dataset } from '../lib/types';
+import PageHeader from '../components/layout/PageHeader';
 
 function fmt(n: number) {
   return n.toLocaleString();
@@ -60,24 +62,13 @@ export default function DatabaseExplorerPage() {
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: 'var(--ag-accent-lo)' }}>
-            <Database className="w-5 h-5" style={{ color: 'var(--ag-accent)' }} />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold" style={{ color: 'var(--ag-text1)' }}>
-              Database Explorer
-            </h1>
-            <p className="text-sm" style={{ color: 'var(--ag-text3)' }}>
-              {all.length} imported table{all.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
+    <div className="space-y-5">
+      <PageHeader
+        icon={<DatabaseIcon size={22} weight="duotone" />}
+        title="Database Explorer"
+        subtitle={`${all.length} imported table${all.length !== 1 ? 's' : ''}`}
+        actions={
+          <div className="flex items-center gap-2">
           {/* Search */}
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -96,8 +87,9 @@ export default function DatabaseExplorerPage() {
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {/* Body */}
       {loading ? (
@@ -140,9 +132,9 @@ export default function DatabaseExplorerPage() {
                 onClick={() => navigate(`/explore/${ds.id}`)}
                 className="group text-left relative overflow-hidden rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl"
                 style={{
-                  background: 'var(--ag-card-bg)',
+                  background: 'var(--ag-surface)',
                   border: '1px solid var(--ag-border)',
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+                  boxShadow: '0 10px 24px rgba(15,23,42,0.10)',
                 }}
               >
                 {/* Accent top bar */}

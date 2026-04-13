@@ -1,13 +1,15 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Table } from '@phosphor-icons/react';
 import {
   ArrowLeft, Search, RefreshCw, Plus, Trash2, Save, X,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
   ArrowUpDown, ArrowUp, ArrowDown, Settings2, AlertTriangle,
-  Loader2, DatabaseZap,
+  Loader2,
 } from 'lucide-react';
 import api from '../lib/api';
 import type { Dataset, TableColumn, TablePagination } from '../lib/types';
+import PageHeader from '../components/layout/PageHeader';
 
 // ─── Cell editor ─────────────────────────────────────────────────────────────
 function CellInput({
@@ -468,52 +470,41 @@ export default function TableEditorPage() {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* ── Header ── */}
-      <div className="px-6 py-4 flex items-center gap-4 flex-wrap shrink-0"
-        style={{ borderBottom: '1px solid var(--ag-border)', background: 'var(--ag-card-bg)' }}>
-        <button onClick={() => navigate('/explore')}
-          className="ag-btn-ghost p-2 rounded-lg" title="Back to Explorer">
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <DatabaseZap className="w-5 h-5 shrink-0" style={{ color: 'var(--ag-accent)' }} />
-          <div className="min-w-0">
-            <h1 className="font-semibold text-sm truncate" style={{ color: 'var(--ag-text1)' }}>
-              {dataset?.name ?? '…'}
-            </h1>
-            <p className="text-xs font-mono truncate" style={{ color: 'var(--ag-text3)' }}>
-              {dataset?.table_name ?? ''}
-              {pagination.total > 0 && ` · ${pagination.total.toLocaleString()} rows`}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          {selected.size > 0 && (
-            <button
-              onClick={() => setShowDeleteRows(true)}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium"
-              style={{ background: 'var(--ag-red-lo)', color: 'var(--ag-red)', border: '1px solid var(--ag-red)' }}
-            >
-              <Trash2 className="w-3.5 h-3.5" /> Delete {selected.size}
-            </button>
-          )}
-          <button onClick={() => setShowAddRow(true)}
-            className="ag-btn-primary flex items-center gap-1.5 text-xs px-3 py-1.5">
-            <Plus className="w-3.5 h-3.5" /> Add Row
-          </button>
-          <button onClick={() => setShowSchema(true)}
-            className="ag-btn-ghost flex items-center gap-1.5 text-xs px-3 py-1.5">
-            <Settings2 className="w-3.5 h-3.5" /> Schema
-          </button>
-          <button onClick={() => setShowDropConfirm(true)}
-            className="ag-btn-ghost flex items-center gap-1.5 text-xs px-3 py-1.5"
-            style={{ color: 'var(--ag-red)' }} disabled={droppingTable}>
-            {droppingTable ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-            Drop
-          </button>
-        </div>
+      <div className="shrink-0 px-6 pt-4 pb-3">
+        <PageHeader
+          icon={<Table size={22} weight="duotone" />}
+          title={dataset?.name ?? 'Table Editor'}
+          subtitle={`${dataset?.table_name ?? ''}${pagination.total > 0 ? ` • ${pagination.total.toLocaleString()} rows` : ''}`}
+          actions={
+            <>
+              <button onClick={() => navigate('/explore')} className="btn btn-outline btn-sm rounded-xl" title="Back to Explorer">
+                <ArrowLeft className="w-4 h-4" /> Back
+              </button>
+              {selected.size > 0 && (
+                <button
+                  onClick={() => setShowDeleteRows(true)}
+                  className="btn btn-sm rounded-xl bg-red-500/15 text-red-400 border-red-500/40 hover:bg-red-500/25"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Delete {selected.size}
+                </button>
+              )}
+              <button onClick={() => setShowAddRow(true)} className="btn btn-primary btn-sm rounded-xl">
+                <Plus className="w-3.5 h-3.5" /> Add Row
+              </button>
+              <button onClick={() => setShowSchema(true)} className="btn btn-outline btn-sm rounded-xl">
+                <Settings2 className="w-3.5 h-3.5" /> Schema
+              </button>
+              <button
+                onClick={() => setShowDropConfirm(true)}
+                className="btn btn-outline btn-sm rounded-xl text-red-400 border-red-500/40 hover:bg-red-500/15"
+                disabled={droppingTable}
+              >
+                {droppingTable ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                Drop
+              </button>
+            </>
+          }
+        />
       </div>
 
       {/* ── Search + pagination bar ── */}

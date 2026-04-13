@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
-type Theme = 'light' | 'dark';
+type Theme = 'light';
 
 interface ThemeContextValue {
   theme: Theme;
@@ -9,33 +9,26 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-  theme: 'dark',
+  theme: 'light',
   toggleTheme: () => {},
   applyTheme: () => {},
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const stored = localStorage.getItem('ag-theme') as Theme | null;
-    return stored ?? 'dark';
-  });
+  const [theme, setTheme] = useState<Theme>('light');
 
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    localStorage.setItem('ag-theme', theme);
+    root.classList.remove('dark');
+    root.setAttribute('data-theme', 'corporate');
   }, [theme]);
 
   function toggleTheme() {
-    setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+    setTheme('light');
   }
 
-  function applyTheme(t: Theme) {
-    setTheme(t);
+  function applyTheme(_t: Theme) {
+    setTheme('light');
   }
 
   return (

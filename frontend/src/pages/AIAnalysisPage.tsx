@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Sparkle } from '@phosphor-icons/react';
 import {
   BrainCircuit,
   Send,
@@ -33,6 +34,7 @@ import {
 import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
 import api from '../lib/api';
 import type { ChatMessage, QueryableTable } from '../lib/types';
+import PageHeader from '../components/layout/PageHeader';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, LineElement, PointElement,
@@ -244,39 +246,34 @@ export default function AIAnalysisPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)]">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--ag-text)' }}>
-            <BrainCircuit className="w-6 h-6" style={{ color: 'var(--ag-accent)' }} />
-            AI Analysis
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--ag-text2)' }}>
-            Ask questions about your data in plain language.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowTables(!showTables)}
-            className="ag-btn-ghost flex items-center gap-1.5 px-3 py-2 text-xs"
-          >
-            <Database className="w-4 h-4" />
-            Tables ({tables.length})
-          </button>
-          {messages.length > 0 && (
+      <PageHeader
+        icon={<Sparkle size={22} weight="duotone" />}
+        title="AI Analysis"
+        subtitle="Ask questions about your data in plain language."
+        actions={
+          <>
             <button
-              onClick={clearHistory}
-              className="p-2 rounded-lg transition-colors"
-              style={{ color: 'var(--ag-text3)' }}
-              onMouseOver={(e) => (e.currentTarget.style.color = 'var(--ag-red)')}
-              onMouseOut={(e) => (e.currentTarget.style.color = 'var(--ag-text3)')}
-              title="Clear history"
+              onClick={() => setShowTables(!showTables)}
+              className="ag-btn-ghost flex items-center gap-1.5 px-3 py-2 text-xs"
             >
-              <Trash2 className="w-4 h-4" />
+              <Database className="w-4 h-4" />
+              Tables ({tables.length})
             </button>
-          )}
-        </div>
-      </div>
+            {messages.length > 0 && (
+              <button
+                onClick={clearHistory}
+                className="p-2 rounded-lg transition-colors"
+                style={{ color: 'var(--ag-text3)' }}
+                onMouseOver={(e) => (e.currentTarget.style.color = 'var(--ag-red)')}
+                onMouseOut={(e) => (e.currentTarget.style.color = 'var(--ag-text3)')}
+                title="Clear history"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </>
+        }
+      />
 
       {/* Tables sidebar */}
       {showTables && (

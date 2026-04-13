@@ -2,8 +2,6 @@ import { useState } from 'react';
 import {
   User as UserIcon,
   Lock,
-  Sun,
-  Moon,
   Info,
   Check,
   AlertCircle,
@@ -11,9 +9,10 @@ import {
   LogOut,
   ShieldCheck,
 } from 'lucide-react';
+import { SlidersHorizontal } from '@phosphor-icons/react';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
+import PageHeader from '../components/layout/PageHeader';
 
 type AlertType = 'success' | 'error' | null;
 
@@ -211,74 +210,6 @@ function PasswordCard() {
   );
 }
 
-// ─── Theme Card ──────────────────────────────────────────────────────────────
-function ThemeCard() {
-  const { theme, toggleTheme } = useTheme();
-  const [saving, setSaving] = useState(false);
-
-  async function handleToggle() {
-    setSaving(true);
-    toggleTheme();
-    const next = theme === 'dark' ? 'light' : 'dark';
-    try {
-      await api.patch('/auth/me/preferences', { preferences: { theme: next } });
-    } catch {
-      // Non-critical – local state already changed
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <section className="ag-card p-6">
-      <h2
-        className="flex items-center gap-2 text-base font-semibold mb-5"
-        style={{ color: 'var(--ag-text)' }}
-      >
-        {theme === 'dark' ? (
-          <Moon className="w-4.5 h-4.5" style={{ color: 'var(--ag-accent)', width: '1.125rem', height: '1.125rem' }} />
-        ) : (
-          <Sun className="w-4.5 h-4.5" style={{ color: 'var(--ag-accent)', width: '1.125rem', height: '1.125rem' }} />
-        )}
-        Appearance
-      </h2>
-
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium" style={{ color: 'var(--ag-text)' }}>
-            {theme === 'dark' ? 'Dark mode' : 'Light mode'}
-          </p>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--ag-text3)' }}>
-            Aerogel theme — preference saved to your account
-          </p>
-        </div>
-
-        {/* Toggle pill */}
-        <button
-          onClick={handleToggle}
-          disabled={saving}
-          title="Toggle theme"
-          className="relative inline-flex items-center w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none disabled:opacity-60"
-          style={{ background: theme === 'dark' ? 'var(--ag-accent)' : 'var(--ag-border)' }}
-        >
-          <span
-            className="absolute flex items-center justify-center w-5 h-5 rounded-full bg-white shadow transition-transform duration-300"
-            style={{ transform: theme === 'dark' ? 'translateX(calc(3.5rem - 1.5rem))' : 'translateX(0.25rem)' }}
-          >
-            {saving ? (
-              <Loader2 className="w-3 h-3 animate-spin text-gray-500" />
-            ) : theme === 'dark' ? (
-              <Moon className="w-3 h-3 text-gray-600" />
-            ) : (
-              <Sun className="w-3 h-3 text-yellow-500" />
-            )}
-          </span>
-        </button>
-      </div>
-    </section>
-  );
-}
-
 // ─── App Info Card ───────────────────────────────────────────────────────────
 function AppInfoCard() {
   const { user, logout } = useAuth();
@@ -344,18 +275,14 @@ function AppInfoCard() {
 export default function SettingsPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold" style={{ color: 'var(--ag-text)' }}>
-          Settings
-        </h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--ag-text2)' }}>
-          Manage your profile, security, and preferences.
-        </p>
-      </div>
+      <PageHeader
+        icon={<SlidersHorizontal size={22} weight="duotone" />}
+        title="Settings"
+        subtitle="Manage your profile, security, and workspace preferences."
+      />
 
       <ProfileCard />
       <PasswordCard />
-      <ThemeCard />
       <AppInfoCard />
     </div>
   );

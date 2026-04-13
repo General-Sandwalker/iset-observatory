@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { ChartBar as ChartBarIcon } from '@phosphor-icons/react';
 import {
   BarChart3,
   PlusCircle,
@@ -30,6 +31,7 @@ import {
 import { Bar, Line, Pie, Doughnut, Radar as RadarChart, PolarArea } from 'react-chartjs-2';
 import api from '../lib/api';
 import type { Chart, ChartType, AggregationType, Dataset, ColumnMapping } from '../lib/types';
+import PageHeader from '../components/layout/PageHeader';
 
 interface ChartApiData { labels: string[]; values: number[] }
 
@@ -246,24 +248,20 @@ export default function ChartBuilderPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--ag-text)' }}>
-            <BarChart3 className="w-7 h-7" style={{ color: 'var(--ag-accent)' }} />
-            Visualizations
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--ag-text2)' }}>
-            Create charts from your imported datasets
-          </p>
-        </div>
-        <button
-          onClick={() => { resetBuilder(); setShowBuilder(true); }}
-          className="ag-btn-primary flex items-center gap-2 px-4 py-2 text-sm"
-        >
-          <PlusCircle className="w-4 h-4" />
-          New Chart
-        </button>
-      </div>
+      <PageHeader
+        icon={<ChartBarIcon size={22} weight="duotone" />}
+        title="Visualization Studio"
+        subtitle="Create charts from your imported datasets."
+        actions={
+          <button
+            onClick={() => { resetBuilder(); setShowBuilder(true); }}
+            className="btn btn-primary rounded-xl"
+          >
+            <PlusCircle className="w-4 h-4" />
+            New Chart
+          </button>
+        }
+      />
 
       {/* Builder Panel */}
       {showBuilder && (

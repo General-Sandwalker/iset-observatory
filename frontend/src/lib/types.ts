@@ -109,12 +109,24 @@ export interface GeneratedSurvey {
   goal: string;
 }
 
+export type SurveyStatus = 'draft' | 'published' | 'archived';
+
 export interface SavedSurvey {
   id: number;
   title: string;
   description: string | null;
   goal: string | null;
+  status: SurveyStatus;
+  public_token: string | null;
+  public_url: string | null;
+  published_at: string | null;
   created_at: string;
+  updated_at: string;
+  question_count: number;
+}
+
+export interface SurveyDetail extends SavedSurvey {
+  schema: GeneratedSurvey;
 }
 
 export interface QueryableTable {

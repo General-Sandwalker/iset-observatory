@@ -24,13 +24,15 @@ services:
   # ─── Backend API (Express + TypeScript) ────────────────────
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
+      target: builder
     container_name: observatory-backend
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
+    command: npm run dev
     environment:
       NODE_ENV: development
       PORT: 5000
