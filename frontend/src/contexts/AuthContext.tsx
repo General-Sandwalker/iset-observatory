@@ -73,7 +73,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateUser = useCallback((patch: Partial<User>) => {
-    setState((s) => s.user ? { ...s, user: { ...s.user, ...patch } } : s);
+    setState((s) => {
+      if (!s.user) return s;
+      const updated = { ...s.user, ...patch };
+      localStorage.setItem('user', JSON.stringify(updated));
+      return { ...s, user: updated };
+    });
   }, []);
 
   return (

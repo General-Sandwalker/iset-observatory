@@ -1,5 +1,11 @@
-import { useState, type FormEvent } from 'react';
-import { X, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Modal, Form, Input, Checkbox, Switch, Button, Alert } from 'antd';
+import {
+  CloseCircleOutlined,
+  UserOutlined,
+  MailOutlined,
+  LockOutlined,
+} from '@ant-design/icons';
 import type { User, Role } from '../../lib/types';
 
 interface Props {
@@ -11,36 +17,39 @@ interface Props {
 
 export default function UserModal({ user, roles, onSave, onClose }: Props) {
   const isEdit = !!user;
-  const [email, setEmail] = useState(user?.email || '');
-  const [fullName, setFullName] = useState(user?.full_name || user?.fullName || '');
-  const [password, setPassword] = useState('');
-  const [isActive, setIsActive] = useState(user?.is_active ?? user?.isActive ?? true);
+  const [form] = Form.useForm();
   const [selectedRoles, setSelectedRoles] = useState<number[]>(
     user?.roles?.map((r) => r.id) || []
+  );
+  const [isActive, setIsActive] = useState(
+    user?.is_active ?? user?.isActive ?? true
   );
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const toggleRole = (roleId: number) => {
-    setSelectedRoles((prev) =>
-      prev.includes(roleId) ? prev.filter((id) => id !== roleId) : [...prev, roleId]
-    );
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSubmitting(true);
+  const handleSubmit = async () => {
     try {
-      const data: any = { email, fullName, roleIds: selectedRoles, isActive };
-      if (password) data.password = password;
-      if (!isEdit && !password) {
+      const values = await form.validateFields();
+      setError('');
+      setSubmitting(true);
+
+      if (!isEdit && !values.password) {
         setError('Password is required for new users.');
         setSubmitting(false);
         return;
       }
+
+      const data: any = {
+        email: values.email,
+        fullName: values.fullName,
+        roleIds: selectedRoles,
+        isActive,
+      };
+      if (values.password) data.password = values.password;
+
       await onSave(data);
     } catch (err: any) {
+      if (err.errorFields) return;
       setError(err.response?.data?.message || 'Operation failed.');
     } finally {
       setSubmitting(false);
@@ -48,152 +57,115 @@ export default function UserModal({ user, roles, onSave, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0 0 0 / 0.55)' }}>
-      <div
-        className="ag-card w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto"
-        style={{ background: 'var(--ag-surface)' }}
-      >
-        {/* Header */}
-        <div
-          className="flex items-center justify-between px-6 py-4"
-          style={{ borderBottom: '1px solid var(--ag-border)' }}
+    <Modal
+      title={isEdit ? 'Edit User' : 'Add User'}
+      open
+      onCancel={onClose}
+      footer={[
+        <Button key="cancel" onClick={onClose}>
+          Cancel
+        </Button>,
+        <Button
+          key="submit"
+          type="primary"
+          loading={submitting}
+          onClick={handleSubmit}
         >
-          <h2 className="text-lg font-semibold" style={{ color: 'var(--ag-text)' }}>
-            {isEdit ? 'Edit User' : 'Add User'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg transition-colors"
-            style={{ color: 'var(--ag-text3)' }}
-            onMouseOver={(e) => (e.currentTarget.style.color = 'var(--ag-text)')}
-            onMouseOut={(e) => (e.currentTarget.style.color = 'var(--ag-text3)')}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+          {isEdit ? 'Update User' : 'Create User'}
+        </Button>,
+      ]}
+      destroyOnClose
+    >
+      {error && (
+        <Alert
+          type="error"
+          message={error}
+          icon={<CloseCircleOutlined />}
+          showIcon
+          closable
+          onClose={() => setError('')}
+          style={{ marginBottom: 16 }}
+        />
+      )}
 
-        {/* Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && (
-            <div className="ag-alert-red flex items-center gap-2 text-sm px-4 py-3">
-              <AlertCircle className="w-4 h-4 shrink-0" /> {error}
-            </div>
-          )}
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{
+          fullName: user?.full_name || user?.fullName || '',
+          email: user?.email || '',
+          password: '',
+        }}
+      >
+        <Form.Item
+          label="Full Name"
+          name="fullName"
+          rules={[{ required: true, message: 'Full name is required' }]}
+        >
+          <Input prefix={<UserOutlined />} placeholder="Full Name" />
+        </Form.Item>
 
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--ag-text2)' }}>
-              Full Name
-            </label>
-            <input
-              type="text"
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="ag-input w-full px-3 py-2.5 text-sm"
-            />
-          </div>
+        <Form.Item
+          label="Email"
+          name="email"
+          rules={[
+            { required: true, message: 'Email is required' },
+            { type: 'email', message: 'Please enter a valid email' },
+          ]}
+        >
+          <Input prefix={<MailOutlined />} type="email" placeholder="Email" />
+        </Form.Item>
 
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--ag-text2)' }}>
-              Email
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="ag-input w-full px-3 py-2.5 text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--ag-text2)' }}>
+        <Form.Item
+          label={
+            <span>
               Password{' '}
               {isEdit && (
-                <span style={{ color: 'var(--ag-text3)' }}>(leave blank to keep current)</span>
+                <span style={{ color: '#999', fontWeight: 'normal' }}>
+                  (leave blank to keep current)
+                </span>
               )}
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={isEdit ? '••••••••' : ''}
-              className="ag-input w-full px-3 py-2.5 text-sm"
-            />
-          </div>
+            </span>
+          }
+          name="password"
+          rules={
+            isEdit
+              ? []
+              : [{ required: true, message: 'Password is required' }]
+          }
+        >
+          <Input.Password
+            prefix={<LockOutlined />}
+            placeholder={isEdit ? '••••••••' : 'Password'}
+          />
+        </Form.Item>
 
-          {/* Roles */}
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ag-text2)' }}>
-              Roles
-            </label>
-            <div className="space-y-2">
+        <Form.Item label="Roles">
+          <Checkbox.Group
+            value={selectedRoles}
+            onChange={(values) => setSelectedRoles(values as number[])}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {roles.map((role) => (
-                <label
-                  key={role.id}
-                  className="flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors"
-                  style={{
-                    border: '1px solid var(--ag-border)',
-                    background: selectedRoles.includes(role.id) ? 'var(--ag-accent-lo)' : 'var(--ag-surface2)',
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedRoles.includes(role.id)}
-                    onChange={() => toggleRole(role.id)}
-                    className="w-4 h-4 rounded"
-                    style={{ accentColor: 'var(--ag-accent)' }}
-                  />
-                  <div>
-                    <span className="text-sm font-medium" style={{ color: 'var(--ag-text)' }}>
-                      {role.name}
+                <Checkbox key={role.id} value={role.id}>
+                  <span>{role.name}</span>
+                  {role.description && (
+                    <span style={{ color: '#999', fontSize: 12, marginLeft: 6 }}>
+                      — {role.description}
                     </span>
-                    {role.description && (
-                      <p className="text-xs mt-0.5" style={{ color: 'var(--ag-text3)' }}>
-                        {role.description}
-                      </p>
-                    )}
-                  </div>
-                </label>
+                  )}
+                </Checkbox>
               ))}
             </div>
-          </div>
+          </Checkbox.Group>
+        </Form.Item>
 
-          {/* Active toggle */}
-          {isEdit && (
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-                className="w-4 h-4 rounded"
-                style={{ accentColor: 'var(--ag-accent)' }}
-              />
-              <span className="text-sm" style={{ color: 'var(--ag-text2)' }}>
-                Account active
-              </span>
-            </label>
-          )}
-
-          {/* Footer */}
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="ag-btn-ghost px-4 py-2 text-sm"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="ag-btn-primary px-4 py-2 text-sm"
-            >
-              {submitting ? 'Saving…' : isEdit ? 'Update User' : 'Create User'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        {isEdit && (
+          <Form.Item label="Account active">
+            <Switch checked={isActive} onChange={setIsActive} />
+          </Form.Item>
+        )}
+      </Form>
+    </Modal>
   );
 }

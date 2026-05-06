@@ -1,20 +1,46 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  Database,
-  BarChart2,
-  Users,
-  Rows3,
-  BrainCircuit,
-  PanelTop,
-  ClipboardList,
-  TrendingUp,
-  ArrowRight,
-  RefreshCw,
-} from 'lucide-react';
+  Card,
+  Row,
+  Col,
+  Statistic,
+  Button,
+  Space,
+  Typography,
+  Spin,
+  Alert,
+  Tag,
+  Skeleton,
+  Avatar,
+  Divider,
+  Empty,
+  message,
+  theme,
+} from 'antd';
+import {
+  DashboardOutlined,
+  DatabaseOutlined,
+  BarChartOutlined,
+  TeamOutlined,
+  AppstoreOutlined,
+  RobotOutlined,
+  ImportOutlined,
+  FileTextOutlined,
+  TableOutlined,
+  ReloadOutlined,
+  ArrowRightOutlined,
+  BulbOutlined,
+  ThunderboltOutlined,
+  ClockCircleOutlined,
+  EyeOutlined,
+  SmileOutlined,
+} from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/api';
+import type { Chart } from '../lib/types';
+
+const { Title, Text, Paragraph } = Typography;
 
 interface Stats {
   datasets: number;
@@ -25,24 +51,103 @@ interface Stats {
   aiQueriesThisMonth: number;
 }
 
+const STAT_CARDS_CONFIG = [
+  { key: 'datasets', label: 'Datasets Imported', icon: DatabaseOutlined, color: '#1677ff' },
+  { key: 'totalRecords', label: 'Total Records', icon: TableOutlined, color: '#52c41a' },
+  { key: 'activeUsers', label: 'Active Users', icon: TeamOutlined, color: '#722ed1' },
+  { key: 'charts', label: 'Charts Created', icon: BarChartOutlined, color: '#fa8c16' },
+  { key: 'dashboards', label: 'Dashboards', icon: AppstoreOutlined, color: '#13c2c2' },
+  { key: 'aiQueriesThisMonth', label: 'AI Queries', icon: RobotOutlined, color: '#eb2f96' },
+] as const;
+
 const QUICK_ACTIONS = [
-  { label: 'Import Data', desc: 'Upload a CSV dataset', icon: Database, to: '/import', color: 'var(--ag-accent)' },
-  { label: 'AI Analysis', desc: 'Query your data with AI', icon: BrainCircuit, to: '/ai', color: '#8b5cf6' },
-  { label: 'Chart Builder', desc: 'Create visualisations', icon: BarChart2, to: '/charts', color: '#0ea5e9' },
-  { label: 'Dashboards', desc: 'Arrange & export charts', icon: PanelTop, to: '/dashboards', color: '#10b981' },
-  { label: 'Survey Generator', desc: 'Build AI-powered surveys', icon: ClipboardList, to: '/surveys', color: '#f59e0b' },
-  { label: 'User Management', desc: 'Manage users & roles', icon: Users, to: '/users', color: '#ef4444' },
+  {
+    label: 'Import Data',
+    desc: 'Upload CSV or Excel files to start analysing your data',
+    icon: ImportOutlined,
+    to: '/import',
+    gradient: 'linear-gradient(135deg, #1677ff 0%, #4096ff 100%)',
+  },
+  {
+    label: 'AI Analysis',
+    desc: 'Ask natural-language questions and get AI-powered insights',
+    icon: RobotOutlined,
+    to: '/ai',
+    gradient: 'linear-gradient(135deg, #722ed1 0%, #9254de 100%)',
+  },
+  {
+    label: 'Chart Builder',
+    desc: 'Create interactive charts and visualisations from datasets',
+    icon: BarChartOutlined,
+    to: '/charts',
+    gradient: 'linear-gradient(135deg, #fa8c16 0%, #ffc53d 100%)',
+  },
+  {
+    label: 'Dashboards',
+    desc: 'Compose multiple charts into shareable dashboards',
+    icon: AppstoreOutlined,
+    to: '/dashboards',
+    gradient: 'linear-gradient(135deg, #13c2c2 0%, #36cfc9 100%)',
+  },
+  {
+    label: 'Survey Generator',
+    desc: 'Build AI-powered surveys and collect responses',
+    icon: FileTextOutlined,
+    to: '/surveys',
+    gradient: 'linear-gradient(135deg, #eb2f96 0%, #f759ab 100%)',
+  },
+  {
+    label: 'DB Explorer',
+    desc: 'Browse tables, inspect schemas and run SQL queries',
+    icon: DatabaseOutlined,
+    to: '/explore',
+    gradient: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
+  },
 ];
+
+const CHART_TYPE_COLORS: Record<string, string> = {
+  bar: '#1677ff',
+  horizontalBar: '#4096ff',
+  line: '#52c41a',
+  pie: '#eb2f96',
+  doughnut: '#722ed1',
+  radar: '#fa8c16',
+  polarArea: '#13c2c2',
+};
+
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function formatDate(): string {
+  return new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { token } = theme.useToken();
+
   const [stats, setStats] = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [charts, setCharts] = useState<Chart[]>([]);
+  const [chartsLoading, setChartsLoading] = useState(true);
+
+  const [aiInsight, setAiInsight] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
   const fetchStats = async () => {
-    setLoading(true);
+    setStatsLoading(true);
     setError(null);
     try {
       const { data } = await api.get<{ success: boolean; data: Stats }>('/stats');
@@ -50,129 +155,576 @@ export default function DashboardPage() {
     } catch {
       setError('Could not load statistics.');
     } finally {
-      setLoading(false);
+      setStatsLoading(false);
     }
   };
 
-  useEffect(() => { fetchStats(); }, []);
+  const fetchCharts = async () => {
+    setChartsLoading(true);
+    try {
+      const { data } = await api.get<{ success: boolean; data: Chart[] }>('/charts');
+      if (data.success) setCharts(data.data ?? []);
+    } catch {
+      setCharts([]);
+    } finally {
+      setChartsLoading(false);
+    }
+  };
 
-  const statCards = stats ? [
-    { label: 'Datasets Imported', value: stats.datasets, icon: Database, color: 'var(--ag-accent)' },
-    { label: 'Total Records', value: stats.totalRecords.toLocaleString(), icon: Rows3, color: '#0ea5e9' },
-    { label: 'Active Users', value: stats.activeUsers, icon: Users, color: '#10b981' },
-    { label: 'Charts Created', value: stats.charts, icon: BarChart2, color: '#8b5cf6' },
-    { label: 'Dashboards', value: stats.dashboards, icon: PanelTop, color: '#f59e0b' },
-    { label: 'AI Queries (30d)', value: stats.aiQueriesThisMonth, icon: BrainCircuit, color: '#ef4444' },
-  ] : [];
+  const fetchAiInsight = async () => {
+    setAiLoading(true);
+    setAiInsight(null);
+    try {
+      const { data } = await api.post<{ success: boolean; insights?: string; answer?: string }>('/ai/query', {
+        question: 'Give me a brief summary of all data in the system',
+      });
+      const text = data.insights ?? data.answer ?? 'No insights available.';
+      setAiInsight(text);
+    } catch {
+      message.error('Failed to get AI insights. Please try again.');
+      setAiInsight(null);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+    fetchCharts();
+  }, []);
+
+  const getStatValue = (key: string): number | string => {
+    if (!stats) return 0;
+    const val = stats[key as keyof Stats];
+    return typeof val === 'number' ? val.toLocaleString() : val;
+  };
+
+  const recentCharts = charts.slice(0, 3);
 
   return (
-    <div>
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-6 gap-3">
-        <div className="flex items-center gap-3">
-          <LayoutDashboard className="w-6 h-6" style={{ color: 'var(--ag-accent)' }} />
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--ag-text)' }}>Dashboard</h1>
-        </div>
-        <button
-          onClick={fetchStats}
-          disabled={loading}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-opacity hover:opacity-80 disabled:opacity-40"
-          style={{ background: 'var(--ag-card)', color: 'var(--ag-text2)', border: '1px solid var(--ag-border)' }}
+    <div style={{ paddingBottom: 32 }}>
+      {/* ── Top Bar ─────────────────────────────────────────────────── */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 8,
+          gap: 12,
+          flexWrap: 'wrap',
+        }}
+      >
+        <Space size="middle">
+          <DashboardOutlined style={{ fontSize: 22, color: token.colorPrimary }} />
+          <Title level={3} style={{ margin: 0 }}>
+            Dashboard
+          </Title>
+        </Space>
+        <Button
+          icon={<ReloadOutlined spin={statsLoading} />}
+          onClick={() => {
+            fetchStats();
+            fetchCharts();
+          }}
+          disabled={statsLoading}
+          size="small"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           Refresh
-        </button>
+        </Button>
       </div>
 
-      {/* Welcome card */}
-      <div className="ag-card p-6 mb-6 flex items-center gap-4" style={{ borderLeft: '4px solid var(--ag-accent)' }}>
-        <div
-          className="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold shrink-0"
-          style={{ background: 'var(--ag-accent)', color: '#fff' }}
-        >
-          {user?.fullName?.charAt(0)?.toUpperCase() ?? '?'}
-        </div>
-        <div>
-          <h2 className="text-lg font-semibold" style={{ color: 'var(--ag-text)' }}>
-            Welcome back, {user?.fullName} 👋
-          </h2>
-          <p className="text-sm" style={{ color: 'var(--ag-text2)' }}>
-            Signed in as{' '}
-            <span className="font-medium" style={{ color: 'var(--ag-accent)' }}>{user?.role}</span>.
-            {' '}Here's an overview of your observatory.
-          </p>
-        </div>
-      </div>
+      {/* ── Welcome Section ─────────────────────────────────────────── */}
+      <Card
+        style={{
+          marginBottom: 24,
+          overflow: 'hidden',
+          position: 'relative',
+        }}
+        styles={{
+          body: {
+            background: `linear-gradient(135deg, ${token.colorBgContainer} 0%, ${token.colorPrimaryBg || token.colorBgLayout} 100%)`,
+            padding: '24px 28px',
+          },
+        }}
+      >
+        <Space size={20} align="center" wrap>
+          <Avatar
+            size={56}
+            style={{
+              backgroundColor: token.colorPrimary,
+              fontSize: 22,
+              fontWeight: 700,
+              flexShrink: 0,
+              boxShadow: `0 4px 12px ${token.colorPrimary}33`,
+            }}
+          >
+            {user?.fullName?.charAt(0)?.toUpperCase() ?? '?'}
+          </Avatar>
+          <div>
+            <Title level={4} style={{ margin: 0, marginBottom: 4 }}>
+              {getGreeting()}, {user?.fullName?.split(' ')[0] ?? 'User'}! 👋
+            </Title>
+            <Space size={8} align="center" wrap>
+              <Text type="secondary" style={{ fontSize: 14 }}>
+                {formatDate()}
+              </Text>
+              <Tag
+                color={token.colorPrimary}
+                style={{
+                  margin: 0,
+                  borderRadius: 12,
+                  fontWeight: 600,
+                  fontSize: 12,
+                  letterSpacing: 0.5,
+                }}
+              >
+                {user?.role?.toUpperCase() ?? 'USER'}
+              </Tag>
+            </Space>
+          </div>
+        </Space>
+      </Card>
 
-      {/* Stats grid */}
+      {/* ── Stats Overview ──────────────────────────────────────────── */}
       {error ? (
-        <div className="ag-card p-5 mb-6 text-sm" style={{ color: '#ef4444', border: '1px solid #ef444430' }}>
-          {error}
-        </div>
-      ) : loading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="ag-card p-6 animate-pulse">
-              <div className="h-3 w-24 rounded mb-3" style={{ background: 'var(--ag-border)' }} />
-              <div className="h-8 w-16 rounded" style={{ background: 'var(--ag-border)' }} />
-            </div>
-          ))}
-        </div>
+        <Alert type="error" message={error} showIcon style={{ marginBottom: 24 }} />
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          {statCards.map((card) => {
-            const Icon = card.icon;
+        <Row gutter={[16, 16]} style={{ marginBottom: 28 }}>
+          {STAT_CARDS_CONFIG.map((cfg) => {
+            const IconComp = cfg.icon;
             return (
-              <div key={card.label} className="ag-card p-5 flex items-center gap-4">
-                <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: card.color + '1a' }}
+              <Col xs={12} sm={12} md={8} lg={4} key={cfg.key}>
+                <Card
+                  style={{
+                    borderRadius: 12,
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                    overflow: 'hidden',
+                  }}
+                  styles={{ body: { padding: '20px 20px 16px' } }}
+                  hoverable
+                  className="stat-card-hover"
                 >
-                  <Icon className="w-5 h-5" style={{ color: card.color }} />
-                </div>
-                <div>
-                  <p className="text-xs mb-0.5" style={{ color: 'var(--ag-text2)' }}>{card.label}</p>
-                  <p className="text-2xl font-bold" style={{ color: 'var(--ag-text)' }}>{card.value}</p>
-                </div>
-              </div>
+                  {statsLoading ? (
+                    <Space vertical style={{ width: '100%' }}>
+                      <Skeleton.Avatar active size="small" shape="circle" />
+                      <Skeleton active paragraph={{ rows: 1, width: '60%' }} title={{ width: '80%' }} />
+                    </Space>
+                  ) : (
+                    <div>
+                      <div
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: `${cfg.color}15`,
+                          marginBottom: 12,
+                        }}
+                      >
+                        <IconComp style={{ fontSize: 20, color: cfg.color }} />
+                      </div>
+                      <Statistic
+                        value={getStatValue(cfg.key)}
+                        valueStyle={{
+                          fontSize: 26,
+                          fontWeight: 700,
+                          color: token.colorText,
+                          lineHeight: 1.2,
+                          marginBottom: 2,
+                        }}
+                        formatter={(val) => <span>{val as string}</span>}
+                      />
+                      <Text
+                        type="secondary"
+                        style={{ fontSize: 13, display: 'block', marginBottom: 6 }}
+                      >
+                        {cfg.label}
+                      </Text>
+                      <Tag
+                        style={{
+                          margin: 0,
+                          fontSize: 11,
+                          borderRadius: 8,
+                          padding: '0 6px',
+                          color: token.colorTextSecondary,
+                          border: 'none',
+                          background: token.colorBgLayout,
+                        }}
+                      >
+                        <span style={{ marginRight: 2 }}>—</span> vs last month
+                      </Tag>
+                    </div>
+                  )}
+                </Card>
+              </Col>
             );
           })}
-        </div>
+        </Row>
       )}
 
-      {/* Quick actions */}
-      <div className="flex items-center gap-2 mb-3">
-        <TrendingUp className="w-4 h-4" style={{ color: 'var(--ag-accent)' }} />
-        <h2 className="text-base font-semibold" style={{ color: 'var(--ag-text)' }}>Quick Actions</h2>
+      {/* ── Quick Actions ───────────────────────────────────────────── */}
+      <div style={{ marginBottom: 8 }}>
+        <Space size={8}>
+          <ThunderboltOutlined style={{ color: token.colorPrimary, fontSize: 16 }} />
+          <Title level={5} style={{ margin: 0 }}>
+            Quick Actions
+          </Title>
+        </Space>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <Row gutter={[16, 16]} style={{ marginBottom: 28 }}>
         {QUICK_ACTIONS.map((action) => {
-          const Icon = action.icon;
+          const IconComp = action.icon;
           return (
-            <button
-              key={action.label}
-              onClick={() => navigate(action.to)}
-              className="ag-card p-5 text-left flex items-start gap-4 group transition-all"
-              style={{ cursor: 'pointer' }}
-            >
-              <div
-                className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-                style={{ background: action.color + '1a' }}
+            <Col xs={24} sm={12} md={8} key={action.label}>
+              <Card
+                hoverable
+                onClick={() => navigate(action.to)}
+                style={{
+                  cursor: 'pointer',
+                  borderRadius: 12,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                }}
+                styles={{ body: { padding: 0 } }}
+                className="action-card-hover"
               >
-                <Icon className="w-[18px] h-[18px]" style={{ color: action.color }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold mb-0.5" style={{ color: 'var(--ag-text)' }}>{action.label}</p>
-                <p className="text-xs leading-snug" style={{ color: 'var(--ag-text2)' }}>{action.desc}</p>
-              </div>
-              <ArrowRight
-                className="w-4 h-4 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5"
-                style={{ color: action.color }}
-              />
-            </button>
+                <div style={{ display: 'flex', minHeight: 100 }}>
+                  <div
+                    style={{
+                      width: 5,
+                      flexShrink: 0,
+                      background: action.gradient,
+                      borderRadius: '12px 0 0 12px',
+                    }}
+                  />
+                  <div
+                    style={{
+                      padding: '20px 20px 20px 20px',
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 16,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 12,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: action.gradient,
+                        flexShrink: 0,
+                        boxShadow: `0 4px 12px ${action.gradient.match(/#[0-9a-fA-F]{6}/)?.[0]}40`,
+                      }}
+                    >
+                      <IconComp style={{ fontSize: 22, color: '#fff' }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        strong
+                        style={{
+                          display: 'block',
+                          fontSize: 15,
+                          marginBottom: 2,
+                          color: token.colorText,
+                        }}
+                      >
+                        {action.label}
+                      </Text>
+                      <Text
+                        type="secondary"
+                        style={{ fontSize: 12, lineHeight: 1.4, display: 'block' }}
+                        ellipsis
+                      >
+                        {action.desc}
+                      </Text>
+                    </div>
+                    <ArrowRightOutlined
+                      style={{
+                        color: token.colorTextQuaternary,
+                        fontSize: 14,
+                        flexShrink: 0,
+                        transition: 'transform 0.2s ease',
+                      }}
+                    />
+                  </div>
+                </div>
+              </Card>
+            </Col>
           );
         })}
-      </div>
+      </Row>
+
+      {/* ── Bottom Section: Recent Activity + AI Insights + Popular Charts ── */}
+      <Row gutter={[16, 16]}>
+        {/* ── Recent Activity ──────────────────────────────────────── */}
+        <Col xs={24} lg={8}>
+          <Card
+            title={
+              <Space size={8}>
+                <ClockCircleOutlined style={{ color: token.colorPrimary }} />
+                <span>Recent Activity</span>
+              </Space>
+            }
+            style={{ borderRadius: 12, height: '100%' }}
+            styles={{ body: { display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 200 } }}
+          >
+            <Empty
+              image={<ClockCircleOutlined style={{ fontSize: 40, color: token.colorTextQuaternary }} />}
+              description={
+                <Space direction="vertical" size={4} align="center">
+                  <Text type="secondary">Activity tracking coming soon</Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Your recent actions will appear here
+                  </Text>
+                </Space>
+              }
+            />
+          </Card>
+        </Col>
+
+        {/* ── AI Insights ──────────────────────────────────────────── */}
+        <Col xs={24} lg={8}>
+          <Card
+            title={
+              <Space size={8}>
+                <BulbOutlined style={{ color: '#fa8c16' }} />
+                <span>AI Insights</span>
+              </Space>
+            }
+            style={{ borderRadius: 12, height: '100%' }}
+            styles={{ body: { display: 'flex', flexDirection: 'column', minHeight: 200 } }}
+          >
+            {aiInsight ? (
+              <div style={{ flex: 1 }}>
+                <div
+                  style={{
+                    borderLeft: `4px solid ${token.colorPrimary}`,
+                    padding: '12px 16px',
+                    background: token.colorBgLayout,
+                    borderRadius: '0 8px 8px 0',
+                    marginBottom: 16,
+                  }}
+                >
+                  <Paragraph
+                    style={{
+                      margin: 0,
+                      color: token.colorText,
+                      fontSize: 14,
+                      lineHeight: 1.7,
+                      fontStyle: 'italic',
+                    }}
+                  >
+                    "{aiInsight}"
+                  </Paragraph>
+                </div>
+                <Button
+                  icon={<ReloadOutlined spin={aiLoading} />}
+                  onClick={fetchAiInsight}
+                  loading={aiLoading}
+                  size="small"
+                  type="link"
+                >
+                  Refresh insights
+                </Button>
+              </div>
+            ) : (
+              <div
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 16,
+                }}
+              >
+                <div
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: `linear-gradient(135deg, #fa8c16 0%, #ffc53d 100%)`,
+                    boxShadow: '0 4px 16px rgba(250, 140, 22, 0.25)',
+                  }}
+                >
+                  <SmileOutlined style={{ fontSize: 28, color: '#fff' }} />
+                </div>
+                <Text type="secondary" style={{ textAlign: 'center', maxWidth: 240 }}>
+                  Let AI analyse your data and provide a quick summary
+                </Text>
+                <Button
+                  type="primary"
+                  icon={<BulbOutlined />}
+                  onClick={fetchAiInsight}
+                  loading={aiLoading}
+                  style={{
+                    borderRadius: 8,
+                    background: 'linear-gradient(135deg, #fa8c16, #ffc53d)',
+                    border: 'none',
+                    fontWeight: 600,
+                    boxShadow: '0 4px 12px rgba(250, 140, 22, 0.35)',
+                  }}
+                >
+                  Get AI Summary
+                </Button>
+              </div>
+            )}
+            {aiLoading && (
+              <div style={{ textAlign: 'center', padding: 24 }}>
+                <Spin tip="Analysing data..." />
+              </div>
+            )}
+          </Card>
+        </Col>
+
+        {/* ── Popular Charts ───────────────────────────────────────── */}
+        <Col xs={24} lg={8}>
+          <Card
+            title={
+              <Space size={8}>
+                <BarChartOutlined style={{ color: '#722ed1' }} />
+                <span>Popular Charts</span>
+              </Space>
+            }
+            extra={
+              <Button
+                type="link"
+                size="small"
+                onClick={() => navigate('/charts')}
+                icon={<ArrowRightOutlined />}
+                style={{ padding: 0 }}
+              >
+                View all
+              </Button>
+            }
+            style={{ borderRadius: 12, height: '100%' }}
+            styles={{ body: { padding: '12px 24px 24px' } }}
+          >
+            {chartsLoading ? (
+              <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} active paragraph={{ rows: 1 }} title={{ width: '50%' }} />
+                ))}
+              </Space>
+            ) : recentCharts.length === 0 ? (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  <Space direction="vertical" size={4} align="center">
+                    <Text type="secondary">No charts yet</Text>
+                    <Button
+                      type="link"
+                      size="small"
+                      onClick={() => navigate('/charts')}
+                      style={{ padding: 0 }}
+                    >
+                      Create your first chart
+                    </Button>
+                  </Space>
+                }
+              />
+            ) : (
+              <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                {recentCharts.map((chart) => (
+                  <div
+                    key={chart.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 14px',
+                      borderRadius: 10,
+                      background: token.colorBgLayout,
+                      transition: 'all 0.2s ease',
+                      cursor: 'pointer',
+                      gap: 12,
+                    }}
+                    onClick={() => navigate('/charts')}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.background =
+                        token.colorPrimaryBg || '#e6f4ff';
+                      (e.currentTarget as HTMLDivElement).style.transform = 'translateX(4px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.background = token.colorBgLayout;
+                      (e.currentTarget as HTMLDivElement).style.transform = 'translateX(0)';
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
+                      <div
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 8,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: `${CHART_TYPE_COLORS[chart.chart_type] || token.colorPrimary}15`,
+                          flexShrink: 0,
+                        }}
+                      >
+                        <BarChartOutlined
+                          style={{
+                            fontSize: 16,
+                            color: CHART_TYPE_COLORS[chart.chart_type] || token.colorPrimary,
+                          }}
+                        />
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <Text
+                          strong
+                          ellipsis
+                          style={{ display: 'block', fontSize: 14, maxWidth: '100%' }}
+                        >
+                          {chart.title}
+                        </Text>
+                        <Tag
+                          color={CHART_TYPE_COLORS[chart.chart_type] || 'blue'}
+                          style={{ margin: 0, fontSize: 11, borderRadius: 6, lineHeight: '18px' }}
+                        >
+                          {chart.chart_type}
+                        </Tag>
+                      </div>
+                    </div>
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<EyeOutlined />}
+                      style={{ flexShrink: 0, padding: '0 4px' }}
+                    >
+                      View
+                    </Button>
+                  </div>
+                ))}
+              </Space>
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      {/* ── Inline hover styles ────────────────────────────────────── */}
+      <style>{`
+        .stat-card-hover:hover {
+          transform: translateY(-4px) !important;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
+        }
+        .action-card-hover:hover {
+          transform: translateY(-3px) !important;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
+        }
+        .action-card-hover:hover .anticon-arrow-right {
+          transform: translateX(4px);
+        }
+      `}</style>
     </div>
   );
 }

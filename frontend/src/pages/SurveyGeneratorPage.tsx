@@ -1,13 +1,21 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
-  ClipboardList, Wand2, Loader2, Eye, Copy, Check, ArrowLeft, Star,
-  Download, Save, Share2, ChevronDown, ChevronUp, Link,
-  ExternalLink, BookMarked, Trash2,
-} from 'lucide-react';
+  Card, Row, Col, Input, Button, Space, Typography, Tag, Table, Spin,
+  Popconfirm, Empty,
+  Select, message, Tabs, theme,
+} from 'antd';
+import {
+  FileTextOutlined, ThunderboltOutlined, EyeOutlined,
+  CopyOutlined, CheckOutlined, ArrowLeftOutlined,
+  DownloadOutlined, SaveOutlined, ShareAltOutlined,
+  BookOutlined, DeleteOutlined, LinkOutlined,
+  ExportOutlined, PlusOutlined, MinusCircleOutlined,
+  EditOutlined,
+} from '@ant-design/icons';
 import api from '../lib/api';
 import type { GeneratedSurvey, SurveyField, SavedSurvey } from '../lib/types';
 
-// ─── helpers ────────────────────────────────────────────────────────────────
+const { Title, Text, Paragraph } = Typography;
 
 function esc(s: string) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -76,39 +84,76 @@ ${fields}
 }
 
 const PLATFORMS = [
-  {
-    name: 'Google Forms',
-    desc: 'Free, unlimited responses, Google account required.',
-    color: '#4285f4',
-    url: 'https://forms.google.com/create',
-    emoji: '🇬',
-  },
-  {
-    name: 'Tally.so',
-    desc: 'Free, unlimited responses, no sign-up required to fill.',
-    color: '#2c2c2c',
-    url: 'https://tally.so',
-    emoji: '📋',
-  },
-  {
-    name: 'Typeform',
-    desc: 'Beautiful conversational forms, free tier available.',
-    color: '#262627',
-    url: 'https://www.typeform.com',
-    emoji: '✨',
-  },
-  {
-    name: 'Microsoft Forms',
-    desc: 'Integrated with Microsoft 365, great for institutions.',
-    color: '#0078d4',
-    url: 'https://forms.microsoft.com',
-    emoji: '🏢',
-  },
+  { name: 'Google Forms', desc: 'Free, unlimited responses, Google account required.', color: '#4285f4', url: 'https://forms.google.com/create' },
+  { name: 'Tally.so', desc: 'Free, unlimited responses, no sign-up required to fill.', color: '#2c2c2c', url: 'https://tally.so' },
+  { name: 'Typeform', desc: 'Beautiful conversational forms, free tier available.', color: '#262627', url: 'https://www.typeform.com' },
+  { name: 'Microsoft Forms', desc: 'Integrated with Microsoft 365, great for institutions.', color: '#0078d4', url: 'https://forms.microsoft.com' },
 ];
 
-// ─── page component ─────────────────────────────────────────────────────────
+const FIELD_TYPES: { value: SurveyField['type']; label: string }[] = [
+  { value: 'text', label: 'Text' },
+  { value: 'textarea', label: 'Text Area' },
+  { value: 'number', label: 'Number' },
+  { value: 'email', label: 'Email' },
+  { value: 'date', label: 'Date' },
+  { value: 'select', label: 'Select' },
+  { value: 'radio', label: 'Radio' },
+  { value: 'checkbox', label: 'Checkbox' },
+  { value: 'rating', label: 'Rating' },
+];
+
+function SurveyFieldPreview({ field }: { field: SurveyField }) {
+  const { token } = theme.useToken();
+
+  return (
+    <div>
+      <label style={{ display: 'block', fontSize: 14, fontWeight: 500, marginBottom: 6, color: token.colorTextSecondary }}>
+        {field.label}
+        {field.required && <Text type="danger"> *</Text>}
+      </label>
+      {(field.type === 'text' || field.type === 'email' || field.type === 'date') && (
+        <Input type={field.type} placeholder={field.placeholder} disabled />
+      )}
+      {field.type === 'number' && (
+        <Input type="number" placeholder={field.placeholder} disabled />
+      )}
+      {field.type === 'textarea' && (
+        <Input.TextArea placeholder={field.placeholder} rows={3} disabled />
+      )}
+      {field.type === 'select' && (
+        <Select disabled style={{ width: '100%' }} placeholder="Select…" options={field.options?.map((o) => ({ value: o, label: o }))} />
+      )}
+      {field.type === 'radio' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {field.options?.map((o) => (
+            <label key={o} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input type="radio" disabled /> <Text type="secondary">{o}</Text>
+            </label>
+          ))}
+        </div>
+      )}
+      {field.type === 'checkbox' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {field.options?.map((o) => (
+            <label key={o} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input type="checkbox" disabled /> <Text type="secondary">{o}</Text>
+            </label>
+          ))}
+        </div>
+      )}
+      {field.type === 'rating' && (
+        <Space>
+          {Array.from({ length: field.max || 5 }, (_, i) => (
+            <span key={i} style={{ fontSize: 24, color: i < 3 ? token.colorWarning : token.colorBorder }}>★</span>
+          ))}
+        </Space>
+      )}
+    </div>
+  );
+}
 
 export default function SurveyGeneratorPage() {
+  const { token } = theme.useToken();
   const [goal, setGoal] = useState('');
   const [context, setContext] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -116,18 +161,18 @@ export default function SurveyGeneratorPage() {
   const [copied, setCopied] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
 
-  // saved surveys sidebar
   const [saved, setSaved] = useState<SavedSurvey[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedId, setSavedId] = useState<number | null>(null);
 
-  // share panel
   const [shareOpen, setShareOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  // ── fetch saved surveys ──────────────────────────────────────────────────
+
+  const [editingFields, setEditingFields] = useState(false);
+
   const fetchSaved = useCallback(async () => {
     setLoadingSaved(true);
     try {
@@ -139,7 +184,6 @@ export default function SurveyGeneratorPage() {
 
   useEffect(() => { fetchSaved(); }, [fetchSaved]);
 
-  // ── actions ──────────────────────────────────────────────────────────────
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
     if (!goal.trim() || generating) return;
@@ -148,6 +192,7 @@ export default function SurveyGeneratorPage() {
     setPreviewMode(false);
     setSavedId(null);
     setShareOpen(false);
+    setEditingFields(false);
     try {
       const res = await api.post('/ai/survey/generate', {
         goal: goal.trim(),
@@ -156,7 +201,7 @@ export default function SurveyGeneratorPage() {
       setSurvey(res.data.data);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      alert(msg || 'Survey generation failed.');
+      message.error(msg || 'Survey generation failed.');
     } finally {
       setGenerating(false);
     }
@@ -173,9 +218,10 @@ export default function SurveyGeneratorPage() {
         schema: survey,
       });
       setSavedId(data.data.id);
+      message.success('Survey saved.');
       await fetchSaved();
     } catch {
-      alert('Failed to save survey.');
+      message.error('Failed to save survey.');
     } finally {
       setSaving(false);
     }
@@ -190,6 +236,7 @@ export default function SurveyGeneratorPage() {
     a.download = `${survey.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
     a.click();
     URL.revokeObjectURL(a.href);
+    message.success('HTML downloaded.');
   }
 
   async function copyJSON() {
@@ -197,6 +244,7 @@ export default function SurveyGeneratorPage() {
     await navigator.clipboard.writeText(JSON.stringify(survey, null, 2));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    message.success('JSON copied to clipboard.');
   }
 
   async function copyEmbed() {
@@ -228,441 +276,449 @@ export default function SurveyGeneratorPage() {
   }
 
   function loadSavedSurvey(s: SavedSurvey & { schema?: GeneratedSurvey }) {
-    // schema stored as GeneratedSurvey inside the saved row - load from backend metadata
     setGoal(s.goal ?? '');
     setSavedId(s.id);
     setPreviewMode(false);
     setShareOpen(false);
-    // We only have metadata from the list endpoint; for the full schema we'd need GET /api/surveys/:id
-    // For now, show a toast indicating it's already saved
-    alert(`"${s.title}" is already saved. Re-generate to get a fresh copy.`);
+    setEditingFields(false);
+    message.info(`"${s.title}" is already saved. Re-generate to get a fresh copy.`);
   }
 
   async function deleteSaved(id: number) {
-    if (!confirm('Remove this saved survey?')) return;
     try {
       await api.delete(`/surveys/${id}`);
       setSaved((prev) => prev.filter((s) => s.id !== id));
       if (savedId === id) setSavedId(null);
+      message.success('Survey deleted.');
     } catch {
-      alert('Failed to delete.');
+      message.error('Failed to delete.');
     }
   }
 
-  // ─── preview mode ────────────────────────────────────────────────────────
+  function addField() {
+    if (!survey) return;
+    const newField: SurveyField = {
+      id: `f_${Date.now()}`,
+      type: 'text',
+      label: 'New Field',
+      placeholder: '',
+      required: false,
+    };
+    setSurvey({ ...survey, fields: [...survey.fields, newField] });
+  }
+
+  function removeField(fieldId: string) {
+    if (!survey) return;
+    setSurvey({ ...survey, fields: survey.fields.filter((f) => f.id !== fieldId) });
+  }
+
+  function updateField(fieldId: string, updates: Partial<SurveyField>) {
+    if (!survey) return;
+    setSurvey({
+      ...survey,
+      fields: survey.fields.map((f) => f.id === fieldId ? { ...f, ...updates } : f),
+    });
+  }
+
+  function moveField(fieldId: string, direction: 'up' | 'down') {
+    if (!survey) return;
+    const idx = survey.fields.findIndex((f) => f.id === fieldId);
+    if (idx < 0) return;
+    if (direction === 'up' && idx === 0) return;
+    if (direction === 'down' && idx === survey.fields.length - 1) return;
+    const newFields = [...survey.fields];
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    [newFields[idx], newFields[swapIdx]] = [newFields[swapIdx], newFields[idx]];
+    setSurvey({ ...survey, fields: newFields });
+  }
+
   if (previewMode && survey) {
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
-        <button
+      <div style={{ maxWidth: 640, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <Button
+          type="link"
+          icon={<ArrowLeftOutlined />}
           onClick={() => setPreviewMode(false)}
-          className="flex items-center gap-1.5 text-sm transition-colors"
-          style={{ color: 'var(--ag-text2)' }}
-          onMouseOver={(e) => (e.currentTarget.style.color = 'var(--ag-text)')}
-          onMouseOut={(e) => (e.currentTarget.style.color = 'var(--ag-text2)')}
         >
-          <ArrowLeft className="w-4 h-4" /> Back to editor
-        </button>
-        <div className="ag-card p-6 space-y-6">
-          <div>
-            <h2 className="text-xl font-bold" style={{ color: 'var(--ag-text)' }}>{survey.title}</h2>
-            <p className="text-sm mt-1" style={{ color: 'var(--ag-text2)' }}>{survey.description}</p>
-          </div>
-          <div className="space-y-5">
+          Back to editor
+        </Button>
+        <Card>
+          <Title level={4}>{survey.title}</Title>
+          <Paragraph type="secondary">{survey.description}</Paragraph>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {survey.fields.map((field) => <SurveyFieldPreview key={field.id} field={field} />)}
           </div>
-          <button
-            type="button"
-            className="w-full px-4 py-2.5 text-sm font-medium rounded-lg opacity-50 cursor-not-allowed text-white"
-            style={{ background: 'var(--ag-accent)' }}
-          >
+          <Button type="primary" block disabled style={{ marginTop: 24, opacity: 0.5 }}>
             Submit (Preview Only)
-          </button>
-        </div>
+          </Button>
+        </Card>
       </div>
     );
   }
 
-  // ─── main view ───────────────────────────────────────────────────────────
-  return (
-    <div className="flex gap-5 items-start">
-      {/* ── Saved surveys sidebar ── */}
-      <aside
-        className="hidden lg:flex flex-col w-60 shrink-0 rounded-xl overflow-hidden"
-        style={{ background: 'var(--ag-card)', border: '1px solid var(--ag-border)' }}
-      >
-        <div
-          className="px-4 py-3 flex items-center gap-2"
-          style={{ borderBottom: '1px solid var(--ag-border)' }}
-        >
-          <BookMarked className="w-4 h-4" style={{ color: 'var(--ag-accent)' }} />
-          <span className="text-sm font-semibold" style={{ color: 'var(--ag-text)' }}>Saved Surveys</span>
-        </div>
-        <div className="flex-1 overflow-y-auto p-2 space-y-1 min-h-[120px]">
-          {loadingSaved ? (
-            <p className="text-xs px-2 py-3" style={{ color: 'var(--ag-text3)' }}>Loading…</p>
-          ) : saved.length === 0 ? (
-            <p className="text-xs px-2 py-3" style={{ color: 'var(--ag-text3)' }}>No saved surveys yet.</p>
-          ) : (
-            saved.map((s) => (
-              <div
-                key={s.id}
-                className="flex items-start gap-2 px-2 py-2 rounded-lg cursor-pointer group"
-                style={{
-                  background: savedId === s.id ? 'var(--ag-accent)15' : 'transparent',
-                  border: savedId === s.id ? '1px solid var(--ag-accent)33' : '1px solid transparent',
-                }}
-                onClick={() => loadSavedSurvey(s)}
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate" style={{ color: 'var(--ag-text)' }}>{s.title}</p>
-                  <p className="text-[10px] mt-0.5" style={{ color: 'var(--ag-text3)' }}>
-                    {new Date(s.created_at).toLocaleDateString()}
-                  </p>
+  const tabItems = [
+    {
+      key: 'generate',
+      label: <span><ThunderboltOutlined /> Generate</span>,
+      children: (
+        <Row gutter={[24, 24]}>
+          <Col xs={24} lg={14}>
+            <Card>
+              <div style={{ marginBottom: 16 }}>
+                <Text strong style={{ display: 'block', marginBottom: 4, fontSize: 14 }}>
+                  How to use
+                </Text>
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  Describe your survey goal below and the AI will generate a complete survey form with
+                  relevant fields. You can then edit, preview, download, or share the result.
+                </Text>
+              </div>
+              <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div>
+                  <Text strong style={{ display: 'block', marginBottom: 4 }}>
+                    Survey Goal <Text type="danger">*</Text>
+                  </Text>
+                  <Input.TextArea
+                    value={goal}
+                    onChange={(e) => setGoal(e.target.value)}
+                    rows={3}
+                    placeholder='e.g. "Collect feedback from alumni about employment status and satisfaction with ISET education"'
+                  />
                 </div>
-                <button
-                  onClick={(e) => { e.stopPropagation(); deleteSaved(s.id); }}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded"
-                  style={{ color: 'var(--ag-text3)' }}
+                <div>
+                  <Text strong style={{ display: 'block', marginBottom: 4 }}>
+                    Additional Context <Text type="secondary">(optional)</Text>
+                  </Text>
+                  <Input
+                    value={context}
+                    onChange={(e) => setContext(e.target.value)}
+                    placeholder="e.g. Target audience: 2020-2024 graduates, bilingual French/Arabic"
+                  />
+                </div>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  icon={<ThunderboltOutlined />}
+                  loading={generating}
+                  disabled={generating || !goal.trim()}
+                  size="large"
+                  block
                 >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-      </aside>
+                  {generating ? 'Generating…' : 'Generate Survey'}
+                </Button>
+              </form>
+            </Card>
+          </Col>
 
-      {/* ── Main content ── */}
-      <div className="flex-1 min-w-0 space-y-5">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--ag-text)' }}>
-            <ClipboardList className="w-6 h-6" style={{ color: 'var(--ag-accent)' }} />
-            AI Survey Generator
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--ag-text2)' }}>
-            Describe your survey goal and AI will generate a professional survey form.
-          </p>
-        </div>
-
-        {/* Generation form */}
-        <form onSubmit={handleGenerate} className="ag-card p-5 space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--ag-text2)' }}>
-              Survey Goal <span style={{ color: 'var(--ag-red)' }}>*</span>
-            </label>
-            <textarea
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              rows={3}
-              placeholder='e.g. "Collect feedback from alumni about employment status and satisfaction with ISET education"'
-              className="ag-input w-full px-3 py-2 text-sm resize-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--ag-text2)' }}>
-              Additional Context <span style={{ color: 'var(--ag-text3)' }}>(optional)</span>
-            </label>
-            <input
-              type="text"
-              value={context}
-              onChange={(e) => setContext(e.target.value)}
-              placeholder="e.g. Target audience: 2020-2024 graduates, bilingual French/Arabic"
-              className="ag-input w-full px-3 py-2.5 text-sm"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={generating || !goal.trim()}
-            className="ag-btn-primary flex items-center gap-2 px-5 py-2.5 text-sm"
-          >
-            {generating
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</>
-              : <><Wand2 className="w-4 h-4" /> Generate Survey</>}
-          </button>
-        </form>
-
-        {/* ── Survey result ── */}
-        {survey && (
-          <div className="space-y-4">
-            {/* Survey header card */}
-            <div className="ag-card p-5">
-              <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                  <h2 className="text-lg font-bold" style={{ color: 'var(--ag-text)' }}>{survey.title}</h2>
-                  <p className="text-sm mt-1" style={{ color: 'var(--ag-text2)' }}>{survey.description}</p>
-                  <p className="text-xs mt-2" style={{ color: 'var(--ag-text3)' }}>
-                    {survey.fields.length} fields generated
-                    {savedId && <span className="ml-2 text-green-500">· Saved ✓</span>}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2 shrink-0">
-                  <button
-                    onClick={() => setPreviewMode(true)}
-                    className="ag-btn-ghost flex items-center gap-1.5 px-3 py-2 text-xs"
-                  >
-                    <Eye className="w-3.5 h-3.5" /> Preview
-                  </button>
-                  <button
-                    onClick={copyJSON}
-                    className="ag-btn-ghost flex items-center gap-1.5 px-3 py-2 text-xs"
-                  >
-                    {copied
-                      ? <><Check className="w-3.5 h-3.5" style={{ color: 'var(--ag-green)' }} /> Copied!</>
-                      : <><Copy className="w-3.5 h-3.5" /> Copy JSON</>}
-                  </button>
-                  <button
-                    onClick={handleDownloadHtml}
-                    className="ag-btn-ghost flex items-center gap-1.5 px-3 py-2 text-xs"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Download HTML
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={saving || !!savedId}
-                    className="ag-btn-primary flex items-center gap-1.5 px-3 py-2 text-xs disabled:opacity-50"
-                  >
-                    {saving
-                      ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      : <Save className="w-3.5 h-3.5" />}
-                    {savedId ? 'Saved' : saving ? 'Saving…' : 'Save'}
-                  </button>
-                  <button
-                    onClick={() => setShareOpen((v) => !v)}
-                    className="ag-btn-ghost flex items-center gap-1.5 px-3 py-2 text-xs"
-                  >
-                    <Share2 className="w-3.5 h-3.5" />
-                    Share
-                    {shareOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* ── Share / Embed panel (Issue 14 + 16) ── */}
-            {shareOpen && (
-              <div className="ag-card p-5 space-y-5">
-                <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--ag-text)' }}>
-                  <Share2 className="w-4 h-4" style={{ color: 'var(--ag-accent)' }} />
-                  Share &amp; Embed
-                </h3>
-
-                {/* URL input for QR */}
-                <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--ag-text2)' }}>
-                    Paste your hosted survey URL to generate a QR code
-                  </label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: 'var(--ag-text3)' }} />
-                      <input
-                        type="url"
-                        value={shareUrl}
-                        onChange={(e) => setShareUrl(e.target.value)}
-                        placeholder="https://your-domain.com/survey.html"
-                        className="ag-input w-full pl-9 pr-3 py-2 text-sm"
-                      />
-                    </div>
-                    {shareUrl.trim() && (
-                      <button onClick={copyLink} className="ag-btn-ghost flex items-center gap-1.5 px-3 py-2 text-xs shrink-0">
-                        {copiedLink ? <Check className="w-3.5 h-3.5" style={{ color: 'var(--ag-green)' }} /> : <Copy className="w-3.5 h-3.5" />}
-                        Copy link
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-xs mt-1.5" style={{ color: 'var(--ag-text3)' }}>
-                    First, export the HTML file below, host it somewhere (e.g. GitHub Pages, Netlify), then paste the public URL here.
-                  </p>
-                </div>
-
-                {/* QR + embed snippet */}
-                <div className="flex flex-col sm:flex-row gap-5">
-                  {/* QR code */}
-                  <div className="flex flex-col items-center gap-3">
+          <Col xs={24} lg={10}>
+            <Card
+              title={<Space><BookOutlined style={{ color: token.colorPrimary }} /> Saved Surveys</Space>}
+              styles={{ body: { padding: loadingSaved ? 24 : 0 } }}
+            >
+              {loadingSaved ? (
+                <Spin style={{ display: 'block', margin: '16px auto' }} />
+              ) : saved.length === 0 ? (
+                <Empty description="No saved surveys yet." image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ padding: 24 }} />
+              ) : (
+                <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+                  {saved.map((s) => (
                     <div
-                      className="rounded-xl p-3"
-                      style={{ background: '#fff', border: '1px solid var(--ag-border)', opacity: shareUrl.trim() ? 1 : 0.2 }}
+                      key={s.id}
+                      style={{
+                        padding: '10px 16px',
+                        cursor: 'pointer',
+                        backgroundColor: savedId === s.id ? token.colorPrimaryBg : 'transparent',
+                        borderLeft: savedId === s.id ? `3px solid ${token.colorPrimary}` : '3px solid transparent',
+                        transition: 'all 0.2s',
+                      }}
+                      onClick={() => loadSavedSurvey(s)}
                     >
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl.trim() || 'https://example.com')}`}
-                        alt="QR code"
-                        width={200}
-                        height={200}
-                        className="block"
-                      />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <Text strong ellipsis style={{ display: 'block', fontSize: 13 }}>{s.title}</Text>
+                          <Text type="secondary" style={{ fontSize: 11 }}>{s.goal?.slice(0, 50)}{s.goal && s.goal.length > 50 ? '…' : ''}</Text>
+                          <br />
+                          <Text type="secondary" style={{ fontSize: 10 }}>{new Date(s.created_at).toLocaleDateString()}</Text>
+                        </div>
+                        <Popconfirm title="Remove this saved survey?" onConfirm={() => deleteSaved(s.id)} okButtonProps={{ danger: true }}>
+                          <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={(e) => e.stopPropagation()} />
+                        </Popconfirm>
+                      </div>
                     </div>
-                    {shareUrl.trim() && (
-                      <button
-                        onClick={downloadQrPng}
-                        className="ag-btn-ghost flex items-center gap-1.5 px-3 py-2 text-xs"
-                      >
-                        <Download className="w-3.5 h-3.5" /> Download QR PNG
-                      </button>
-                    )}
-                    {!shareUrl.trim() && (
-                      <p className="text-xs" style={{ color: 'var(--ag-text3)' }}>Enter URL to generate QR</p>
-                    )}
-                  </div>
-
-                  {/* Embed snippet */}
-                  <div className="flex-1 space-y-2">
-                    <p className="text-xs font-medium" style={{ color: 'var(--ag-text2)' }}>
-                      Embed snippet — paste into your LMS or website:
-                    </p>
-                    <pre
-                      className="text-xs p-3 rounded-lg overflow-x-auto leading-relaxed"
-                      style={{ background: 'var(--ag-sidebar)', color: '#7dd3fc', border: '1px solid var(--ag-border)' }}
-                    >
-{`<iframe
-  src="${shareUrl.trim() || 'YOUR_SURVEY_URL'}"
-  width="100%" height="600"
-  style="border:none; border-radius:8px;"
-  title="${survey.title}"
-></iframe>`}
-                    </pre>
-                    <button
-                      onClick={copyEmbed}
-                      className="ag-btn-ghost flex items-center gap-1.5 px-3 py-2 text-xs"
-                    >
-                      {copiedEmbed
-                        ? <><Check className="w-3.5 h-3.5" style={{ color: 'var(--ag-green)' }} /> Copied!</>
-                        : <><Copy className="w-3.5 h-3.5" /> Copy snippet</>}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ── Platform suggestions (Issue 15) ── */}
-            <div className="ag-card p-5">
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--ag-text)' }}>
-                <ExternalLink className="w-4 h-4" style={{ color: 'var(--ag-accent)' }} />
-                Publish on a free platform
-              </h3>
-              <p className="text-xs mb-4" style={{ color: 'var(--ag-text2)' }}>
-                Copy your questions into one of these free survey platforms for easy response collection.
-              </p>
-              <div className="grid sm:grid-cols-2 gap-3">
-                {PLATFORMS.map((p) => (
-                  <a
-                    key={p.name}
-                    href={p.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-start gap-3 p-3 rounded-xl transition hover:-translate-y-0.5"
-                    style={{ background: 'var(--ag-bg)', border: '1px solid var(--ag-border)', textDecoration: 'none' }}
-                  >
-                    <span className="text-xl shrink-0 mt-0.5">{p.emoji}</span>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold" style={{ color: p.color }}>{p.name}</p>
-                      <p className="text-[11px] mt-0.5 leading-snug" style={{ color: 'var(--ag-text3)' }}>{p.desc}</p>
-                    </div>
-                    <ExternalLink className="w-3 h-3 shrink-0 mt-0.5 ml-auto" style={{ color: 'var(--ag-text3)' }} />
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            {/* Fields table */}
-            <div className="ag-card overflow-hidden">
-              <div className="px-5 py-3 ag-table-head">
-                <h3 className="text-sm font-medium">Survey Fields</h3>
-              </div>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="ag-table-head">
-                    <th className="px-5 py-2.5 text-left">#</th>
-                    <th className="px-5 py-2.5 text-left">Label</th>
-                    <th className="px-5 py-2.5 text-left">Type</th>
-                    <th className="px-5 py-2.5 text-left">Required</th>
-                    <th className="px-5 py-2.5 text-left">Options</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {survey.fields.map((f, i) => (
-                    <tr key={f.id} className="ag-table-row">
-                      <td className="px-5 py-2.5" style={{ color: 'var(--ag-text3)' }}>{i + 1}</td>
-                      <td className="px-5 py-2.5" style={{ color: 'var(--ag-text)' }}>{f.label}</td>
-                      <td className="px-5 py-2.5"><span className="ag-badge">{f.type}</span></td>
-                      <td className="px-5 py-2.5" style={{ color: 'var(--ag-text2)' }}>{f.required ? 'Yes' : 'No'}</td>
-                      <td className="px-5 py-2.5 max-w-[200px] truncate" style={{ color: 'var(--ag-text3)', fontSize: '0.7rem' }}>
-                        {f.options?.join(', ') || '—'}
-                      </td>
-                    </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              )}
+            </Card>
+          </Col>
+        </Row>
+      ),
+    },
+    ...(survey
+      ? [
+          {
+            key: 'result',
+            label: <span><FileTextOutlined /> Result</span>,
+            children: (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <Card>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                    <div>
+                      <Title level={4} style={{ margin: 0 }}>{survey.title}</Title>
+                      <Paragraph type="secondary" style={{ margin: '4px 0 0' }}>{survey.description}</Paragraph>
+                      <Text type="secondary" style={{ fontSize: 12, marginTop: 8, display: 'block' }}>
+                        {survey.fields.length} fields generated
+                        {savedId && <Tag color="success" style={{ marginLeft: 8 }}>Saved</Tag>}
+                      </Text>
+                    </div>
+                    <Space wrap>
+                      <Button icon={<EyeOutlined />} onClick={() => setPreviewMode(true)}>Preview</Button>
+                      <Button icon={copied ? <CheckOutlined /> : <CopyOutlined />} onClick={copyJSON}>
+                        {copied ? 'Copied!' : 'Copy JSON'}
+                      </Button>
+                      <Button icon={<DownloadOutlined />} onClick={handleDownloadHtml}>Download HTML</Button>
+                      <Button type="primary" icon={<SaveOutlined />} onClick={handleSave} loading={saving} disabled={!!savedId}>
+                        {savedId ? 'Saved' : saving ? 'Saving…' : 'Save'}
+                      </Button>
+                      <Button icon={<ShareAltOutlined />} onClick={() => setShareOpen((v) => !v)}>Share</Button>
+                    </Space>
+                  </div>
+                </Card>
 
-            {/* JSON schema */}
-            <div className="ag-card overflow-hidden">
-              <div className="px-5 py-3 ag-table-head">
-                <h3 className="text-sm font-medium">JSON Schema</h3>
+                {shareOpen && (
+                  <Card>
+                    <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <ShareAltOutlined style={{ color: token.colorPrimary }} /> Share & Embed
+                    </Title>
+
+                    <div style={{ marginBottom: 16 }}>
+                      <Text strong style={{ display: 'block', marginBottom: 4, fontSize: 12 }}>
+                        Paste your hosted survey URL to generate a QR code
+                      </Text>
+                      <Space.Compact style={{ width: '100%' }}>
+                        <Input
+                          prefix={<LinkOutlined />}
+                          value={shareUrl}
+                          onChange={(e) => setShareUrl(e.target.value)}
+                          placeholder="https://your-domain.com/survey.html"
+                        />
+                        {shareUrl.trim() && (
+                          <Button icon={copiedLink ? <CheckOutlined /> : <CopyOutlined />} onClick={copyLink}>
+                            {copiedLink ? 'Copied!' : 'Copy link'}
+                          </Button>
+                        )}
+                      </Space.Compact>
+                      <Text type="secondary" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
+                        First, export the HTML file, host it (e.g. GitHub Pages, Netlify), then paste the public URL here.
+                      </Text>
+                    </div>
+
+                    <Row gutter={24}>
+                      <Col style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                        <div style={{ borderRadius: 12, padding: 12, backgroundColor: '#fff', border: `1px solid ${token.colorBorder}`, opacity: shareUrl.trim() ? 1 : 0.2 }}>
+                          <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl.trim() || 'https://example.com')}`}
+                            alt="QR code"
+                            width={200}
+                            height={200}
+                          />
+                        </div>
+                        {shareUrl.trim() ? (
+                          <Button size="small" icon={<DownloadOutlined />} onClick={downloadQrPng}>Download QR PNG</Button>
+                        ) : (
+                          <Text type="secondary" style={{ fontSize: 12 }}>Enter URL to generate QR</Text>
+                        )}
+                      </Col>
+                      <Col flex="auto" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <Text strong style={{ fontSize: 12 }}>Embed snippet — paste into your LMS or website:</Text>
+                        <pre style={{
+                          fontSize: 12, padding: 12, borderRadius: 8,
+                          backgroundColor: token.colorBgContainer, overflowX: 'auto',
+                          border: `1px solid ${token.colorBorder}`,
+                        }}>
+                          {`<iframe\n src="${shareUrl.trim() || 'YOUR_SURVEY_URL'}"\n width="100%" height="600"\n style="border:none; border-radius:8px;"\n title="${survey.title}"\n></iframe>`}
+                        </pre>
+                        <Button size="small" icon={copiedEmbed ? <CheckOutlined /> : <CopyOutlined />} onClick={copyEmbed}>
+                          {copiedEmbed ? 'Copied!' : 'Copy snippet'}
+                        </Button>
+                      </Col>
+                    </Row>
+                  </Card>
+                )}
+
+                <Card
+                  title={
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Space><EditOutlined style={{ color: token.colorPrimary }} /> Survey Fields</Space>
+                      <Space>
+                        <Button
+                          size="small"
+                          type={editingFields ? 'primary' : 'default'}
+                          icon={<EditOutlined />}
+                          onClick={() => setEditingFields((v) => !v)}
+                        >
+                          {editingFields ? 'Done Editing' : 'Edit Fields'}
+                        </Button>
+                        {editingFields && (
+                          <Button size="small" icon={<PlusOutlined />} onClick={addField}>Add Field</Button>
+                        )}
+                      </Space>
+                    </div>
+                  }
+                  size="small"
+                >
+                  {editingFields ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {survey.fields.map((field, idx) => (
+                        <Card
+                          key={field.id}
+                          size="small"
+                          style={{ backgroundColor: token.colorBgContainer }}
+                        >
+                          <Row gutter={[12, 8]} align="middle">
+                            <Col flex="none">
+                              <Space direction="vertical" size={2}>
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  icon={<span style={{ fontSize: 10 }}>▲</span>}
+                                  disabled={idx === 0}
+                                  onClick={() => moveField(field.id, 'up')}
+                                />
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  icon={<span style={{ fontSize: 10 }}>▼</span>}
+                                  disabled={idx === survey.fields.length - 1}
+                                  onClick={() => moveField(field.id, 'down')}
+                                />
+                              </Space>
+                            </Col>
+                            <Col xs={24} sm={8} md={6}>
+                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Label</Text>
+                              <Input
+                                size="small"
+                                value={field.label}
+                                onChange={(e) => updateField(field.id, { label: e.target.value })}
+                              />
+                            </Col>
+                            <Col xs={12} sm={6} md={4}>
+                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Type</Text>
+                              <Select
+                                size="small"
+                                style={{ width: '100%' }}
+                                value={field.type}
+                                onChange={(v) => updateField(field.id, { type: v as SurveyField['type'] })}
+                                options={FIELD_TYPES}
+                              />
+                            </Col>
+                            <Col xs={12} sm={6} md={4}>
+                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Placeholder</Text>
+                              <Input
+                                size="small"
+                                value={field.placeholder ?? ''}
+                                onChange={(e) => updateField(field.id, { placeholder: e.target.value })}
+                              />
+                            </Col>
+                            <Col xs={12} sm={4} md={3}>
+                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Required</Text>
+                              <Select
+                                size="small"
+                                style={{ width: '100%' }}
+                                value={field.required ? 'yes' : 'no'}
+                                onChange={(v) => updateField(field.id, { required: v === 'yes' })}
+                                options={[{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }]}
+                              />
+                            </Col>
+                            <Col xs={24} sm={12} md={5}>
+                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
+                                Options <Text type="secondary">(comma-sep)</Text>
+                              </Text>
+                              <Input
+                                size="small"
+                                value={(field.options ?? []).join(', ')}
+                                onChange={(e) => {
+                                  const opts = e.target.value.split(',').map((o) => o.trim()).filter(Boolean);
+                                  updateField(field.id, { options: opts.length ? opts : undefined });
+                                }}
+                                disabled={!['select', 'radio', 'checkbox'].includes(field.type)}
+                              />
+                            </Col>
+                            <Col flex="none">
+                              <Button
+                                type="text"
+                                danger
+                                size="small"
+                                icon={<MinusCircleOutlined />}
+                                onClick={() => removeField(field.id)}
+                                style={{ marginTop: 18 }}
+                              />
+                            </Col>
+                          </Row>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <Table
+                      dataSource={survey.fields.map((f, i) => ({ key: f.id, ...f, idx: i }))}
+                      pagination={false}
+                      size="small"
+                      columns={[
+                        { title: '#', dataIndex: 'idx', width: 40, render: (i: number) => i + 1 },
+                        { title: 'Label', dataIndex: 'label', ellipsis: true },
+                        { title: 'Type', dataIndex: 'type', width: 100, render: (v: string) => <Tag>{v}</Tag> },
+                        { title: 'Required', dataIndex: 'required', width: 80, render: (v: boolean) => v ? <Tag color="red">Yes</Tag> : <Tag>No</Tag> },
+                        { title: 'Options', dataIndex: 'options', render: (v: string[] | undefined) => v?.join(', ') || '—' },
+                      ]}
+                    />
+                  )}
+                </Card>
+
+                <Card title={<Space><ExportOutlined style={{ color: token.colorPrimary }} /> Publish on a free platform</Space>}>
+                  <Paragraph type="secondary" style={{ fontSize: 12 }}>
+                    Copy your questions into one of these free survey platforms for easy response collection.
+                  </Paragraph>
+                  <Row gutter={[12, 12]}>
+                    {PLATFORMS.map((p) => (
+                      <Col xs={12} md={6} key={p.name}>
+                        <a href={p.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                          <Card hoverable size="small" style={{ textAlign: 'center' }}>
+                            <Space direction="vertical" size={4}>
+                              <Text strong style={{ color: p.color }}>{p.name}</Text>
+                              <Text type="secondary" style={{ fontSize: 11 }}>{p.desc}</Text>
+                            </Space>
+                          </Card>
+                        </a>
+                      </Col>
+                    ))}
+                  </Row>
+                </Card>
+
+                <Card title="JSON Schema" size="small">
+                  <pre style={{
+                    padding: 16, fontSize: 12, overflowX: 'auto', maxHeight: 256,
+                    backgroundColor: token.colorBgContainer, color: token.colorSuccess,
+                    borderRadius: 8,
+                  }}>
+                    {JSON.stringify(survey, null, 2)}
+                  </pre>
+                </Card>
               </div>
-              <pre className="p-4 text-xs overflow-x-auto max-h-64 font-mono" style={{ color: 'var(--ag-green)' }}>
-                {JSON.stringify(survey, null, 2)}
-              </pre>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── field preview component ─────────────────────────────────────────────────
-
-function SurveyFieldPreview({ field }: { field: SurveyField }) {
-  const labelStyle = { color: 'var(--ag-text2)' };
-  const inputClass = 'ag-input w-full px-3 py-2 text-sm';
+            ),
+          },
+        ]
+      : []),
+  ];
 
   return (
-    <div>
-      <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
-        {field.label}
-        {field.required && <span className="ml-0.5" style={{ color: 'var(--ag-red)' }}>*</span>}
-      </label>
-      {(field.type === 'text' || field.type === 'email' || field.type === 'date') && (
-        <input type={field.type} placeholder={field.placeholder} className={inputClass} disabled />
-      )}
-      {field.type === 'number' && (
-        <input type="number" placeholder={field.placeholder} min={field.min} max={field.max} className={inputClass} disabled />
-      )}
-      {field.type === 'textarea' && (
-        <textarea placeholder={field.placeholder} rows={3} className={`${inputClass} resize-none`} disabled />
-      )}
-      {field.type === 'select' && (
-        <select className={inputClass} disabled>
-          <option>Select…</option>
-          {field.options?.map((o) => <option key={o}>{o}</option>)}
-        </select>
-      )}
-      {field.type === 'radio' && (
-        <div className="space-y-1.5">
-          {field.options?.map((o) => (
-            <label key={o} className="flex items-center gap-2 text-sm" style={{ color: 'var(--ag-text2)' }}>
-              <input type="radio" name={field.id} disabled style={{ accentColor: 'var(--ag-accent)' }} /> {o}
-            </label>
-          ))}
-        </div>
-      )}
-      {field.type === 'checkbox' && (
-        <div className="space-y-1.5">
-          {field.options?.map((o) => (
-            <label key={o} className="flex items-center gap-2 text-sm" style={{ color: 'var(--ag-text2)' }}>
-              <input type="checkbox" disabled style={{ accentColor: 'var(--ag-accent)' }} className="rounded" /> {o}
-            </label>
-          ))}
-        </div>
-      )}
-      {field.type === 'rating' && (
-        <div className="flex gap-1">
-          {Array.from({ length: field.max || 5 }, (_, i) => (
-            <Star key={i} className={`w-6 h-6 ${i < 3 ? 'fill-current' : ''}`}
-              style={{ color: i < 3 ? 'var(--ag-amber)' : 'var(--ag-border)' }} />
-          ))}
-        </div>
-      )}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div>
+        <Title level={3} style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+          <FileTextOutlined style={{ color: token.colorPrimary }} /> AI Survey Generator
+        </Title>
+        <Text type="secondary">Describe your survey goal and AI will generate a professional survey form.</Text>
+      </div>
+
+      <Tabs items={tabItems} defaultActiveKey="generate" />
     </div>
   );
 }

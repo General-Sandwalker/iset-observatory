@@ -1,62 +1,54 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Search, RefreshCw, Plus, Trash2, Save, X,
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
-  ArrowUpDown, ArrowUp, ArrowDown, Settings2, AlertTriangle,
-  Loader2, DatabaseZap,
-} from 'lucide-react';
+  Table, Input, Button, Space, Typography, Spin,
+  Alert, Modal, Form, Select, Tag, Breadcrumb, Row, Col,
+  Tabs, Popconfirm, message, theme, Grid, Tooltip, Empty,
+} from 'antd';
+import type { ColumnsType, TableProps } from 'antd/es/table';
+import {
+  SearchOutlined, ReloadOutlined, PlusOutlined,
+  DeleteOutlined, SaveOutlined, CloseOutlined, SettingOutlined,
+  AlertOutlined, DatabaseOutlined, DownloadOutlined,
+  LinkOutlined, ProfileOutlined, HomeOutlined,
+  FileTextOutlined, UnorderedListOutlined,
+} from '@ant-design/icons';
 import api from '../lib/api';
-import type { Dataset, TableColumn, TablePagination } from '../lib/types';
+import type { Dataset, TableColumn, TablePagination, DataProfile, ForeignLink } from '../lib/types';
 
-// ─── Cell editor ─────────────────────────────────────────────────────────────
-function CellInput({
-  initial,
-  onSave,
-  onCancel,
-}: {
-  initial: string;
-  onSave: (v: string) => void;
-  onCancel: () => void;
-}) {
+const { Text, Title } = Typography;
+const { useBreakpoint } = Grid;
+
+function CellInput({ initial, onSave, onCancel }: { initial: string; onSave: (v: string) => void; onCancel: () => void }) {
   const [val, setVal] = useState(initial);
-  const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => { ref.current?.focus(); ref.current?.select(); }, []);
+  const ref = useRef<Input>(null);
+  useEffect(() => {
+    const inputEl = ref.current?.input;
+    inputEl?.focus();
+    inputEl?.select();
+  }, []);
   return (
-    <div className="flex items-center gap-1 min-w-0">
-      <input
+    <Space.Compact style={{ width: '100%' }}>
+      <Input
         ref={ref}
         value={val}
         onChange={(e) => setVal(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') onSave(val);
-          if (e.key === 'Escape') onCancel();
-        }}
-        className="ag-input py-0.5 px-1.5 text-xs w-full min-w-0"
+        onKeyDown={(e) => { if (e.key === 'Enter') onSave(val); if (e.key === 'Escape') onCancel(); }}
+        size="small"
         style={{ minWidth: 60 }}
       />
-      <button onClick={() => onSave(val)} title="Save"
-        className="shrink-0 text-green-400 hover:text-green-300"><Save className="w-3 h-3" /></button>
-      <button onClick={onCancel} title="Cancel"
-        className="shrink-0 text-red-400 hover:text-red-300"><X className="w-3 h-3" /></button>
-    </div>
+      <Button size="small" type="primary" icon={<SaveOutlined />} onClick={() => onSave(val)} />
+      <Button size="small" danger icon={<CloseOutlined />} onClick={onCancel} />
+    </Space.Compact>
   );
 }
 
-// ─── Schema editor modal ──────────────────────────────────────────────────────
 function SchemaEditor({
-  columns,
-  datasetId,
-  onClose,
-  onChanged,
-}: {
-  columns: TableColumn[];
-  datasetId: string;
-  onClose: () => void;
-  onChanged: () => void;
-}) {
-  const [editing, setEditing] = useState<Record<string, { name: string; type: string }>>(() =>
-    Object.fromEntries(columns.map((c) => [c.column_name, { name: c.column_name, type: c.data_type.toUpperCase() }]))
+  columns, datasetId, onClose, onChanged,
+}: { columns: TableColumn[]; datasetId: string; onClose: () => void; onChanged: () => void }) {
+  const { token } = theme.useToken();
+  const [editing, setEditing] = useState<Record<string, { name: string; type: string }>>(
+    () => Object.fromEntries(columns.map((c) => [c.column_name, { name: c.column_name, type: c.data_type.toUpperCase() }]))
   );
   const [saving, setSaving] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -69,255 +61,274 @@ function SchemaEditor({
     try {
       const nameChanged = target.name !== col.column_name;
       const typeChanged = target.type !== col.data_type.toUpperCase() && target.type !== col.udt_name.toUpperCase();
-      if (nameChanged) {
-        await api.patch(`/datasets/${datasetId}/columns/${col.column_name}/rename`, { newName: target.name });
-      }
+      if (nameChanged) await api.patch(`/datasets/${datasetId}/columns/${col.column_name}/rename`, { newName: target.name });
       const resolvedName = nameChanged ? target.name : col.column_name;
-      if (typeChanged) {
-        await api.patch(`/datasets/${datasetId}/columns/${resolvedName}/type`, { newType: target.type });
-      }
-      if (!nameChanged && !typeChanged) {
-        setSaving(null);
-        return;
-      }
+      if (typeChanged) await api.patch(`/datasets/${datasetId}/columns/${resolvedName}/type`, { newType: target.type });
+      if (!nameChanged && !typeChanged) { setSaving(null); return; }
+      message.success(`Column "${col.column_name}" updated.`);
       onChanged();
     } catch (err: unknown) {
-      setErrors((e) => ({ ...e, [col.column_name]: (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Error' }));
-    } finally {
-      setSaving(null);
-    }
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Error';
+      setErrors((e) => ({ ...e, [col.column_name]: msg }));
+      message.error(msg);
+    } finally { setSaving(null); }
   }
 
+  const schemaColumns = [
+    {
+      title: 'Original',
+      key: 'original',
+      render: (_: unknown, col: TableColumn) => (
+        <Space>
+          <Text code style={{ fontSize: 12 }}>{col.column_name}</Text>
+          <Tag color="blue" style={{ fontSize: 11 }}>{col.data_type}</Tag>
+        </Space>
+      ),
+    },
+    {
+      title: 'New Name',
+      key: 'name',
+      render: (_: unknown, col: TableColumn) => (
+        <Input
+          size="small"
+          style={{ fontFamily: 'monospace' }}
+          value={editing[col.column_name].name}
+          onChange={(e) => setEditing((p) => ({ ...p, [col.column_name]: { ...p[col.column_name], name: e.target.value } }))}
+        />
+      ),
+    },
+    {
+      title: 'New Type',
+      key: 'type',
+      render: (_: unknown, col: TableColumn) => (
+        <Select
+          size="small"
+          style={{ width: 120 }}
+          value={editing[col.column_name].type}
+          onChange={(v) => setEditing((p) => ({ ...p, [col.column_name]: { ...p[col.column_name], type: v } }))}
+          options={TYPES.map((t) => ({ value: t, label: t }))}
+        />
+      ),
+    },
+    {
+      title: '',
+      key: 'action',
+      width: 100,
+      render: (_: unknown, col: TableColumn) => (
+        <Space direction="vertical" size={4}>
+          <Button size="small" type="primary" icon={<SaveOutlined />} loading={saving === col.column_name} onClick={() => applyColumn(col)}>Apply</Button>
+          {errors[col.column_name] && <Text type="danger" style={{ fontSize: 11 }}>{errors[col.column_name]}</Text>}
+        </Space>
+      ),
+    },
+  ];
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.6)' }}>
-      <div className="ag-card w-full max-w-lg max-h-[80vh] flex flex-col"
-        style={{ background: 'var(--ag-card-bg)', border: '1px solid var(--ag-border)' }}>
-        <div className="flex items-center justify-between p-5 shrink-0"
-          style={{ borderBottom: '1px solid var(--ag-border)' }}>
-          <div className="flex items-center gap-2">
-            <Settings2 className="w-4 h-4" style={{ color: 'var(--ag-accent)' }} />
-            <h2 className="font-semibold text-sm" style={{ color: 'var(--ag-text1)' }}>
-              Schema Editor
-            </h2>
-          </div>
-          <button onClick={onClose} className="ag-btn-ghost p-1 rounded"><X className="w-4 h-4" /></button>
-        </div>
-        <div className="overflow-y-auto flex-1 p-4 space-y-3">
-          {columns.filter(c => c.column_name !== 'id').map((col) => {
-            const ed = editing[col.column_name];
-            const isSaving = saving === col.column_name;
-            return (
-              <div key={col.column_name} className="rounded-lg p-3 space-y-2"
-                style={{ background: 'var(--ag-bg)', border: '1px solid var(--ag-border)' }}>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-mono" style={{ color: 'var(--ag-text3)' }}>
-                    {col.column_name}
-                  </span>
-                  <span className="text-xs px-1.5 py-0.5 rounded"
-                    style={{ background: 'var(--ag-accent-lo)', color: 'var(--ag-accent)' }}>
-                    {col.data_type}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    className="ag-input text-xs py-1 flex-1"
-                    value={ed.name}
-                    onChange={(e) => setEditing((p) => ({ ...p, [col.column_name]: { ...p[col.column_name], name: e.target.value } }))}
-                    placeholder="Column name"
-                  />
-                  <select
-                    className="ag-input text-xs py-1 w-32 shrink-0"
-                    value={ed.type}
-                    onChange={(e) => setEditing((p) => ({ ...p, [col.column_name]: { ...p[col.column_name], type: e.target.value } }))}
-                  >
-                    {TYPES.map(t => <option key={t}>{t}</option>)}
-                  </select>
-                  <button
-                    onClick={() => applyColumn(col)}
-                    disabled={isSaving}
-                    className="ag-btn-primary text-xs px-3 py-1 shrink-0 flex items-center gap-1"
-                  >
-                    {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                    Apply
-                  </button>
-                </div>
-                {errors[col.column_name] && (
-                  <p className="text-xs" style={{ color: 'var(--ag-red)' }}>{errors[col.column_name]}</p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        <div className="p-4 shrink-0" style={{ borderTop: '1px solid var(--ag-border)' }}>
-          <button onClick={onClose} className="ag-btn-ghost w-full text-sm py-2">Close</button>
-        </div>
-      </div>
-    </div>
+    <Modal
+      title={<Space><SettingOutlined style={{ color: token.colorPrimary }} /> Schema Editor</Space>}
+      open={true}
+      onCancel={onClose}
+      footer={<Button onClick={onClose}>Close</Button>}
+      width={640}
+    >
+      <Table
+        dataSource={columns.filter((c) => c.column_name !== 'id')}
+        columns={schemaColumns}
+        rowKey="column_name"
+        pagination={false}
+        size="small"
+      />
+    </Modal>
   );
 }
 
-// ─── Add Row modal ────────────────────────────────────────────────────────────
 function AddRowModal({
-  columns,
-  datasetId,
-  onClose,
-  onAdded,
-}: {
-  columns: TableColumn[];
-  datasetId: string;
-  onClose: () => void;
-  onAdded: () => void;
-}) {
-  const editableCols = columns.filter((c) => c.column_name !== 'id');
-  const [form, setForm] = useState<Record<string, string>>(
-    Object.fromEntries(editableCols.map((c) => [c.column_name, ''])),
-  );
+  columns, datasetId, onClose, onAdded,
+}: { columns: TableColumn[]; datasetId: string; onClose: () => void; onAdded: () => void }) {
+  const { token } = theme.useToken();
+  const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const editableCols = columns.filter((c) => c.column_name !== 'id');
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function submit() {
+    const values = form.getFieldsValue();
     setSaving(true);
     setError(null);
     try {
-      await api.post(`/datasets/${datasetId}/rows`, form);
+      await api.post(`/datasets/${datasetId}/rows`, values);
+      message.success('Row added successfully.');
       onAdded();
       onClose();
     } catch (err: unknown) {
-      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to add row.');
-    } finally {
-      setSaving(false);
-    }
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to add row.';
+      setError(msg);
+      message.error(msg);
+    } finally { setSaving(false); }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.6)' }}>
-      <div className="ag-card w-full max-w-md flex flex-col max-h-[80vh]"
-        style={{ background: 'var(--ag-card-bg)', border: '1px solid var(--ag-border)' }}>
-        <div className="flex items-center justify-between p-5 shrink-0"
-          style={{ borderBottom: '1px solid var(--ag-border)' }}>
-          <div className="flex items-center gap-2">
-            <Plus className="w-4 h-4" style={{ color: 'var(--ag-accent)' }} />
-            <h2 className="font-semibold text-sm" style={{ color: 'var(--ag-text1)' }}>Add New Row</h2>
-          </div>
-          <button onClick={onClose} className="ag-btn-ghost p-1 rounded"><X className="w-4 h-4" /></button>
-        </div>
-        <form onSubmit={submit} className="overflow-y-auto flex-1 p-4 space-y-3">
-          {editableCols.map((col) => (
-            <div key={col.column_name}>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--ag-text2)' }}>
-                {col.column_name}
-                <span className="ml-1 font-normal" style={{ color: 'var(--ag-text3)' }}>({col.data_type})</span>
-              </label>
-              <input
-                className="ag-input text-sm py-1.5 w-full"
-                value={form[col.column_name]}
-                onChange={(e) => setForm((f) => ({ ...f, [col.column_name]: e.target.value }))}
-                placeholder={`Enter ${col.column_name}…`}
-              />
-            </div>
-          ))}
-          {error && <p className="text-xs" style={{ color: 'var(--ag-red)' }}>{error}</p>}
-        </form>
-        <div className="p-4 flex gap-3 shrink-0" style={{ borderTop: '1px solid var(--ag-border)' }}>
-          <button onClick={onClose} className="ag-btn-ghost flex-1 text-sm py-2">Cancel</button>
-          <button onClick={submit} disabled={saving}
-            className="ag-btn-primary flex-1 text-sm py-2 flex items-center justify-center gap-2">
-            {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            Add Row
-          </button>
-        </div>
-      </div>
-    </div>
+    <Modal
+      title={<Space><PlusOutlined style={{ color: token.colorPrimary }} /> Add New Row</Space>}
+      open={true}
+      onCancel={onClose}
+      onOk={submit}
+      okText="Add Row"
+      okButtonProps={{ loading: saving }}
+    >
+      <Form form={form} layout="vertical" size="small">
+        {editableCols.map((col) => (
+          <Form.Item key={col.column_name} label={<span>{col.column_name} <Text type="secondary">({col.data_type})</Text></span>} name={col.column_name}>
+            <Input placeholder={`Enter ${col.column_name}…`} />
+          </Form.Item>
+        ))}
+      </Form>
+      {error && <Alert type="error" message={error} showIcon style={{ marginTop: 8 }} />}
+    </Modal>
   );
 }
 
-// ─── Drop table confirm modal ─────────────────────────────────────────────────
-function DropConfirmModal({
-  datasetName,
-  onClose,
-  onConfirm,
-}: {
-  datasetName: string;
-  onClose: () => void;
-  onConfirm: () => void;
-}) {
+function ProfileTab({ datasetId }: { datasetId: string }) {
+  const [profile, setProfile] = useState<DataProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      try {
+        const res = await api.get<{ success: boolean; data: DataProfile[] }>(`/datasets/${datasetId}/profile`);
+        if (!cancelled && res.data.success) setProfile(res.data.data);
+      } catch {
+        if (!cancelled) setError('Failed to load profile data.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [datasetId]);
+
+  if (loading) return <div style={{ padding: 40, textAlign: 'center' }}><Spin size="large" /></div>;
+  if (error) return <Alert type="error" message={error} showIcon />;
+  if (profile.length === 0) return <Empty description="No profile data available." />;
+
+  const columns: ColumnsType<DataProfile> = [
+    { title: 'Column', dataIndex: 'column_name', key: 'column_name', sorter: (a, b) => a.column_name.localeCompare(b.column_name) },
+    { title: 'Type', dataIndex: 'data_type', key: 'data_type', render: (v: string) => <Tag>{v}</Tag> },
+    { title: 'Nulls', dataIndex: 'null_count', key: 'null_count', sorter: (a, b) => a.null_count - b.null_count, render: (v: number) => v > 0 ? <Tag color="warning">{v}</Tag> : <Tag color="success">0</Tag> },
+    { title: 'Unique', dataIndex: 'unique_count', key: 'unique_count', sorter: (a, b) => a.unique_count - b.unique_count },
+    { title: 'Min', dataIndex: 'min_value', key: 'min_value', render: (v: string | number | undefined) => v !== undefined ? String(v) : '—' },
+    { title: 'Max', dataIndex: 'max_value', key: 'max_value', render: (v: string | number | undefined) => v !== undefined ? String(v) : '—' },
+    { title: 'Avg', dataIndex: 'avg_value', key: 'avg_value', render: (v: number | undefined) => v !== undefined ? v.toFixed(2) : '—' },
+    { title: 'Sample Values', dataIndex: 'sample_values', key: 'sample_values', render: (v: string[]) => v?.length ? <Space size={4} wrap>{v.slice(0, 3).map((s) => <Tag key={s}>{s}</Tag>)}</Space> : '—' },
+  ];
+
+  return <Table dataSource={profile} columns={columns} rowKey="column_name" pagination={false} size="small" scroll={{ x: 800 }} />;
+}
+
+function RelationsTab({ tableName }: { tableName: string; datasetId: string }) {
+  const { token } = theme.useToken();
+  const [foreignKeys, setForeignKeys] = useState<ForeignLink[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form] = Form.useForm();
+
+  const loadFKs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get<{ success: boolean; data: ForeignLink[] }>('/foreign-keys');
+      if (res.data.success) {
+        const filtered = res.data.data.filter(
+          (fk) => fk.source_table === tableName || fk.target_table === tableName
+        );
+        setForeignKeys(filtered);
+      }
+    } catch {
+      message.error('Failed to load foreign keys.');
+    } finally {
+      setLoading(false);
+    }
+  }, [tableName]);
+
+  useEffect(() => { loadFKs(); }, [loadFKs]);
+
+  async function createFK() {
+    try {
+      const values = await form.validateFields();
+      setCreating(true);
+      await api.post('/foreign-keys', {
+        sourceTable: values.sourceTable,
+        sourceColumn: values.sourceColumn,
+        targetTable: values.targetTable,
+        targetColumn: values.targetColumn,
+      });
+      message.success('Foreign key created.');
+      setShowCreate(false);
+      form.resetFields();
+      loadFKs();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      if (msg) message.error(msg);
+    } finally { setCreating(false); }
+  }
+
+  const fkColumns: ColumnsType<ForeignLink> = [
+    { title: 'Direction', key: 'direction', render: (_: unknown, fk: ForeignLink) => fk.source_table === tableName ? <Tag color="blue">Outgoing</Tag> : <Tag color="green">Incoming</Tag> },
+    { title: 'Source', key: 'source', render: (_: unknown, fk: ForeignLink) => <Text code>{fk.source_table}.{fk.source_column}</Text> },
+    { title: 'Target', key: 'target', render: (_: unknown, fk: ForeignLink) => <Text code>{fk.target_table}.{fk.target_column}</Text> },
+    { title: 'Created', dataIndex: 'created_at', key: 'created_at', render: (v: string) => new Date(v).toLocaleDateString() },
+  ];
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.6)' }}>
-      <div className="ag-card w-full max-w-sm"
-        style={{ background: 'var(--ag-card-bg)', border: '1px solid var(--ag-border)' }}>
-        <div className="p-6 text-center space-y-4">
-          <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center"
-            style={{ background: 'var(--ag-red-lo)' }}>
-            <AlertTriangle className="w-6 h-6" style={{ color: 'var(--ag-red)' }} />
-          </div>
-          <h2 className="font-semibold" style={{ color: 'var(--ag-text1)' }}>Drop Table</h2>
-          <p className="text-sm" style={{ color: 'var(--ag-text2)' }}>
-            This will permanently delete <strong>{datasetName}</strong> and all its data.
-            This action cannot be undone.
-          </p>
-          <div className="flex gap-3 pt-2">
-            <button onClick={onClose} className="ag-btn-ghost flex-1 py-2 text-sm">Cancel</button>
-            <button onClick={onConfirm}
-              className="flex-1 py-2 text-sm rounded-lg font-medium"
-              style={{ background: 'var(--ag-red)', color: '#fff' }}>
-              Delete Forever
-            </button>
-          </div>
-        </div>
+    <div>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text type="secondary">Foreign key relationships for <Text code>{tableName}</Text></Text>
+        <Button type="primary" size="small" icon={<LinkOutlined />} onClick={() => setShowCreate(true)}>New Relation</Button>
       </div>
+
+      {loading ? <Spin /> : foreignKeys.length === 0 ? (
+        <Empty description="No foreign key relations defined." image={Empty.PRESENTED_IMAGE_SIMPLE}>
+          <Button type="primary" onClick={() => setShowCreate(true)}>Create Relation</Button>
+        </Empty>
+      ) : (
+        <Table dataSource={foreignKeys} columns={fkColumns} rowKey="id" pagination={false} size="small" />
+      )}
+
+      <Modal
+        title={<Space><LinkOutlined style={{ color: token.colorPrimary }} /> Create Foreign Key</Space>}
+        open={showCreate}
+        onCancel={() => { setShowCreate(false); form.resetFields(); }}
+        onOk={createFK}
+        okText="Create"
+        okButtonProps={{ loading: creating }}
+      >
+        <Form form={form} layout="vertical" size="small" initialValues={{ sourceTable: tableName }}>
+          <Form.Item label="Source Table" name="sourceTable" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item label="Source Column" name="sourceColumn" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item label="Target Table" name="targetTable" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item label="Target Column" name="targetColumn" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }
 
-// ─── Delete rows confirm modal ────────────────────────────────────────────────
-function DeleteRowsModal({
-  count,
-  onClose,
-  onConfirm,
-  loading,
-}: {
-  count: number;
-  onClose: () => void;
-  onConfirm: () => void;
-  loading: boolean;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.6)' }}>
-      <div className="ag-card w-full max-w-sm"
-        style={{ background: 'var(--ag-card-bg)', border: '1px solid var(--ag-border)' }}>
-        <div className="p-6 text-center space-y-4">
-          <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center"
-            style={{ background: 'var(--ag-red-lo)' }}>
-            <Trash2 className="w-6 h-6" style={{ color: 'var(--ag-red)' }} />
-          </div>
-          <h2 className="font-semibold" style={{ color: 'var(--ag-text1)' }}>Delete {count} row{count !== 1 ? 's' : ''}?</h2>
-          <p className="text-sm" style={{ color: 'var(--ag-text2)' }}>
-            This action cannot be undone.
-          </p>
-          <div className="flex gap-3 pt-2">
-            <button onClick={onClose} disabled={loading} className="ag-btn-ghost flex-1 py-2 text-sm">Cancel</button>
-            <button onClick={onConfirm} disabled={loading}
-              className="flex-1 py-2 text-sm rounded-lg font-medium flex items-center justify-center gap-2"
-              style={{ background: 'var(--ag-red)', color: '#fff' }}>
-              {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main page ────────────────────────────────────────────────────────────────
 export default function TableEditorPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { token } = theme.useToken();
+  const screens = useBreakpoint();
 
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [columns, setColumns] = useState<TableColumn[]>([]);
@@ -326,28 +337,24 @@ export default function TableEditorPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Search + sort
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [sortCol, setSortCol] = useState('id');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  // Selection
-  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
-  // Inline edit state
   const [editingCell, setEditingCell] = useState<{ rowId: number; col: string } | null>(null);
   const [savingCell, setSavingCell] = useState<{ rowId: number; col: string } | null>(null);
 
-  // Modals
   const [showSchema, setShowSchema] = useState(false);
   const [showAddRow, setShowAddRow] = useState(false);
-  const [showDropConfirm, setShowDropConfirm] = useState(false);
   const [showDeleteRows, setShowDeleteRows] = useState(false);
   const [deletingRows, setDeletingRows] = useState(false);
   const [droppingTable, setDroppingTable] = useState(false);
 
-  // ── Fetch dataset metadata + schema ──────────────────────────────────────
+  const isMobile = !screens.md;
+
   const fetchMeta = useCallback(async () => {
     if (!id) return;
     try {
@@ -357,18 +364,20 @@ export default function TableEditorPage() {
       ]);
       if (dsRes.data.success) setDataset(dsRes.data.data);
       if (schRes.data.success) setColumns(schRes.data.data);
-    } catch { setError('Failed to load dataset info.'); }
+    } catch {
+      setError('Failed to load dataset info.');
+      message.error('Failed to load dataset info.');
+    }
   }, [id]);
 
-  // ── Fetch rows ────────────────────────────────────────────────────────────
-  const fetchRows = useCallback(async (page = 1) => {
+  const fetchRows = useCallback(async (page = 1, pageSize?: number) => {
     if (!id) return;
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams({
         page: String(page),
-        limit: String(pagination.limit),
+        limit: String(pageSize ?? pagination.limit),
         sort: sortCol,
         order: sortOrder,
         ...(search ? { search } : {}),
@@ -381,28 +390,17 @@ export default function TableEditorPage() {
       if (res.data.success) {
         setRows(res.data.data);
         setPagination(res.data.pagination);
-        setSelected(new Set());
+        setSelectedRowKeys([]);
       }
-    } catch { setError('Failed to load table data.'); }
-    finally { setLoading(false); }
+    } catch {
+      setError('Failed to load table data.');
+      message.error('Failed to load table data.');
+    } finally { setLoading(false); }
   }, [id, search, sortCol, sortOrder, pagination.limit]);
 
   useEffect(() => { fetchMeta(); }, [fetchMeta]);
   useEffect(() => { fetchRows(1); }, [search, sortCol, sortOrder]); // eslint-disable-line
 
-  function goPage(p: number) { fetchRows(p); }
-
-  // ── Sort toggle ───────────────────────────────────────────────────────────
-  function handleSort(col: string) {
-    if (sortCol === col) {
-      setSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortCol(col);
-      setSortOrder('asc');
-    }
-  }
-
-  // ── Inline save ───────────────────────────────────────────────────────────
   async function saveCell(rowId: number, col: string, value: string) {
     setSavingCell({ rowId, col });
     setEditingCell(null);
@@ -413,270 +411,253 @@ export default function TableEditorPage() {
       );
       if (res.data.success) {
         setRows((prev) => prev.map((r) => (r.id === rowId ? res.data.data : r)));
+        message.success('Cell updated.');
       }
-    } catch { /* silently revert – row stays as was */ }
-    finally { setSavingCell(null); }
+    } catch {
+      message.error('Failed to update cell.');
+    } finally { setSavingCell(null); }
   }
 
-  // ── Delete rows ───────────────────────────────────────────────────────────
   async function confirmDeleteRows() {
     setDeletingRows(true);
     try {
-      await api.delete(`/datasets/${id}/rows`, { data: { ids: [...selected] } });
+      await api.delete(`/datasets/${id}/rows`, { data: { ids: selectedRowKeys.map(Number) } });
+      message.success(`${selectedRowKeys.length} row(s) deleted.`);
       setShowDeleteRows(false);
-      setSelected(new Set());
+      setSelectedRowKeys([]);
       fetchRows(pagination.page);
       fetchMeta();
-    } catch { /* ignore */ }
-    finally { setDeletingRows(false); }
+    } catch {
+      message.error('Failed to delete rows.');
+    } finally { setDeletingRows(false); }
   }
 
-  // ── Drop table ────────────────────────────────────────────────────────────
   async function confirmDropTable() {
     setDroppingTable(true);
     try {
       await api.delete(`/datasets/${id}`);
+      message.success('Table dropped successfully.');
       navigate('/explore');
-    } catch { setDroppingTable(false); }
-  }
-
-  // ── Selection helpers ─────────────────────────────────────────────────────
-  function toggleAll() {
-    if (selected.size === rows.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(rows.map((r) => r.id as number)));
+    } catch {
+      message.error('Failed to drop table.');
+      setDroppingTable(false);
     }
   }
-  function toggleRow(rid: number) {
-    setSelected((s) => {
-      const next = new Set(s);
-      if (next.has(rid)) next.delete(rid);
-      else next.add(rid);
-      return next;
-    });
+
+  function handleExport(format: 'csv' | 'json') {
+    const dataToExport = rows;
+    if (format === 'csv') {
+      if (columns.length === 0 || dataToExport.length === 0) return;
+      const headers = columns.map((c) => c.column_name);
+      const csvRows = dataToExport.map((row) =>
+        headers.map((h) => {
+          const val = String(row[h] ?? '');
+          return val.includes(',') || val.includes('"') || val.includes('\n')
+            ? `"${val.replace(/"/g, '""')}"`
+            : val;
+        }).join(',')
+      );
+      const csv = [headers.join(','), ...csvRows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${dataset?.name ?? 'data'}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } else {
+      const json = JSON.stringify(dataToExport, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${dataset?.name ?? 'data'}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+    message.success(`Exported as ${format.toUpperCase()}.`);
   }
 
-  const allCols = columns;
+  const tableColumns: ColumnsType<Record<string, unknown>> = [
+    ...columns.map((col) => ({
+      title: col.column_name,
+      key: col.column_name,
+      dataIndex: col.column_name,
+      width: 160,
+      ellipsis: true,
+      sorter: true,
+      render: (val: unknown, record: Record<string, unknown>) => {
+        const rid = record.id as number;
+        const isId = col.column_name === 'id';
+        const isEditing = !isId && editingCell?.rowId === rid && editingCell?.col === col.column_name;
+        const isSaving = savingCell?.rowId === rid && savingCell?.col === col.column_name;
+        const cellVal = String(val ?? '');
 
-  function SortIcon({ col }: { col: string }) {
-    if (sortCol !== col) return <ArrowUpDown className="w-3 h-3 opacity-40 ml-1 inline" />;
-    return sortOrder === 'asc'
-      ? <ArrowUp className="w-3 h-3 ml-1 inline" style={{ color: 'var(--ag-accent)' }} />
-      : <ArrowDown className="w-3 h-3 ml-1 inline" style={{ color: 'var(--ag-accent)' }} />;
-  }
+        if (isEditing) {
+          return <CellInput initial={cellVal} onSave={(v) => saveCell(rid, col.column_name, v)} onCancel={() => setEditingCell(null)} />;
+        }
+        if (isSaving) {
+          return <Spin size="small" />;
+        }
+        return (
+          <Tooltip title={isId ? undefined : 'Double-click to edit'}>
+            <span
+              style={{ cursor: isId ? 'default' : 'pointer', display: 'block' }}
+              onDoubleClick={() => { if (!isId) setEditingCell({ rowId: rid, col: col.column_name }); }}
+            >
+              {cellVal === '' ? <Text type="secondary">—</Text> : <Text type={isId ? 'secondary' : undefined}>{cellVal}</Text>}
+            </span>
+          </Tooltip>
+        );
+      },
+    })),
+  ];
+
+  const handleTableChange: TableProps<Record<string, unknown>>['onChange'] = (_pagination, _filters, sorter) => {
+    if (!Array.isArray(sorter) && sorter.field) {
+      const newSortCol = String(sorter.field);
+      const newSortOrder = sorter.order === 'descend' ? 'desc' : 'asc';
+      setSortCol(newSortCol);
+      setSortOrder(newSortOrder);
+    } else if (!sorter.field) {
+      setSortCol('id');
+      setSortOrder('asc');
+    }
+  };
+
+  const tabItems = [
+    {
+      key: 'data',
+      label: <span><UnorderedListOutlined /> Data</span>,
+      children: (
+        <div>
+          <Row gutter={[8, 8]} style={{ marginBottom: 12 }} align="middle">
+            <Col xs={24} sm={12} md={8}>
+              <Input
+                placeholder="Search all columns…"
+                prefix={<SearchOutlined />}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') setSearch(searchInput); }}
+                allowClear
+                onClear={() => { setSearch(''); setSearchInput(''); }}
+              />
+            </Col>
+            <Col xs={24} sm={12} md={16}>
+              <Space wrap style={{ width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'flex-start' : 'flex-end' }}>
+                {search && <Button size="small" type="link" onClick={() => { setSearch(''); setSearchInput(''); }}>Clear search</Button>}
+                <Tooltip title="Refresh data">
+                  <Button icon={<ReloadOutlined spin={loading} />} size="small" onClick={() => fetchRows(pagination.page)} />
+                </Tooltip>
+                <Button icon={<DownloadOutlined />} size="small" onClick={() => handleExport('csv')}>CSV</Button>
+                <Button icon={<FileTextOutlined />} size="small" onClick={() => handleExport('json')}>JSON</Button>
+              </Space>
+            </Col>
+          </Row>
+
+          {error ? (
+            <Alert type="error" message={error} showIcon style={{ margin: 16 }} />
+          ) : (
+            <Table
+              dataSource={rows.map((r, i) => ({ key: (r.id as number) ?? i, ...r }))}
+              columns={tableColumns}
+              size="small"
+              scroll={{ x: columns.length * 160 }}
+              rowSelection={{
+                selectedRowKeys,
+                onChange: setSelectedRowKeys,
+              }}
+              pagination={{
+                current: pagination.page,
+                pageSize: pagination.limit,
+                total: pagination.total,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total, range) => `${range[0]}–${range[1]} of ${total.toLocaleString()}`,
+                pageSizeOptions: ['10', '25', '50', '100'],
+              }}
+              onChange={(pag, filters, sorter, extra) => {
+                if (extra.action === 'paginate') {
+                  fetchRows(pag.current, pag.pageSize);
+                }
+                handleTableChange(pag, filters, sorter);
+              }}
+              loading={loading}
+            />
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'profile',
+      label: <span><ProfileOutlined /> Profile</span>,
+      children: id ? <ProfileTab datasetId={id} /> : null,
+    },
+    {
+      key: 'relations',
+      label: <span><LinkOutlined /> Relations</span>,
+      children: dataset?.table_name && id ? <RelationsTab tableName={dataset.table_name} datasetId={id} /> : null,
+    },
+  ];
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      {/* ── Header ── */}
-      <div className="px-6 py-4 flex items-center gap-4 flex-wrap shrink-0"
-        style={{ borderBottom: '1px solid var(--ag-border)', background: 'var(--ag-card-bg)' }}>
-        <button onClick={() => navigate('/explore')}
-          className="ag-btn-ghost p-2 rounded-lg" title="Back to Explorer">
-          <ArrowLeft className="w-4 h-4" />
-        </button>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+      <div style={{
+        padding: '12px 24px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
+        flexWrap: 'wrap',
+        flexShrink: 0,
+        borderBottom: `1px solid ${token.colorBorder}`,
+        backgroundColor: token.colorBgContainer,
+      }}>
+        <Breadcrumb
+          items={[
+            { title: <><HomeOutlined /> <a onClick={() => navigate('/explore')}>DB Explorer</a></> },
+            { title: <><DatabaseOutlined /> {dataset?.name ?? '…'}</> },
+          ]}
+        />
+      </div>
 
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <DatabaseZap className="w-5 h-5 shrink-0" style={{ color: 'var(--ag-accent)' }} />
-          <div className="min-w-0">
-            <h1 className="font-semibold text-sm truncate" style={{ color: 'var(--ag-text1)' }}>
+      <div style={{
+        padding: '8px 24px',
+        display: 'flex',
+        alignItems: isMobile ? 'flex-start' : 'center',
+        gap: 12,
+        flexWrap: 'wrap',
+        flexShrink: 0,
+        borderBottom: `1px solid ${token.colorBorder}`,
+        flexDirection: isMobile ? 'column' : 'row',
+      }}>
+        <Space size="small" style={{ flex: 1, minWidth: 0 }}>
+          <DatabaseOutlined style={{ color: token.colorPrimary }} />
+          <div style={{ minWidth: 0 }}>
+            <Title level={5} style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {dataset?.name ?? '…'}
-            </h1>
-            <p className="text-xs font-mono truncate" style={{ color: 'var(--ag-text3)' }}>
-              {dataset?.table_name ?? ''}
-              {pagination.total > 0 && ` · ${pagination.total.toLocaleString()} rows`}
-            </p>
+            </Title>
+            <Text type="secondary" code style={{ fontSize: 12 }}>
+              {dataset?.table_name ?? ''}{pagination.total > 0 ? ` · ${pagination.total.toLocaleString()} rows` : ''}
+            </Text>
           </div>
-        </div>
+        </Space>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {selected.size > 0 && (
-            <button
-              onClick={() => setShowDeleteRows(true)}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium"
-              style={{ background: 'var(--ag-red-lo)', color: 'var(--ag-red)', border: '1px solid var(--ag-red)' }}
-            >
-              <Trash2 className="w-3.5 h-3.5" /> Delete {selected.size}
-            </button>
+        <Space wrap>
+          {selectedRowKeys.length > 0 && (
+            <Button danger icon={<DeleteOutlined />} onClick={() => setShowDeleteRows(true)}>
+              Delete {selectedRowKeys.length}
+            </Button>
           )}
-          <button onClick={() => setShowAddRow(true)}
-            className="ag-btn-primary flex items-center gap-1.5 text-xs px-3 py-1.5">
-            <Plus className="w-3.5 h-3.5" /> Add Row
-          </button>
-          <button onClick={() => setShowSchema(true)}
-            className="ag-btn-ghost flex items-center gap-1.5 text-xs px-3 py-1.5">
-            <Settings2 className="w-3.5 h-3.5" /> Schema
-          </button>
-          <button onClick={() => setShowDropConfirm(true)}
-            className="ag-btn-ghost flex items-center gap-1.5 text-xs px-3 py-1.5"
-            style={{ color: 'var(--ag-red)' }} disabled={droppingTable}>
-            {droppingTable ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-            Drop
-          </button>
-        </div>
+          <Button type="primary" icon={<PlusOutlined />} size="small" onClick={() => setShowAddRow(true)}>Add Row</Button>
+          <Button icon={<SettingOutlined />} size="small" onClick={() => setShowSchema(true)}>Schema</Button>
+          <Popconfirm title="Drop this table permanently?" onConfirm={confirmDropTable} okText="Drop" okButtonProps={{ danger: true }}>
+            <Button danger icon={<DeleteOutlined />} size="small" loading={droppingTable}>Drop Table</Button>
+          </Popconfirm>
+        </Space>
       </div>
 
-      {/* ── Search + pagination bar ── */}
-      <div className="px-6 py-3 flex items-center gap-3 flex-wrap shrink-0"
-        style={{ borderBottom: '1px solid var(--ag-border)' }}>
-        <div className="relative flex-1 min-w-48 max-w-xs">
-          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ color: 'var(--ag-text3)' }} />
-          <input
-            className="ag-input pl-8 pr-3 py-1.5 text-xs w-full"
-            placeholder="Search all columns…"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') setSearch(searchInput); }}
-          />
-        </div>
-        {search && (
-          <button onClick={() => { setSearch(''); setSearchInput(''); }}
-            className="text-xs ag-btn-ghost flex items-center gap-1 px-2 py-1.5">
-            <X className="w-3 h-3" /> Clear
-          </button>
-        )}
-        <button onClick={() => fetchRows(pagination.page)}
-          className="ag-btn-ghost p-1.5 rounded-lg ml-auto" title="Refresh">
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-        </button>
-
-        {/* Pagination controls */}
-        <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--ag-text2)' }}>
-          <span>
-            {pagination.total === 0 ? '0' : `${((pagination.page - 1) * pagination.limit) + 1}–${Math.min(pagination.page * pagination.limit, pagination.total)}`}
-            {' '}of {pagination.total.toLocaleString()}
-          </span>
-          <button onClick={() => goPage(1)} disabled={pagination.page <= 1}
-            className="ag-btn-ghost p-1 rounded disabled:opacity-30">
-            <ChevronsLeft className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={() => goPage(pagination.page - 1)} disabled={pagination.page <= 1}
-            className="ag-btn-ghost p-1 rounded disabled:opacity-30">
-            <ChevronLeft className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={() => goPage(pagination.page + 1)} disabled={pagination.page >= pagination.totalPages}
-            className="ag-btn-ghost p-1 rounded disabled:opacity-30">
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={() => goPage(pagination.totalPages)} disabled={pagination.page >= pagination.totalPages}
-            className="ag-btn-ghost p-1 rounded disabled:opacity-30">
-            <ChevronsRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
+      <div style={{ flex: 1, overflow: 'auto', minHeight: 0, padding: '0 24px' }}>
+        <Tabs items={tabItems} defaultActiveKey="data" />
       </div>
 
-      {/* ── Table ── */}
-      <div className="flex-1 overflow-auto min-h-0">
-        {loading ? (
-          <div className="flex items-center justify-center h-40 gap-2" style={{ color: 'var(--ag-text3)' }}>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span className="text-sm">Loading…</span>
-          </div>
-        ) : error ? (
-          <div className="flex items-center gap-3 m-6 p-4 rounded-lg"
-            style={{ background: 'var(--ag-red-lo)', color: 'var(--ag-red)', border: '1px solid var(--ag-red)' }}>
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            <span className="text-sm">{error}</span>
-          </div>
-        ) : (
-          <table className="w-full text-xs border-collapse" style={{ minWidth: allCols.length * 140 }}>
-            <thead className="sticky top-0 z-10" style={{ background: 'var(--ag-sidebar-bg)' }}>
-              <tr>
-                {/* Checkbox */}
-                <th className="w-10 px-3 py-2.5 text-left"
-                  style={{ borderBottom: '1px solid var(--ag-border)' }}>
-                  <input type="checkbox"
-                    checked={rows.length > 0 && selected.size === rows.length}
-                    onChange={toggleAll}
-                    className="rounded"
-                  />
-                </th>
-                {allCols.map((col) => (
-                  <th
-                    key={col.column_name}
-                    className="px-3 py-2.5 text-left font-medium cursor-pointer select-none whitespace-nowrap"
-                    style={{ borderBottom: '1px solid var(--ag-border)', color: 'var(--ag-text2)' }}
-                    onClick={() => handleSort(col.column_name)}
-                  >
-                    {col.column_name}
-                    <SortIcon col={col.column_name} />
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 ? (
-                <tr>
-                  <td colSpan={allCols.length + 1} className="text-center py-16"
-                    style={{ color: 'var(--ag-text3)' }}>
-                    {search ? 'No rows match your search.' : 'No rows in this table.'}
-                  </td>
-                </tr>
-              ) : rows.map((row) => {
-                const rid = row.id as number;
-                const isSelected = selected.has(rid);
-                return (
-                  <tr
-                    key={rid}
-                    style={{
-                      background: isSelected ? 'var(--ag-accent-lo)' : undefined,
-                      borderBottom: '1px solid var(--ag-border)',
-                    }}
-                    className="hover:bg-[var(--ag-hover)] transition-colors"
-                  >
-                    {/* Checkbox */}
-                    <td className="px-3 py-2">
-                      <input type="checkbox" checked={isSelected}
-                        onChange={() => toggleRow(rid)} className="rounded" />
-                    </td>
-                    {allCols.map((col) => {
-                      const isId = col.column_name === 'id';
-                      const isEditing = !isId && editingCell?.rowId === rid && editingCell?.col === col.column_name;
-                      const isSaving = savingCell?.rowId === rid && savingCell?.col === col.column_name;
-                      const cellVal = String(row[col.column_name] ?? '');
-
-                      return (
-                        <td
-                          key={col.column_name}
-                          className="px-3 py-1.5 max-w-[240px]"
-                          style={{ color: isId ? 'var(--ag-text3)' : 'var(--ag-text1)' }}
-                        >
-                          {isEditing ? (
-                            <CellInput
-                              initial={cellVal}
-                              onSave={(v) => saveCell(rid, col.column_name, v)}
-                              onCancel={() => setEditingCell(null)}
-                            />
-                          ) : isSaving ? (
-                            <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--ag-text3)' }}>
-                              <Loader2 className="w-3 h-3 animate-spin" /> saving…
-                            </span>
-                          ) : (
-                            <span
-                              className={`block truncate ${isId ? '' : 'cursor-pointer hover:underline'}`}
-                              title={cellVal}
-                              onDoubleClick={() => {
-                                if (!isId) setEditingCell({ rowId: rid, col: col.column_name });
-                              }}
-                            >
-                              {cellVal === '' ? (
-                                <span style={{ color: 'var(--ag-text3)' }}>—</span>
-                              ) : cellVal}
-                            </span>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* ── Modals ── */}
       {showSchema && (
         <SchemaEditor
           columns={columns}
@@ -693,21 +674,19 @@ export default function TableEditorPage() {
           onAdded={() => { fetchRows(pagination.page); fetchMeta(); }}
         />
       )}
-      {showDropConfirm && (
-        <DropConfirmModal
-          datasetName={dataset?.name ?? 'this table'}
-          onClose={() => setShowDropConfirm(false)}
-          onConfirm={confirmDropTable}
-        />
-      )}
-      {showDeleteRows && (
-        <DeleteRowsModal
-          count={selected.size}
-          onClose={() => setShowDeleteRows(false)}
-          onConfirm={confirmDeleteRows}
-          loading={deletingRows}
-        />
-      )}
+      <Modal
+        title={<Space><AlertOutlined style={{ color: token.colorError }} /> Delete {selectedRowKeys.length} row{selectedRowKeys.length !== 1 ? 's' : ''}?</Space>}
+        open={showDeleteRows}
+        onCancel={() => setShowDeleteRows(false)}
+        footer={
+          <Space>
+            <Button onClick={() => setShowDeleteRows(false)} disabled={deletingRows}>Cancel</Button>
+            <Button type="primary" danger onClick={confirmDeleteRows} loading={deletingRows}>Delete</Button>
+          </Space>
+        }
+      >
+        <Text>This action cannot be undone.</Text>
+      </Modal>
     </div>
   );
 }

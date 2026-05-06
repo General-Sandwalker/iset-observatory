@@ -127,7 +127,7 @@ export interface QueryableTable {
 
 // ─── Phase 5: Visual Dashboard Editor types ──────────────────────
 
-export type ChartType = 'bar' | 'horizontalBar' | 'line' | 'pie' | 'doughnut' | 'radar' | 'polarArea';
+export type ChartType = 'bar' | 'horizontalBar' | 'line' | 'pie' | 'doughnut' | 'radar' | 'polarArea' | 'scatter' | 'bubble' | 'area';
 export type AggregationType = 'COUNT' | 'SUM' | 'AVG' | 'MIN' | 'MAX';
 
 export interface ChartConfig {
@@ -140,6 +140,14 @@ export interface ChartConfig {
   colors?: string[];
   showLegend?: boolean;
   showGrid?: boolean;
+  showValues?: boolean;
+  legendPosition?: 'top' | 'bottom' | 'left' | 'right';
+  tension?: number;
+  fill?: boolean;
+  borderWidth?: number;
+  pointRadius?: number;
+  colorScheme?: string;
+  maxDataPoints?: number;
 }
 
 export interface Chart {
@@ -192,4 +200,78 @@ export interface TablePagination {
   limit: number;
   total: number;
   totalPages: number;
+}
+
+// ─── Additional types ─────────────────────────────────────────────
+
+export interface ForeignLink {
+  id: number;
+  source_table: string;
+  source_column: string;
+  target_table: string;
+  target_column: string;
+  created_by: number;
+  created_at: string;
+}
+
+export interface SavedQuery {
+  id: number;
+  title: string;
+  sql: string;
+  description?: string;
+  is_public: boolean;
+  created_by: number;
+  created_by_name?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Notification {
+  id: number;
+  type: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+}
+
+export interface DataProfile {
+  column_name: string;
+  data_type: string;
+  null_count: number;
+  unique_count: number;
+  min_value?: string | number;
+  max_value?: string | number;
+  avg_value?: number;
+  sample_values: string[];
+}
+
+export interface ActivityLogEntry {
+  id: number;
+  user_id: number;
+  user_name: string;
+  action: string;
+  resource_type: string;
+  resource_id?: number;
+  details?: string;
+  created_at: string;
+}
+
+export interface ChartColorScheme {
+  name: string;
+  colors: string[];
+}
+
+export interface ChartAdvancedConfig {
+  showLegend?: boolean;
+  showGrid?: boolean;
+  showValues?: boolean;
+  legendPosition?: 'top' | 'bottom' | 'left' | 'right';
+  fill?: boolean;
+  tension?: number;
+  borderWidth?: number;
+  pointRadius?: number;
+  animation?: boolean;
+  maxDataPoints?: number;
+  colorScheme?: string;
 }

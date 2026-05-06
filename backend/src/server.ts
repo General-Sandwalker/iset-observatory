@@ -13,6 +13,10 @@ import chartsRouter from './routes/charts';
 import dashboardsRouter from './routes/dashboards';
 import statsRouter from './routes/stats';
 import surveysRouter from './routes/surveys';
+import foreignKeysRouter from './routes/foreignKeys';
+import savedQueriesRouter from './routes/savedQueries';
+import notificationsRouter from './routes/notifications';
+import dataProfileRouter from './routes/dataProfile';
 
 const app = express();
 
@@ -59,6 +63,10 @@ app.use('/api/charts', chartsRouter);
 app.use('/api/dashboards', dashboardsRouter);
 app.use('/api', statsRouter);
 app.use('/api/surveys', surveysRouter);
+app.use('/api', foreignKeysRouter);
+app.use('/api', savedQueriesRouter);
+app.use('/api', notificationsRouter);
+app.use('/api', dataProfileRouter);
 
 // --------------- Error Handler -----------
 app.use(errorHandler);

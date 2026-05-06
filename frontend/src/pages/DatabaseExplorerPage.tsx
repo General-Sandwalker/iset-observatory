@@ -1,23 +1,21 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Database,
-  Table2,
-  Rows3,
-  Columns3,
-  CalendarDays,
-  User,
-  Search,
-  RefreshCw,
-  ChevronRight,
-  AlertTriangle,
-} from 'lucide-react';
+  Card, Row, Col, Input, Button, Space, Typography,
+  Alert, Tag, theme, Select, Badge, Tooltip,
+} from 'antd';
+import {
+  DatabaseOutlined, TableOutlined, UnorderedListOutlined,
+  CalendarOutlined, UserOutlined, SearchOutlined, ReloadOutlined,
+  FileTextOutlined, ProfileOutlined,
+  InboxOutlined, ArrowRightOutlined,
+} from '@ant-design/icons';
 import api from '../lib/api';
 import type { Dataset } from '../lib/types';
 
-function fmt(n: number) {
-  return n.toLocaleString();
-}
+const { Title, Text, Paragraph } = Typography;
+
+function fmt(n: number) { return n.toLocaleString(); }
 
 function relDate(iso: string) {
   const ms = Date.now() - new Date(iso).getTime();
@@ -32,19 +30,38 @@ function relDate(iso: string) {
   return new Date(iso).toLocaleDateString();
 }
 
+type SortKey = 'name' | 'date' | 'rows';
+type StatusFilter = 'all' | 'imported' | 'uploaded' | 'error';
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'name', label: 'Name' },
+  { value: 'date', label: 'Date' },
+  { value: 'rows', label: 'Rows' },
+];
+
+const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: 'all', label: 'All Statuses' },
+  { value: 'imported', label: 'Imported' },
+  { value: 'uploaded', label: 'Uploaded' },
+  { value: 'error', label: 'Error' },
+];
+
 export default function DatabaseExplorerPage() {
+  const { token } = theme.useToken();
+  const navigate = useNavigate();
   const [all, setAll] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const navigate = useNavigate();
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [sortBy, setSortBy] = useState<SortKey>('date');
 
   const fetchDatasets = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const { data } = await api.get<{ success: boolean; data: Dataset[] }>('/datasets');
-      if (data.success) setAll(data.data.filter((d) => d.status === 'imported'));
+      if (data.success) setAll(data.data);
     } catch {
       setError('Failed to load datasets.');
     } finally {
@@ -54,170 +71,311 @@ export default function DatabaseExplorerPage() {
 
   useEffect(() => { fetchDatasets(); }, [fetchDatasets]);
 
-  const filtered = all.filter((d) =>
-    d.name.toLowerCase().includes(search.toLowerCase()) ||
-    (d.table_name ?? '').toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = useMemo(() => {
+    let result = all;
+
+    if (statusFilter !== 'all') {
+      result = result.filter((d) => d.status === statusFilter);
+    }
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (d) =>
+          d.name.toLowerCase().includes(q) ||
+          (d.table_name ?? '').toLowerCase().includes(q) ||
+          (d.file_name ?? '').toLowerCase().includes(q),
+      );
+    }
+
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'date':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'rows':
+          return (b.row_count ?? 0) - (a.row_count ?? 0);
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [all, search, statusFilter, sortBy]);
+
+  const totalRecords = filtered.reduce((sum, d) => sum + (d.row_count ?? 0), 0);
+  const tableCount = filtered.length;
+
+  const STATUS_TAG_MAP: Record<string, { color: string; label: string }> = {
+    imported: { color: 'green', label: 'Imported' },
+    uploaded: { color: 'orange', label: 'Uploaded' },
+    processing: { color: 'blue', label: 'Processing' },
+    error: { color: 'red', label: 'Error' },
+  };
+
+  const gradients = [
+    `linear-gradient(135deg, ${token.colorPrimaryBg}, ${token.colorInfoBg})`,
+    `linear-gradient(135deg, ${token.colorSuccessBg}, ${token.colorInfoBg})`,
+    `linear-gradient(135deg, ${token.colorWarningBg}, ${token.colorBgContainer})`,
+  ];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: 'var(--ag-accent-lo)' }}>
-            <Database className="w-5 h-5" style={{ color: 'var(--ag-accent)' }} />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold" style={{ color: 'var(--ag-text1)' }}>
-              Database Explorer
-            </h1>
-            <p className="text-sm" style={{ color: 'var(--ag-text3)' }}>
-              {all.length} imported table{all.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Search */}
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-              style={{ color: 'var(--ag-text3)' }} />
-            <input
-              className="ag-input pl-9 pr-3 py-2 text-sm w-56"
+    <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+      <Row gutter={[16, 16]} align="middle" style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={12} md={10}>
+          <Space size="middle">
+            <div style={{
+              width: 48,
+              height: 48,
+              borderRadius: 12,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: `linear-gradient(135deg, ${token.colorPrimary}, ${token.colorInfo})`,
+            }}>
+              <DatabaseOutlined style={{ color: '#fff', fontSize: 22 }} />
+            </div>
+            <div>
+              <Title level={4} style={{ margin: 0 }}>Database Explorer</Title>
+              <Text type="secondary">
+                {tableCount} table{tableCount !== 1 ? 's' : ''} · {fmt(totalRecords)} total records
+              </Text>
+            </div>
+          </Space>
+        </Col>
+        <Col xs={24} sm={12} md={14}>
+          <Space
+            size={8}
+            wrap
+            style={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}
+          >
+            <Input
               placeholder="Search tables…"
+              prefix={<SearchOutlined />}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              allowClear
+              style={{ width: 200 }}
             />
-          </div>
-          <button
-            onClick={fetchDatasets}
-            className="ag-btn-ghost p-2 rounded-lg"
-            title="Refresh"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-      </div>
+            <Select
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={STATUS_FILTER_OPTIONS}
+              style={{ width: 140 }}
+            />
+            <Select
+              value={sortBy}
+              onChange={setSortBy}
+              options={SORT_OPTIONS}
+              style={{ width: 110 }}
+              suffixIcon={<span style={{ fontSize: 11, color: token.colorTextSecondary }}>Sort</span>}
+            />
+            <Tooltip title="Refresh">
+              <Button
+                icon={<ReloadOutlined spin={loading} />}
+                onClick={fetchDatasets}
+              />
+            </Tooltip>
+          </Space>
+        </Col>
+      </Row>
 
-      {/* Body */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="rounded-2xl overflow-hidden animate-pulse"
-              style={{ background: 'var(--ag-card-bg)', border: '1px solid var(--ag-border)', height: 176 }}>
-              <div className="h-0.5 w-full" style={{ background: 'var(--ag-border)' }} />
-              <div className="p-5 space-y-3">
-                <div className="flex justify-between">
-                  <div className="w-10 h-10 rounded-xl" style={{ background: 'var(--ag-border)' }} />
-                  <div className="w-16 h-5 rounded-full" style={{ background: 'var(--ag-border)' }} />
-                </div>
-                <div className="w-3/4 h-3.5 rounded" style={{ background: 'var(--ag-border)' }} />
-                <div className="w-1/2 h-3 rounded" style={{ background: 'var(--ag-border)' }} />
-              </div>
-              <div className="h-10" style={{ background: 'var(--ag-hover)' }} />
-            </div>
+        <Row gutter={[16, 16]}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Col xs={24} sm={12} md={8} lg={6} key={i}>
+              <Card loading style={{ height: 220 }} />
+            </Col>
           ))}
-        </div>
+        </Row>
       ) : error ? (
-        <div className="ag-card flex items-center gap-3 p-6" style={{ color: 'var(--ag-red)' }}>
-          <AlertTriangle className="w-5 h-5 shrink-0" />
-          <span>{error}</span>
-        </div>
+        <Alert
+          type="error"
+          message={error}
+          showIcon
+          action={
+            <Button size="small" onClick={fetchDatasets}>Retry</Button>
+          }
+        />
       ) : filtered.length === 0 ? (
-        <div className="ag-card flex flex-col items-center gap-3 py-20 text-center">
-          <Database className="w-12 h-12 opacity-20" style={{ color: 'var(--ag-text3)' }} />
-          <p className="text-sm font-medium" style={{ color: 'var(--ag-text2)' }}>
-            {search ? 'No tables match your search.' : 'No imported tables yet. Go to Data Import to get started.'}
-          </p>
+        <div style={{ textAlign: 'center', padding: '64px 0' }}>
+          <div style={{
+            width: 80,
+            height: 80,
+            borderRadius: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 20px',
+            background: token.colorBgLayout,
+            border: `2px dashed ${token.colorBorder}`,
+          }}>
+            <InboxOutlined style={{ fontSize: 36, color: token.colorTextQuaternary }} />
+          </div>
+          <Title level={5} type="secondary" style={{ marginBottom: 4 }}>
+            {search || statusFilter !== 'all'
+              ? 'No matching tables found'
+              : 'No tables in the database yet'}
+          </Title>
+          <Paragraph type="secondary" style={{ marginBottom: 20 }}>
+            {search || statusFilter !== 'all'
+              ? 'Try adjusting your search or filters.'
+              : 'Import some data to see tables appear here.'}
+          </Paragraph>
+          {(search || statusFilter !== 'all') && (
+            <Button
+              onClick={() => { setSearch(''); setStatusFilter('all'); }}
+            >
+              Clear Filters
+            </Button>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filtered.map((ds) => {
+        <Row gutter={[16, 16]}>
+          {filtered.map((ds, idx) => {
             const colCount = ds.column_mapping?.length ?? 0;
-            return (
-              <button
-                key={ds.id}
-                onClick={() => navigate(`/explore/${ds.id}`)}
-                className="group text-left relative overflow-hidden rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl"
-                style={{
-                  background: 'var(--ag-card-bg)',
-                  border: '1px solid var(--ag-border)',
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
-                }}
-              >
-                {/* Accent top bar */}
-                <div
-                  className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl transition-opacity duration-200 opacity-60 group-hover:opacity-100"
-                  style={{ background: 'linear-gradient(90deg, var(--ag-accent), var(--ag-accent2, var(--ag-accent)))' }}
-                />
+            const statusInfo = STATUS_TAG_MAP[ds.status] ?? STATUS_TAG_MAP.uploaded;
+            const gradient = gradients[idx % gradients.length];
 
-                <div className="p-5">
-                  {/* Header row */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                      style={{
-                        background: 'var(--ag-accent-lo)',
-                        boxShadow: 'inset 0 0 0 1px var(--ag-accent)',
-                      }}
-                    >
-                      <Table2 className="w-5 h-5" style={{ color: 'var(--ag-accent)' }} />
+            return (
+              <Col xs={24} sm={12} md={8} lg={6} key={ds.id}>
+                <Card
+                  hoverable
+                  style={{
+                    position: 'relative',
+                    overflow: 'hidden',
+                    height: '100%',
+                    borderRadius: token.borderRadiusLG,
+                  }}
+                  styles={{ body: { padding: 20, display: 'flex', flexDirection: 'column', height: '100%' } }}
+                >
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 4,
+                    background: gradient,
+                  }} />
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                    <div style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 10,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: gradient,
+                      flexShrink: 0,
+                    }}>
+                      <TableOutlined style={{ color: token.colorPrimary, fontSize: 20 }} />
                     </div>
-                    <span
-                      className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full"
-                      style={{ background: 'var(--ag-accent-lo)', color: 'var(--ag-accent)' }}
-                    >
-                      <Rows3 className="w-3 h-3" />
-                      {fmt(ds.row_count)}
-                    </span>
+                    <Badge
+                      count={ds.row_count > 0 ? fmt(ds.row_count) : '0'}
+                      overflowCount={999999999}
+                      style={{
+                        backgroundColor: ds.row_count > 0 ? token.colorPrimary : token.colorBgContainer,
+                        color: ds.row_count > 0 ? '#fff' : token.colorTextSecondary,
+                        fontWeight: 600,
+                        fontSize: 11,
+                        boxShadow: 'none',
+                      }}
+                    />
                   </div>
 
-                  {/* Title */}
-                  <h3 className="font-semibold text-sm leading-snug truncate mb-0.5" style={{ color: 'var(--ag-text1)' }}>
+                  <Text strong style={{ display: 'block', fontSize: 14, marginBottom: 2, lineHeight: 1.3 }}>
                     {ds.name}
-                  </h3>
-                  <p className="text-xs font-mono truncate mb-4" style={{ color: 'var(--ag-text3)' }}>
-                    {ds.table_name}
-                  </p>
+                  </Text>
+                  <Text
+                    code
+                    style={{
+                      fontSize: 11,
+                      display: 'block',
+                      marginBottom: 8,
+                      color: token.colorTextTertiary,
+                    }}
+                  >
+                    {ds.table_name ?? '—'}
+                  </Text>
 
-                  {/* Divider */}
-                  <div className="mb-4" style={{ borderTop: '1px solid var(--ag-border)' }} />
+                  <Tag
+                    color={statusInfo.color}
+                    style={{ alignSelf: 'flex-start', fontSize: 11, lineHeight: '18px', padding: '0 6px', marginBottom: 12 }}
+                  >
+                    {statusInfo.label}
+                  </Tag>
 
-                  {/* Stats row */}
-                  <div className="flex items-center justify-between text-xs" style={{ color: 'var(--ag-text2)' }}>
-                    <div className="flex items-center gap-1">
-                      <Columns3 className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--ag-text3)' }} />
-                      <span>{colCount} cols</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <CalendarDays className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--ag-text3)' }} />
-                      <span>{relDate(ds.created_at)}</span>
-                    </div>
-                    {ds.uploaded_by_name && (
-                      <div className="flex items-center gap-1 max-w-[90px]">
-                        <User className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--ag-text3)' }} />
-                        <span className="truncate">{ds.uploaded_by_name}</span>
-                      </div>
+                  <div style={{ borderTop: `1px solid ${token.colorBorderSecondary}`, paddingTop: 10, marginTop: 'auto' }}>
+                    <Row gutter={[4, 4]}>
+                      <Col span={12}>
+                        <Space size={4}>
+                          <UnorderedListOutlined style={{ color: token.colorTextQuaternary, fontSize: 11 }} />
+                          <Text type="secondary" style={{ fontSize: 11 }}>{colCount} cols</Text>
+                        </Space>
+                      </Col>
+                      <Col span={12}>
+                        <Space size={4}>
+                          <CalendarOutlined style={{ color: token.colorTextQuaternary, fontSize: 11 }} />
+                          <Text type="secondary" style={{ fontSize: 11 }}>{relDate(ds.created_at)}</Text>
+                        </Space>
+                      </Col>
+                      {ds.file_name && (
+                        <Col span={24}>
+                          <Space size={4}>
+                            <FileTextOutlined style={{ color: token.colorTextQuaternary, fontSize: 11 }} />
+                            <Text type="secondary" ellipsis style={{ fontSize: 11, maxWidth: 140 }}>{ds.file_name}</Text>
+                          </Space>
+                        </Col>
+                      )}
+                      {ds.uploaded_by_name && (
+                        <Col span={24}>
+                          <Space size={4}>
+                            <UserOutlined style={{ color: token.colorTextQuaternary, fontSize: 11 }} />
+                            <Text type="secondary" ellipsis style={{ fontSize: 11, maxWidth: 140 }}>{ds.uploaded_by_name}</Text>
+                          </Space>
+                        </Col>
+                      )}
+                    </Row>
+                  </div>
+
+                  <div style={{
+                    marginTop: 12,
+                    paddingTop: 12,
+                    borderTop: `1px solid ${token.colorBorderSecondary}`,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}>
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<ArrowRightOutlined />}
+                      onClick={() => navigate(`/explore/${ds.id}`)}
+                      style={{ flex: 1 }}
+                    >
+                      Open
+                    </Button>
+                    {ds.status === 'imported' && (
+                      <Tooltip title="Profile Data">
+                        <Button
+                          size="small"
+                          icon={<ProfileOutlined />}
+                          onClick={() => navigate(`/explore/${ds.id}`)}
+                          style={{ color: token.colorInfo, borderColor: token.colorInfo }}
+                        >
+                          Profile
+                        </Button>
+                      </Tooltip>
                     )}
                   </div>
-                </div>
-
-                {/* Footer CTA */}
-                <div
-                  className="px-5 py-3 flex items-center justify-between text-xs font-medium transition-colors duration-150"
-                  style={{
-                    borderTop: '1px solid var(--ag-border)',
-                    background: 'var(--ag-hover)',
-                    color: 'var(--ag-accent)',
-                  }}
-                >
-                  <span>Open table</span>
-                  <ChevronRight className="w-3.5 h-3.5 transition-transform duration-150 group-hover:translate-x-0.5" />
-                </div>
-              </button>
+                </Card>
+              </Col>
             );
           })}
-        </div>
+        </Row>
       )}
     </div>
   );

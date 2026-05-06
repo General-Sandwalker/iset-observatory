@@ -206,7 +206,53 @@ const migrations = [
     name: '008_charts_nullable_dataset',
     sql: `
       ALTER TABLE charts
-        ALTER COLUMN dataset_id DROP NOT NULL;
+      ALTER COLUMN dataset_id DROP NOT NULL;
+    `,
+  },
+  {
+    name: '009_foreign_keys',
+    sql: `
+      CREATE TABLE IF NOT EXISTS foreign_keys (
+        id SERIAL PRIMARY KEY,
+        source_table VARCHAR(255) NOT NULL,
+        source_column VARCHAR(255) NOT NULL,
+        target_table VARCHAR(255) NOT NULL,
+        target_column VARCHAR(255) NOT NULL,
+        created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        CONSTRAINT fk_unique_link UNIQUE (source_table, source_column, target_table, target_column)
+      );
+    `,
+  },
+  {
+    name: '010_saved_queries',
+    sql: `
+      CREATE TABLE IF NOT EXISTS saved_queries (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        sql TEXT NOT NULL,
+        description TEXT,
+        is_public BOOLEAN DEFAULT false,
+        created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `,
+  },
+  {
+    name: '011_notifications',
+    sql: `
+      CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        type VARCHAR(20) DEFAULT 'info',
+        title VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        is_read BOOLEAN DEFAULT false,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+      CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(user_id, is_read);
     `,
   },
 ];

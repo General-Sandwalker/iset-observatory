@@ -1,43 +1,30 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  BrainCircuit,
-  Send,
-  Loader2,
-  Database,
-  Trash2,
-  Table2,
-  MessageSquare,
-  ChevronDown,
-  ChevronRight,
-  AlertCircle,
-  Code,
-  BarChart3,
-  X,
-  Save,
-  CheckCircle,
-} from 'lucide-react';
+  Card, Input, Button, Space, Typography, Spin, Collapse, Select, Tag,
+  Empty, Popconfirm, Table, message, Tooltip, Avatar, Divider, theme,
+} from 'antd';
+import {
+  RobotOutlined, SendOutlined, DeleteOutlined, SaveOutlined,
+  LineChartOutlined, TableOutlined, CodeOutlined, BulbOutlined,
+  HistoryOutlined, DatabaseOutlined,
+} from '@ant-design/icons';
 import {
   Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  ArcElement,
-  RadialLinearScale,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
+  CategoryScale, LinearScale, BarElement, LineElement, PointElement,
+  ArcElement, RadialLinearScale, Title as ChartTitle, Tooltip as ChartTooltip, Legend, Filler,
 } from 'chart.js';
 import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
 import api from '../lib/api';
 import type { ChatMessage, QueryableTable } from '../lib/types';
+import { useAuth } from '../contexts/AuthContext';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, LineElement, PointElement,
-  ArcElement, RadialLinearScale, Title, Tooltip, Legend, Filler,
+  ArcElement, RadialLinearScale, ChartTitle, ChartTooltip, Legend, Filler,
 );
+
+const { Title, Text, Paragraph } = Typography;
+const { Panel } = Collapse;
 
 const PALETTE = [
   'rgba(59,130,246,0.75)', 'rgba(16,185,129,0.75)', 'rgba(245,158,11,0.75)',
@@ -46,21 +33,38 @@ const PALETTE = [
   'rgba(168,85,247,0.75)', 'rgba(34,197,94,0.75)', 'rgba(234,179,8,0.75)',
 ];
 
-type MiniChartType = 'bar' | 'horizontalBar' | 'line' | 'pie' | 'doughnut';
+type MiniChartType = 'bar' | 'line' | 'pie' | 'doughnut';
 
 const MINI_CHART_TYPES: { value: MiniChartType; label: string }[] = [
   { value: 'bar', label: 'Bar' },
-  { value: 'horizontalBar', label: 'H-Bar' },
   { value: 'line', label: 'Line' },
   { value: 'pie', label: 'Pie' },
   { value: 'doughnut', label: 'Donut' },
+];
+
+const SUGGESTED_QUESTIONS = [
+  'How many records are in each dataset?',
+  'What are the top values in the largest table?',
+  'Show me a summary of all imported data',
+  'What is the distribution of values across categories?',
+  'Which table has the most columns?',
+  'What are the average values by group?',
 ];
 
 function isNumeric(val: unknown): boolean {
   return val !== null && val !== undefined && val !== '' && !isNaN(Number(val));
 }
 
-function InlineChart({ data, sql, onClose }: { data: Record<string, unknown>[]; sql?: string; onClose: () => void }) {
+function InlineChart({
+  data,
+  sql,
+  onClose,
+}: {
+  data: Record<string, unknown>[];
+  sql?: string;
+  onClose: () => void;
+}) {
+  const { token } = theme.useToken();
   const columns = Object.keys(data[0] || {});
   const numericCols = columns.filter((c) => data.slice(0, 10).every((r) => isNumeric(r[c])));
   const labelCols = columns.filter((c) => !numericCols.includes(c));
@@ -78,14 +82,15 @@ function InlineChart({ data, sql, onClose }: { data: Record<string, unknown>[]; 
     try {
       await api.post('/charts', {
         title: saveTitle.trim(),
-        chartType: chartType === 'horizontalBar' ? 'horizontalBar' : chartType,
+        chartType,
         config: { sql, labelCol, valueCol },
       });
       setSaved(true);
+      message.success('Chart saved successfully!');
       setTimeout(() => setSaved(false), 3000);
       setSaveTitle('');
     } catch {
-      alert('Failed to save chart.');
+      message.error('Failed to save chart.');
     } finally {
       setSaving(false);
     }
@@ -93,115 +98,370 @@ function InlineChart({ data, sql, onClose }: { data: Record<string, unknown>[]; 
 
   const labels = data.map((r) => String(r[labelCol] ?? ''));
   const values = data.map((r) => Number(r[valueCol] ?? 0));
-  const bgColors = PALETTE.slice(0, labels.length);
+  const bgColors = PALETTE.slice(0, labels.length).concat(
+    PALETTE.slice(0, Math.max(0, labels.length - PALETTE.length)),
+  );
   const borderColors = bgColors.map((c) => c.replace('0.75', '1'));
 
   const chartData = {
     labels,
-    datasets: [{ label: valueCol, data: values, backgroundColor: bgColors, borderColor: borderColors, borderWidth: 1, fill: false }],
+    datasets: [{
+      label: valueCol,
+      data: values,
+      backgroundColor: bgColors,
+      borderColor: borderColors,
+      borderWidth: 1,
+      fill: chartType === 'line',
+      tension: 0.3,
+    }],
   };
 
-  const isHorizontal = chartType === 'horizontalBar';
   const baseOpts = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: false }, tooltip: { mode: 'index' as const } },
+    plugins: {
+      legend: { display: chartType === 'pie' || chartType === 'doughnut', position: 'right' as const },
+      tooltip: { mode: 'index' as const },
+    },
   };
-  const barOpts = { ...baseOpts, ...(isHorizontal ? { indexAxis: 'y' as const } : {}) };
 
   return (
-    <div className="px-4 pb-4">
-      {/* Controls */}
-      <div className="flex flex-wrap items-center gap-2 mb-3">
-        {/* Chart type pills */}
-        <div className="flex gap-1 flex-wrap">
+    <div style={{ padding: '0 16px 16px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <Space size={4}>
           {MINI_CHART_TYPES.map(({ value, label }) => (
-            <button
+            <Tag
               key={value}
+              color={chartType === value ? token.colorPrimary : undefined}
+              style={{ cursor: 'pointer' }}
               onClick={() => setChartType(value)}
-              className="px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors"
-              style={{
-                background: chartType === value ? 'var(--ag-accent-lo)' : 'var(--ag-surface2)',
-                borderColor: chartType === value ? 'var(--ag-accent)' : 'var(--ag-border)',
-                color: chartType === value ? 'var(--ag-accent)' : 'var(--ag-text3)',
-              }}
-            >{label}</button>
+            >
+              {label}
+            </Tag>
           ))}
-        </div>
-        {/* Column selectors */}
-        <select
+        </Space>
+        <Select
           value={labelCol}
-          onChange={(e) => setLabelCol(e.target.value)}
-          className="ag-input px-2 py-1 text-xs"
-          title="Label column"
-        >
-          {columns.map((c) => <option key={c} value={c}>Label: {c}</option>)}
-        </select>
-        <select
+          onChange={setLabelCol}
+          size="small"
+          style={{ width: 140 }}
+          options={columns.map((c) => ({ value: c, label: `Label: ${c}` }))}
+        />
+        <Select
           value={valueCol}
-          onChange={(e) => setValueCol(e.target.value)}
-          className="ag-input px-2 py-1 text-xs"
-          title="Value column"
-        >
-          {columns.map((c) => <option key={c} value={c}>Value: {c}</option>)}
-        </select>
-        <button onClick={onClose} className="ml-auto p-1 rounded" style={{ color: 'var(--ag-text3)' }}>
-          <X className="w-3.5 h-3.5" />
-        </button>
+          onChange={setValueCol}
+          size="small"
+          style={{ width: 140 }}
+          options={columns.map((c) => ({ value: c, label: `Value: ${c}` }))}
+        />
+        <Tooltip title="Close chart">
+          <Button icon={<DeleteOutlined />} size="small" type="text" onClick={onClose} style={{ marginLeft: 'auto' }} />
+        </Tooltip>
       </div>
-      {/* Chart */}
-      <div style={{ height: 260, background: 'var(--ag-surface2)', borderRadius: 8, padding: 12, border: '1px solid var(--ag-border)' }}>
-        {(chartType === 'bar' || chartType === 'horizontalBar') && <Bar data={chartData} options={barOpts} />}
+      <div style={{
+        height: 260,
+        backgroundColor: token.colorBgElevated,
+        borderRadius: 8,
+        padding: 12,
+        border: `1px solid ${token.colorBorder}`,
+      }}>
+        {chartType === 'bar' && <Bar data={chartData} options={baseOpts} />}
         {chartType === 'line' && <Line data={chartData} options={baseOpts} />}
-        {chartType === 'pie' && <Pie data={chartData} options={{ ...baseOpts, plugins: { legend: { position: 'right' } } }} />}
-        {chartType === 'doughnut' && <Doughnut data={chartData} options={{ ...baseOpts, plugins: { legend: { position: 'right' } } }} />}
+        {chartType === 'pie' && <Pie data={chartData} options={baseOpts} />}
+        {chartType === 'doughnut' && <Doughnut data={chartData} options={baseOpts} />}
       </div>
-      {/* Save to Charts */}
       {sql && (
-        <div className="flex items-center gap-2 mt-3">
-          <input
+        <Space.Compact style={{ width: '100%', marginTop: 12 }}>
+          <Input
             value={saveTitle}
             onChange={(e) => setSaveTitle(e.target.value)}
             placeholder="Chart title to save…"
-            className="ag-input flex-1 px-3 py-1.5 text-xs"
-            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+            size="small"
+            onPressEnter={handleSave}
           />
-          <button
+          <Button
+            type="primary"
+            size="small"
             onClick={handleSave}
             disabled={!saveTitle.trim() || saving || saved}
-            className="ag-btn-primary flex items-center gap-1.5 px-3 py-1.5 text-xs disabled:opacity-50"
+            icon={saved ? <></> : <SaveOutlined />}
+            loading={saving}
           >
-            {saved
-              ? <><CheckCircle className="w-3.5 h-3.5" /> Saved!</>
-              : saving
-                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                : <><Save className="w-3.5 h-3.5" /> Save to Charts</>}
-          </button>
-        </div>
+            {saved ? 'Saved!' : 'Save Chart'}
+          </Button>
+        </Space.Compact>
       )}
     </div>
   );
 }
 
+function DataResultTable({ data }: { data: Record<string, unknown>[] }) {
+  const { token } = theme.useToken();
+  if (data.length === 0) return null;
+  const columns = Object.keys(data[0]);
+
+  const tableCols = columns.map((c) => ({
+    title: c,
+    dataIndex: c,
+    key: c,
+    ellipsis: true as const,
+    width: 150,
+    render: (v: unknown) => <Text style={{ fontSize: 12 }}>{String(v ?? '')}</Text>,
+  }));
+
+  return (
+    <Table
+      dataSource={data.map((row, i) => ({ ...row, _key: i }))}
+      columns={tableCols}
+      rowKey="_key"
+      size="small"
+      pagination={{ pageSize: 10, size: 'small', showSizeChanger: false, showTotal: (t) => `${t} rows` }}
+      scroll={{ x: 'max-content', y: 320 }}
+      style={{ marginTop: 8 }}
+    />
+  );
+}
+
+function renderInsights(text: string): React.ReactNode {
+  const paragraphs = text.split(/\n{2,}/);
+  return paragraphs.map((para, pi) => {
+    const lines = para.split('\n');
+    return (
+      <div key={pi} style={{ marginBottom: pi < paragraphs.length - 1 ? 12 : 0 }}>
+        {lines.map((line, li) => {
+          const rendered = renderInlineMarkdown(line);
+          if (line.startsWith('• ') || line.startsWith('- ') || line.startsWith('* ')) {
+            return <div key={li} style={{ marginLeft: 12, marginBottom: 2 }}>{rendered}</div>;
+          }
+          if (/^\d+\.\s/.test(line)) {
+            return <div key={li} style={{ marginLeft: 12, marginBottom: 2 }}>{rendered}</div>;
+          }
+          return <div key={li} style={{ marginBottom: 2 }}>{rendered}</div>;
+        })}
+      </div>
+    );
+  });
+}
+
+function renderInlineMarkdown(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('*') && part.endsWith('*')) {
+      return <em key={i}>{part.slice(1, -1)}</em>;
+    }
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return (
+        <code key={i} style={{
+          backgroundColor: 'rgba(148,163,184,0.15)',
+          padding: '1px 5px',
+          borderRadius: 4,
+          fontSize: '0.9em',
+        }}>
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    return part;
+  });
+}
+
+function MessageBubble({ message }: { message: ChatMessage }) {
+  const { token } = theme.useToken();
+  const [showSql, setShowSql] = useState(false);
+  const [showData, setShowData] = useState(true);
+  const [showChart, setShowChart] = useState(false);
+
+  if (message.role === 'user') {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+        <div style={{
+          maxWidth: '75%',
+          backgroundColor: token.colorPrimary,
+          color: token.colorWhite,
+          borderRadius: '18px 18px 4px 18px',
+          padding: '10px 16px',
+          boxShadow: `0 1px 4px ${token.colorPrimary}33`,
+        }}>
+          <Text style={{ color: token.colorWhite, whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+        </div>
+        <Avatar
+          size={36}
+          style={{ backgroundColor: token.colorPrimary, flexShrink: 0, marginTop: 2 }}
+          icon={<SendOutlined />}
+        />
+      </div>
+    );
+  }
+
+  const hasResults = message.data && message.data.length > 0;
+  const hasInsights = !!message.insights;
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'flex-start', gap: 8 }}>
+      <Avatar
+        size={36}
+        style={{ backgroundColor: token.colorBgContainer, border: `1.5px solid ${token.colorPrimary}`, flexShrink: 0, marginTop: 2 }}
+        icon={<RobotOutlined style={{ color: token.colorPrimary }} />}
+      />
+      <div style={{
+        maxWidth: '88%',
+        backgroundColor: token.colorBgElevated,
+        borderRadius: '18px 18px 18px 4px',
+        padding: '12px 16px',
+        border: `1px solid ${token.colorBorderSecondary}`,
+        boxShadow: `0 1px 3px rgba(0,0,0,0.06)`,
+      }}>
+        {hasInsights ? (
+          <div style={{ marginBottom: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <BulbOutlined style={{ color: token.colorWarning }} />
+              <Text strong>Insights</Text>
+            </div>
+            <div style={{ lineHeight: 1.6 }}>
+              {renderInsights(message.insights!)}
+            </div>
+          </div>
+        ) : (
+          <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+        )}
+
+        {message.sql && (
+          <>
+            <Divider style={{ margin: '12px 0 8px' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              {message.rowCount !== undefined && (
+                <Tag
+                  color={message.rowCount > 0 ? 'success' : 'warning'}
+                  icon={<TableOutlined />}
+                  style={{ margin: 0 }}
+                >
+                  {message.rowCount} {message.rowCount === 1 ? 'row' : 'rows'}
+                </Tag>
+              )}
+              {hasResults && (
+                <Tooltip title="Visualize data">
+                  <Button
+                    size="small"
+                    type={showChart ? 'primary' : 'text'}
+                    icon={<LineChartOutlined />}
+                    onClick={() => {
+                      setShowChart(!showChart);
+                      if (!showChart) setShowData(false);
+                    }}
+                  >
+                    {showChart ? 'Hide Chart' : 'Visualize'}
+                  </Button>
+                </Tooltip>
+              )}
+              {hasResults && !showChart && (
+                <Tooltip title={showData ? 'Hide data' : 'Show data'}>
+                  <Button
+                    size="small"
+                    type="text"
+                    icon={<TableOutlined />}
+                    onClick={() => setShowData(!showData)}
+                  >
+                    {showData ? 'Hide Data' : 'Show Data'}
+                  </Button>
+                </Tooltip>
+              )}
+              <Tooltip title={showSql ? 'Hide SQL' : 'View SQL query'}>
+                <Button
+                  size="small"
+                  type="text"
+                  icon={<CodeOutlined />}
+                  onClick={() => setShowSql(!showSql)}
+                  style={{ marginLeft: 'auto' }}
+                >
+                  {showSql ? 'Hide SQL' : 'View SQL'}
+                </Button>
+              </Tooltip>
+            </div>
+          </>
+        )}
+
+        {showSql && message.sql && (
+          <pre style={{
+            marginTop: 8,
+            padding: 12,
+            fontSize: 12,
+            backgroundColor: '#1e293b',
+            color: '#a5f3fc',
+            borderRadius: 8,
+            overflowX: 'auto',
+            fontFamily: "'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
+            border: `1px solid ${token.colorBorder}`,
+          }}>
+            {message.sql}
+          </pre>
+        )}
+
+        {message.sql && message.data && message.data.length === 0 && (
+          <div style={{
+            marginTop: 8,
+            padding: '8px 12px',
+            backgroundColor: token.colorWarningBg,
+            borderRadius: 8,
+            border: `1px solid ${token.colorWarningBorder}`,
+          }}>
+            <Text type="warning" style={{ fontSize: 13 }}>Query returned no results.</Text>
+          </div>
+        )}
+
+        {hasResults && showData && !showChart && (
+          <div style={{ marginTop: 8 }}>
+            <DataResultTable data={message.data!} />
+          </div>
+        )}
+
+        {hasResults && showChart && (
+          <InlineChart
+            data={message.data!}
+            sql={message.sql}
+            onClose={() => { setShowChart(false); setShowData(true); }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AIAnalysisPage() {
+  const { token } = theme.useToken();
+  const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);
   const [tables, setTables] = useState<QueryableTable[]>([]);
-  const [showTables, setShowTables] = useState(false);
+  const [tablesLoading, setTablesLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<any>(null);
 
-  useEffect(() => {
-    api.get('/ai/history').then((r) => setMessages(r.data.data)).catch(() => {});
-    api.get('/ai/tables').then((r) => setTables(r.data.data)).catch(() => {});
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    scrollToBottom();
+  }, [messages, loading, scrollToBottom]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  useEffect(() => {
+    api.get('/ai/history')
+      .then((r) => setMessages(r.data.data || []))
+      .catch(() => {});
+    setTablesLoading(true);
+    api.get('/ai/tables')
+      .then((r) => setTables(r.data.data || []))
+      .catch(() => {})
+      .finally(() => setTablesLoading(false));
+  }, []);
+
+  async function handleSubmit(e?: React.FormEvent) {
+    e?.preventDefault();
     const q = question.trim();
     if (!q || loading) return;
 
@@ -216,7 +476,7 @@ export default function AIAnalysisPage() {
         ...prev,
         {
           role: 'assistant',
-          content: result.explanation,
+          content: result.explanation || '',
           sql: result.sql,
           data: result.data,
           rowCount: result.rowCount,
@@ -224,326 +484,294 @@ export default function AIAnalysisPage() {
         },
       ]);
     } catch (err: any) {
+      const errMsg = err.response?.data?.message || 'Something went wrong. Please try again.';
+      message.error(errMsg);
       setMessages((prev) => [
         ...prev,
-        {
-          role: 'assistant',
-          content: err.response?.data?.message || 'Something went wrong. Please try again.',
-        },
+        { role: 'assistant', content: errMsg },
       ]);
     } finally {
       setLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 100);
     }
   }
 
   async function clearHistory() {
-    if (!confirm('Clear all chat history?')) return;
-    await api.delete('/ai/history').catch(() => {});
-    setMessages([]);
+    try {
+      await api.delete('/ai/history');
+      setMessages([]);
+      message.success('Chat history cleared.');
+    } catch {
+      message.error('Failed to clear history.');
+    }
   }
 
+  function handleSuggestedQuestion(q: string) {
+    setQuestion(q);
+    setTimeout(() => {
+      const nativeEvent = new Event('submit', { cancelable: true }) as any;
+      const form = document.getElementById('ai-chat-form') as HTMLFormElement;
+      if (form) {
+        setQuestion(q);
+      }
+    }, 0);
+    setQuestion(q);
+  }
+
+  const chatEmpty = messages.length === 0 && !loading;
+
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)]">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--ag-text)' }}>
-            <BrainCircuit className="w-6 h-6" style={{ color: 'var(--ag-accent)' }} />
-            AI Analysis
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--ag-text2)' }}>
-            Ask questions about your data in plain language.
-          </p>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: 'calc(100vh - 4rem)',
+      maxHeight: 'calc(100vh - 4rem)',
+      padding: '0 0 0 0',
+    }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '16px 24px 12px',
+        flexShrink: 0,
+        borderBottom: `1px solid ${token.colorBorderSecondary}`,
+        backgroundColor: token.colorBgContainer,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Avatar
+            size={40}
+            style={{ backgroundColor: token.colorPrimaryBg }}
+            icon={<RobotOutlined style={{ color: token.colorPrimary, fontSize: 20 }} />}
+          />
+          <div>
+            <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              AI Analysis
+            </Title>
+            <Text type="secondary" style={{ fontSize: 13 }}>
+              Ask questions about your data in plain language
+            </Text>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowTables(!showTables)}
-            className="ag-btn-ghost flex items-center gap-1.5 px-3 py-2 text-xs"
-          >
-            <Database className="w-4 h-4" />
-            Tables ({tables.length})
-          </button>
-          {messages.length > 0 && (
-            <button
-              onClick={clearHistory}
-              className="p-2 rounded-lg transition-colors"
-              style={{ color: 'var(--ag-text3)' }}
-              onMouseOver={(e) => (e.currentTarget.style.color = 'var(--ag-red)')}
-              onMouseOut={(e) => (e.currentTarget.style.color = 'var(--ag-text3)')}
-              title="Clear history"
+        <Space>
+          <Tooltip title="Available queryable tables">
+            <Button
+              icon={<DatabaseOutlined />}
+              size="middle"
+              loading={tablesLoading}
+              onClick={() => {}}
+              style={{ display: 'none' }}
             >
-              <Trash2 className="w-4 h-4" />
-            </button>
+              Tables ({tables.length})
+            </Button>
+          </Tooltip>
+          {messages.length > 0 && (
+            <Popconfirm
+              title="Clear all chat history?"
+              description="This action cannot be undone."
+              onConfirm={clearHistory}
+              okText="Clear"
+              okButtonProps={{ danger: true }}
+            >
+              <Button icon={<DeleteOutlined />} danger type="text" size="middle">
+                Clear
+              </Button>
+            </Popconfirm>
           )}
-        </div>
+        </Space>
       </div>
 
-      {/* Tables sidebar */}
-      {showTables && (
-        <div className="ag-card mb-4 p-4 shrink-0">
-          <h3 className="text-sm font-medium mb-2" style={{ color: 'var(--ag-text2)' }}>Available Tables</h3>
-          {tables.length === 0 ? (
-            <p className="text-xs" style={{ color: 'var(--ag-text3)' }}>No imported tables yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {tables.map((t) => (
-                <div key={t.id} className="flex items-start gap-2 text-xs">
-                  <Table2 className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: 'var(--ag-accent)' }} />
-                  <div>
-                    <span className="font-mono font-medium" style={{ color: 'var(--ag-text)' }}>{t.table_name}</span>
-                    <span className="ml-1" style={{ color: 'var(--ag-text3)' }}>({t.row_count} rows)</span>
-                    <div className="mt-0.5" style={{ color: 'var(--ag-text3)' }}>
-                      {t.column_mapping?.map((c) => c.columnName).join(', ')}
-                    </div>
-                  </div>
+      {tables.length > 0 && (
+        <div style={{
+          padding: '8px 24px',
+          flexShrink: 0,
+          backgroundColor: token.colorBgContainer,
+          borderBottom: `1px solid ${token.colorBorderSecondary}`,
+        }}>
+          <Collapse
+            ghost
+            size="small"
+            items={[{
+              key: 'tables',
+              label: (
+                <Space size={6}>
+                  <DatabaseOutlined style={{ color: token.colorPrimary }} />
+                  <Text strong style={{ fontSize: 13 }}>Available Tables</Text>
+                  <Tag color="blue" style={{ margin: 0 }}>{tables.length}</Tag>
+                </Space>
+              ),
+              children: (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {tables.map((t) => (
+                    <Tag
+                      key={t.id}
+                      icon={<TableOutlined />}
+                      color="default"
+                      style={{ padding: '4px 10px', borderRadius: 6 }}
+                    >
+                      <Text code style={{ fontSize: 12 }}>{t.table_name}</Text>
+                      <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                        ({t.row_count.toLocaleString()} rows)
+                      </Text>
+                    </Tag>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              ),
+            }]}
+          />
         </div>
       )}
 
-      {/* Chat area */}
       <div
-        className="flex-1 overflow-y-auto ag-card p-4 space-y-4 min-h-0"
-        style={{ background: 'var(--ag-surface2)' }}
+        ref={chatContainerRef}
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          minHeight: 0,
+          padding: '20px 24px',
+          backgroundColor: token.colorBgLayout,
+        }}
       >
-        {messages.length === 0 && !loading && (
-          <div className="flex flex-col items-center justify-center h-full" style={{ color: 'var(--ag-text3)' }}>
-            <MessageSquare className="w-12 h-12 mb-3 opacity-30" />
-            <p className="text-sm">No messages yet. Ask a question about your data!</p>
-            <div className="mt-4 space-y-1.5 text-xs">
-              <p style={{ color: 'var(--ag-text3)' }}>Try asking:</p>
-              <p style={{ color: 'var(--ag-text2)' }}>"How many students are from Tozeur?"</p>
-              <p style={{ color: 'var(--ag-text2)' }}>"What is the average GPA by city?"</p>
-              <p style={{ color: 'var(--ag-text2)' }}>"Show me the top 10 highest grades"</p>
+        {chatEmpty && (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            maxWidth: 640,
+            margin: '0 auto',
+            textAlign: 'center',
+          }}>
+            <Avatar
+              size={64}
+              style={{
+                backgroundColor: token.colorPrimaryBg,
+                marginBottom: 16,
+              }}
+              icon={<RobotOutlined style={{ color: token.colorPrimary, fontSize: 32 }} />}
+            />
+            <Title level={3} style={{ marginBottom: 8 }}>
+              Welcome to AI Analysis
+            </Title>
+            <Paragraph type="secondary" style={{ fontSize: 15, marginBottom: 24 }}>
+              Ask any question about your data and get instant insights with visualizations.
+            </Paragraph>
+            <Divider style={{ marginBottom: 24 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                <BulbOutlined /> Try asking
+              </Text>
+            </Divider>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: 10,
+              width: '100%',
+            }}>
+              {SUGGESTED_QUESTIONS.map((q) => (
+                <Card
+                  key={q}
+                  size="small"
+                  hoverable
+                  style={{
+                    borderRadius: 10,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    border: `1px solid ${token.colorBorderSecondary}`,
+                  }}
+                  onClick={() => {
+                    setQuestion(q);
+                    inputRef.current?.focus();
+                  }}
+                >
+                  <Text style={{ fontSize: 13 }}>{q}</Text>
+                </Card>
+              ))}
             </div>
           </div>
         )}
 
-        {messages.map((msg, i) => (
-          <MessageBubble key={i} message={msg} />
-        ))}
+        {!chatEmpty && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 900, margin: '0 auto' }}>
+            {messages.map((msg, i) => (
+              <MessageBubble key={i} message={msg} />
+            ))}
 
-        {loading && (
-          <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--ag-accent)' }}>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Querying and analysing your data…
+            {loading && (
+              <div style={{ display: 'flex', justifyContent: 'flex-start', gap: 8 }}>
+                <Avatar
+                  size={36}
+                  style={{ backgroundColor: token.colorBgContainer, border: `1.5px solid ${token.colorPrimary}`, flexShrink: 0 }}
+                  icon={<RobotOutlined style={{ color: token.colorPrimary }} />}
+                />
+                <div style={{
+                  backgroundColor: token.colorBgElevated,
+                  borderRadius: '18px 18px 18px 4px',
+                  padding: '12px 16px',
+                  border: `1px solid ${token.colorBorderSecondary}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}>
+                  <Spin size="small" />
+                  <Text type="secondary">Analyzing your data…</Text>
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
           </div>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <form onSubmit={handleSubmit} className="mt-4 shrink-0 flex gap-2">
-        <input
-          type="text"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Ask a question about your data…"
-          className="ag-input flex-1 px-4 py-3 text-sm"
-          disabled={loading}
-        />
-        <button
-          type="submit"
-          disabled={loading || !question.trim()}
-          className="ag-btn-primary px-4 py-3"
-        >
-          <Send className="w-5 h-5" />
-        </button>
-      </form>
-    </div>
-  );
-}
-
-function renderMarkdown(text: string): React.ReactNode {
-  // Split on **bold** and *italic* tokens, preserving delimiters
-  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i} style={{ color: 'var(--ag-text)', fontWeight: 600 }}>{part.slice(2, -2)}</strong>;
-    }
-    if (part.startsWith('*') && part.endsWith('*')) {
-      return <em key={i}>{part.slice(1, -1)}</em>;
-    }
-    return part;
-  });
-}
-
-function MessageBubble({ message }: { message: ChatMessage }) {
-  const [showSql, setShowSql] = useState(false);
-  const [showData, setShowData] = useState(true);
-  const [showChart, setShowChart] = useState(false);
-
-  if (message.role === 'user') {
-    return (
-      <div className="flex justify-end">
-        <div
-          className="rounded-xl px-4 py-2.5 max-w-[80%]"
+      <div style={{
+        flexShrink: 0,
+        padding: '12px 24px 16px',
+        backgroundColor: token.colorBgContainer,
+        borderTop: `1px solid ${token.colorBorderSecondary}`,
+      }}>
+        <form
+          id="ai-chat-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
           style={{
-            background: 'var(--ag-accent-lo)',
-            border: '1px solid var(--ag-accent)',
+            display: 'flex',
+            gap: 8,
+            maxWidth: 900,
+            margin: '0 auto',
           }}
         >
-          <p className="text-sm" style={{ color: 'var(--ag-text)' }}>{message.content}</p>
+          <Input
+            ref={inputRef}
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="Ask a question about your data…"
+            size="large"
+            disabled={loading}
+            style={{ borderRadius: 10 }}
+            onPressEnter={(e) => {
+              if (!e.shiftKey) {
+                e.preventDefault();
+                handleSubmit();
+              }
+            }}
+          />
+          <Button
+            type="primary"
+            htmlType="submit"
+            icon={<SendOutlined />}
+            size="large"
+            disabled={loading || !question.trim()}
+            style={{ borderRadius: 10, minWidth: 48 }}
+          />
+        </form>
+        <div style={{ textAlign: 'center', marginTop: 4 }}>
+          <Text type="secondary" style={{ fontSize: 11 }}>
+            AI can make mistakes. Verify important results with your data.
+          </Text>
         </div>
       </div>
-    );
-  }
-
-  const hasResults = message.data && message.data.length > 0;
-  const hasInsights = !!message.insights;
-
-  return (
-    <div className="flex justify-start">
-      <div className="ag-card max-w-[92%] overflow-hidden" style={{ background: 'var(--ag-surface)' }}>
-
-        {/* Insights banner — shown when we have real data analysis */}
-        {hasInsights ? (
-          <div
-            className="px-4 py-3 text-sm leading-relaxed"
-            style={{
-              background: 'var(--ag-accent-lo)',
-              borderBottom: '1px solid var(--ag-accent)',
-              color: 'var(--ag-text)',
-            }}
-          >
-            <div className="flex items-start gap-2">
-              <BrainCircuit
-                className="w-4 h-4 mt-0.5 shrink-0"
-                style={{ color: 'var(--ag-accent)' }}
-              />
-              <p>{renderMarkdown(message.insights!)}</p>
-            </div>
-          </div>
-        ) : (
-          /* Fallback: plain explanation when no insights (e.g. error or empty result) */
-          <div className="px-4 py-3">
-            <p className="text-sm" style={{ color: 'var(--ag-text)' }}>{message.content}</p>
-          </div>
-        )}
-
-        {/* Stats strip */}
-        {message.sql && (
-          <div
-            className="flex items-center gap-3 px-4 py-2 text-xs"
-            style={{
-              borderBottom: hasResults || true ? '1px solid var(--ag-border)' : undefined,
-              background: 'var(--ag-surface2)',
-              color: 'var(--ag-text3)',
-            }}
-          >
-            {message.rowCount !== undefined && (
-              <span
-                className="flex items-center gap-1 font-medium"
-                style={{ color: message.rowCount > 0 ? 'var(--ag-green)' : 'var(--ag-amber)' }}
-              >
-                <Table2 className="w-3.5 h-3.5" />
-                {message.rowCount} {message.rowCount === 1 ? 'row' : 'rows'} returned
-              </span>
-            )}
-            {hasResults && (
-              <button
-                onClick={() => { setShowChart(!showChart); if (!showChart) setShowData(false); else setShowData(true); }}
-                className="flex items-center gap-1 transition-colors hover:opacity-80"
-                style={{ color: showChart ? 'var(--ag-accent)' : 'var(--ag-text3)' }}
-              >
-                <BarChart3 className="w-3.5 h-3.5" />
-                {showChart ? 'Hide chart' : 'Visualize'}
-              </button>
-            )}
-            <button
-              onClick={() => setShowSql(!showSql)}
-              className="ml-auto flex items-center gap-1 transition-colors hover:opacity-80"
-              style={{ color: 'var(--ag-accent)' }}
-            >
-              <Code className="w-3.5 h-3.5" />
-              {showSql ? 'Hide SQL' : 'View SQL'}
-              {showSql ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-            </button>
-          </div>
-        )}
-
-        {/* SQL block (collapsible) */}
-        {showSql && message.sql && (
-          <pre
-            className="px-4 py-3 text-xs overflow-x-auto font-mono"
-            style={{
-              background: 'var(--ag-bg2)',
-              color: 'var(--ag-green)',
-              borderBottom: '1px solid var(--ag-border)',
-            }}
-          >
-            {message.sql}
-          </pre>
-        )}
-
-        {/* Empty result warning */}
-        {message.sql && message.data && message.data.length === 0 && (
-          <div className="flex items-center gap-1.5 px-4 py-3 text-xs" style={{ color: 'var(--ag-amber)' }}>
-            <AlertCircle className="w-3.5 h-3.5" />
-            Query returned no results.
-          </div>
-        )}
-
-        {/* Results table */}
-        {hasResults && !showChart && (
-          <div className="px-4 py-3">
-            <button
-              onClick={() => setShowData(!showData)}
-              className="flex items-center gap-1.5 text-xs mb-2 transition-colors"
-              style={{ color: 'var(--ag-text2)' }}
-            >
-              <Table2 className="w-3.5 h-3.5" />
-              <span className="font-medium">Results</span>
-              <span style={{ color: 'var(--ag-text3)' }}>({message.rowCount} rows)</span>
-              {showData ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-            </button>
-            {showData && <ResultTable data={message.data!} />}
-          </div>
-        )}
-
-        {/* Inline chart */}
-        {hasResults && showChart && (
-          <InlineChart data={message.data!} sql={message.sql} onClose={() => { setShowChart(false); setShowData(true); }} />
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ResultTable({ data }: { data: Record<string, unknown>[] }) {
-  if (data.length === 0) return null;
-  const columns = Object.keys(data[0]);
-
-  return (
-    <div className="overflow-x-auto rounded-lg" style={{ border: '1px solid var(--ag-border)' }}>
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="ag-table-head">
-            {columns.map((c) => (
-              <th key={c} className="px-3 py-2 text-left font-medium whitespace-nowrap">{c}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.slice(0, 500).map((row, ri) => (
-            <tr key={ri} className="ag-table-row">
-              {columns.map((c) => (
-                <td key={c} className="px-3 py-1.5 whitespace-nowrap max-w-[200px] truncate"
-                  style={{ color: 'var(--ag-text2)' }}>
-                  {String(row[c] ?? '')}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {data.length > 500 && (
-        <p className="text-xs text-center py-2" style={{ color: 'var(--ag-text3)' }}>
-          Showing 500 of {data.length} rows
-        </p>
-      )}
     </div>
   );
 }

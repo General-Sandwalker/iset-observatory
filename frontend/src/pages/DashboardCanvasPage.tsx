@@ -1,47 +1,40 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  LayoutDashboard,
-  PlusCircle,
-  Save,
-  Loader2,
-  Trash2,
-  GripVertical,
-  ArrowLeft,
-  BarChart3,
-  Download,
-} from 'lucide-react';
+  Card, Row, Col, Button, Space, Typography, Input, Spin, Tag,
+  Empty, Modal, Popconfirm, message, theme, Grid, Tooltip,
+} from 'antd';
 import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
+  AppstoreOutlined, PlusOutlined, SaveOutlined, DeleteOutlined,
+  HolderOutlined, ArrowLeftOutlined, BarChartOutlined, DownloadOutlined,
+  EditOutlined, ReloadOutlined, FormOutlined,
+} from '@ant-design/icons';
+import {
+  DndContext, closestCenter, KeyboardSensor, PointerSensor,
+  useSensor, useSensors,
 } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
+  arrayMove, SortableContext, sortableKeyboardCoordinates,
+  useSortable, rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  Chart as ChartJS,
-  CategoryScale, LinearScale, BarElement, LineElement, PointElement,
-  ArcElement, RadialLinearScale, Title, Tooltip, Legend, Filler,
+  Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement,
+  ArcElement, RadialLinearScale, Title as ChartTitle, Tooltip as ChartTooltip, Legend, Filler,
 } from 'chart.js';
 import { Bar, Line, Pie, Doughnut, Radar as RadarChart, PolarArea } from 'react-chartjs-2';
 import jsPDF from 'jspdf';
 import api from '../lib/api';
 import type { Dashboard, Chart, ChartType, DashboardLayoutItem } from '../lib/types';
 
+const { Title, Text } = Typography;
+const { useBreakpoint } = Grid;
+
 interface ChartApiData { labels: string[]; values: number[] }
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, LineElement, PointElement,
-  ArcElement, RadialLinearScale, Title, Tooltip, Legend, Filler,
+  ArcElement, RadialLinearScale, ChartTitle, ChartTooltip, Legend, Filler,
 );
 
 const PALETTE = [
@@ -51,55 +44,24 @@ const PALETTE = [
   'rgba(168, 85, 247, 0.7)', 'rgba(34, 197, 94, 0.7)', 'rgba(234, 179, 8, 0.7)',
 ];
 
-// ── Issue #21: unavailable placeholder ──────────────────────────
-function UnavailablePlaceholder({ chartId, onRemove }: { chartId: number; onRemove: (id: number) => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: chartId });
-  return (
-    <div
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition, border: '1px dashed var(--ag-border)', background: 'var(--ag-surface)' }}
-      className="rounded-xl p-4 backdrop-blur"
-    >
-      <div className="flex items-center gap-2 mb-3">
-        <button {...attributes} {...listeners} className="cursor-grab" style={{ color: 'var(--ag-text3)' }}>
-          <GripVertical className="w-4 h-4" />
-        </button>
-        <span className="text-xs flex-1" style={{ color: 'var(--ag-text3)' }}>Chart #{chartId}</span>
-        <button
-          onClick={() => onRemove(chartId)}
-          className="transition-colors"
-          style={{ color: 'var(--ag-text3)' }}
-          onMouseOver={(e) => (e.currentTarget.style.color = 'var(--ag-red)')}
-          onMouseOut={(e) => (e.currentTarget.style.color = 'var(--ag-text3)')}
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
-      </div>
-      <div className="flex flex-col items-center justify-center gap-2" style={{ height: 220 }}>
-        <BarChart3 className="w-8 h-8 opacity-30" style={{ color: 'var(--ag-text3)' }} />
-        <p className="text-xs" style={{ color: 'var(--ag-text3)' }}>Chart no longer exists</p>
-      </div>
-    </div>
-  );
-}
-
 function SortableChartCard({
   chartId, chart, chartData, onRemove,
 }: {
-  chartId: number;
-  chart?: Chart;
-  chartData?: ChartApiData;
-  onRemove: (id: number) => void;
+  chartId: number; chart?: Chart; chartData?: ChartApiData; onRemove: (id: number) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: chartId });
-  const style = { transform: CSS.Transform.toString(transform), transition };
+  const { token } = theme.useToken();
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: chartId });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+  };
 
   function renderMini(type: ChartType, data: ChartApiData) {
     const chartJsData = {
       labels: data.labels,
       datasets: [{
-        label: chart?.title || '',
-        data: data.values,
+        label: chart?.title || '', data: data.values,
         backgroundColor: PALETTE.slice(0, data.labels.length),
         borderColor: PALETTE.map((c) => c.replace('0.7', '1')).slice(0, data.labels.length),
         borderWidth: 1,
@@ -126,47 +88,50 @@ function SortableChartCard({
     }
   }
 
+  const unavailable = !chart || (chartData !== undefined && chartData.labels.length === 0);
+
+  if (unavailable) {
+    return (
+      <div ref={setNodeRef} style={{
+        ...style,
+        border: `1px dashed ${token.colorBorder}`,
+        background: token.colorBgContainer, borderRadius: 8, padding: 16,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <button {...attributes} {...listeners} style={{ cursor: 'grab', border: 'none', background: 'none', padding: 0, color: token.colorTextQuaternary }}>
+            <HolderOutlined />
+          </button>
+          <Text type="secondary" style={{ fontSize: 12, flex: 1 }}>Chart #{chartId}</Text>
+          <Button type="text" danger size="small" icon={<DeleteOutlined />} onClick={() => onRemove(chartId)} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, height: 220 }}>
+          <BarChartOutlined style={{ fontSize: 32, opacity: 0.3, color: token.colorTextQuaternary }} />
+          <Text type="secondary" style={{ fontSize: 12 }}>Chart no longer exists</Text>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      ref={setNodeRef}
-      data-chart-id={chartId}
-      style={{ ...style, border: '1px solid var(--ag-border)', background: 'var(--ag-surface)' }}
-      className="rounded-xl p-4 backdrop-blur transition-all"
-    >
-      <div className="flex items-center gap-2 mb-3">
-        <button
-          {...attributes}
-          {...listeners}
-          className="cursor-grab transition-colors"
-          style={{ color: 'var(--ag-text3)' }}
-          onMouseOver={(e) => (e.currentTarget.style.color = 'var(--ag-text)')}
-          onMouseOut={(e) => (e.currentTarget.style.color = 'var(--ag-text3)')}
-        >
-          <GripVertical className="w-4 h-4" />
+    <div ref={setNodeRef} data-chart-id={chartId} style={{
+      ...style,
+      border: `1px solid ${token.colorBorder}`,
+      background: token.colorBgContainer, borderRadius: 8, padding: 16,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <button {...attributes} {...listeners} style={{ cursor: 'grab', border: 'none', background: 'none', padding: 0, color: token.colorTextQuaternary }}>
+          <HolderOutlined />
         </button>
-        <h3 className="text-sm font-medium flex-1 truncate" style={{ color: 'var(--ag-text)' }}>
+        <Text strong style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {chart?.title || `Chart #${chartId}`}
-        </h3>
-        <span
-          className="text-xs px-2 py-0.5 rounded-full capitalize font-medium"
-          style={{ background: 'var(--ag-accent-lo)', color: 'var(--ag-accent)' }}
-        >
-          {chart?.chart_type || 'bar'}
-        </span>
-        <button
-          onClick={() => onRemove(chartId)}
-          className="transition-colors"
-          style={{ color: 'var(--ag-text3)' }}
-          onMouseOver={(e) => (e.currentTarget.style.color = 'var(--ag-red)')}
-          onMouseOut={(e) => (e.currentTarget.style.color = 'var(--ag-text3)')}
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
+        </Text>
+        <Tag color={token.colorPrimary}>{chart?.chart_type || 'bar'}</Tag>
+        <Button type="text" danger size="small" icon={<DeleteOutlined />} onClick={() => onRemove(chartId)} />
       </div>
       <div style={{ height: 220 }}>
         {chartData ? renderMini(chart?.chart_type || 'bar', chartData) : (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--ag-accent)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <Spin />
           </div>
         )}
       </div>
@@ -175,6 +140,8 @@ function SortableChartCard({
 }
 
 export default function DashboardCanvasPage() {
+  const { token } = theme.useToken();
+  const screens = useBreakpoint();
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [charts, setCharts] = useState<Chart[]>([]);
   const [loading, setLoading] = useState(true);
@@ -186,6 +153,13 @@ export default function DashboardCanvasPage() {
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [showPicker, setShowPicker] = useState(false);
+  const [pickerSearch, setPickerSearch] = useState('');
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState('');
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [refreshInterval, setRefreshInterval] = useState<ReturnType<typeof setInterval> | null>(null);
+
+  const isMobile = !screens.md;
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -200,29 +174,50 @@ export default function DashboardCanvasPage() {
   }, []);
 
   const loadChartData = useCallback(async (items: DashboardLayoutItem[]) => {
-    const needed = items.filter((it) => !chartDataMap[it.chartId]);
-    if (!needed.length) return;
     const results: Record<number, ChartApiData> = {};
-    await Promise.all(needed.map(async (it) => {
-      try { const res = await api.get(`/charts/${it.chartId}/data`); results[it.chartId] = res.data.data; }
-      catch { results[it.chartId] = { labels: [], values: [] }; }
+    await Promise.all(items.map(async (it) => {
+      try {
+        const res = await api.get(`/charts/${it.chartId}/data`);
+        results[it.chartId] = res.data.data;
+      } catch {
+        results[it.chartId] = { labels: [], values: [] };
+      }
     }));
     setChartDataMap((prev) => ({ ...prev, ...results }));
-  }, [chartDataMap]);
+  }, []);
+
+  const refreshAllCharts = useCallback(async () => {
+    if (layoutItems.length === 0) return;
+    const results: Record<number, ChartApiData> = {};
+    await Promise.all(layoutItems.map(async (it) => {
+      try {
+        const res = await api.get(`/charts/${it.chartId}/data`);
+        results[it.chartId] = res.data.data;
+      } catch {
+        results[it.chartId] = { labels: [], values: [] };
+      }
+    }));
+    setChartDataMap(results);
+  }, [layoutItems]);
+
+  useEffect(() => {
+    if (autoRefresh && activeDashboard) {
+      const interval = setInterval(() => { refreshAllCharts(); }, 30000);
+      setRefreshInterval(interval);
+      return () => clearInterval(interval);
+    } else {
+      if (refreshInterval) clearInterval(refreshInterval);
+      setRefreshInterval(null);
+    }
+  }, [autoRefresh, activeDashboard]); // eslint-disable-line
 
   async function openDashboard(dashboard: Dashboard) {
     setActiveDashboard(dashboard);
     const raw: DashboardLayoutItem[] = Array.isArray(dashboard.layout) ? dashboard.layout : [];
-
-    // ── Issue #20: drop any layout entries whose chartId no longer exists ──
     const knownIds = new Set(charts.map((c) => c.id));
-    const items = raw.filter((it) => {
-      const valid = knownIds.has(it.chartId);
-      if (!valid) console.warn(`[Dashboard] Dropping orphaned chartId ${it.chartId} from layout.`);
-      return valid;
-    });
-
+    const items = raw.filter((it) => knownIds.has(it.chartId));
     setLayoutItems(items);
+    setChartDataMap({});
     loadChartData(items);
   }
 
@@ -233,30 +228,61 @@ export default function DashboardCanvasPage() {
       const res = await api.post('/dashboards', { title: newTitle.trim(), description: newDescription.trim() });
       const created = res.data.data;
       setDashboards((prev) => [created, ...prev]);
-      setShowCreate(false); setNewTitle(''); setNewDescription('');
+      setShowCreate(false);
+      setNewTitle('');
+      setNewDescription('');
       openDashboard(created);
-    } catch { alert('Failed to create dashboard.'); }
-    finally { setSaving(false); }
+      message.success('Dashboard created.');
+    } catch { message.error('Failed to create dashboard.'); } finally { setSaving(false); }
   }
 
   async function saveLayout() {
     if (!activeDashboard) return;
     setSaving(true);
     try {
-      await api.put(`/dashboards/${activeDashboard.id}`, { layout: layoutItems });
+      await api.put(`/dashboards/${activeDashboard.id}`, {
+        title: activeDashboard.title,
+        description: activeDashboard.description,
+        layout: layoutItems,
+      });
       setDashboards((prev) => prev.map((d) => d.id === activeDashboard.id ? { ...d, layout: layoutItems } : d));
-    } catch { alert('Failed to save layout.'); }
-    finally { setSaving(false); }
+      message.success('Layout saved.');
+    } catch { message.error('Failed to save layout.'); } finally { setSaving(false); }
+  }
+
+  async function saveTitle(newTitleValue: string) {
+    if (!activeDashboard || !newTitleValue.trim()) { setEditingTitle(false); return; }
+    try {
+      const updated = { ...activeDashboard, title: newTitleValue.trim() };
+      await api.put(`/dashboards/${activeDashboard.id}`, {
+        title: updated.title,
+        description: updated.description,
+        layout: layoutItems,
+      });
+      setActiveDashboard(updated);
+      setDashboards((prev) => prev.map((d) => d.id === activeDashboard.id ? updated : d));
+      message.success('Title updated.');
+    } catch { message.error('Failed to update title.'); }
+    setEditingTitle(false);
   }
 
   function addChart(chartId: number) {
     if (layoutItems.some((it) => it.chartId === chartId)) return;
     const newItem: DashboardLayoutItem = { chartId, x: 0, y: layoutItems.length, w: 6, h: 4 };
     const updated = [...layoutItems, newItem];
-    setLayoutItems(updated); loadChartData(updated); setShowPicker(false);
+    setLayoutItems(updated);
+    loadChartData([newItem]);
+    setShowPicker(false);
   }
 
-  function removeChart(chartId: number) { setLayoutItems((prev) => prev.filter((it) => it.chartId !== chartId)); }
+  function removeChart(chartId: number) {
+    setLayoutItems((prev) => prev.filter((it) => it.chartId !== chartId));
+    setChartDataMap((prev) => {
+      const next = { ...prev };
+      delete next[chartId];
+      return next;
+    });
+  }
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -269,12 +295,16 @@ export default function DashboardCanvasPage() {
   }
 
   async function deleteDashboard(id: number) {
-    if (!confirm('Delete this dashboard?')) return;
     try {
       await api.delete(`/dashboards/${id}`);
       setDashboards((prev) => prev.filter((d) => d.id !== id));
-      if (activeDashboard?.id === id) { setActiveDashboard(null); setLayoutItems([]); }
-    } catch { alert('Failed to delete dashboard.'); }
+      if (activeDashboard?.id === id) {
+        setActiveDashboard(null);
+        setLayoutItems([]);
+        setChartDataMap({});
+      }
+      message.success('Dashboard deleted.');
+    } catch { message.error('Failed to delete dashboard.'); }
   }
 
   async function exportPDF() {
@@ -284,11 +314,10 @@ export default function DashboardCanvasPage() {
       const pageH = 297;
       const marginL = 18;
       const marginR = 18;
-      const usableW = pageW - marginL - marginR; // 174 mm
+      const usableW = pageW - marginL - marginR;
       const dashTitle = activeDashboard?.title || 'Dashboard';
       const exportDate = new Date().toLocaleString();
 
-      // ── Helper: render canvas onto white background → PNG dataURL ──
       function canvasToPng(canvas: HTMLCanvasElement): string {
         const tmp = document.createElement('canvas');
         tmp.width = canvas.width;
@@ -300,8 +329,7 @@ export default function DashboardCanvasPage() {
         return tmp.toDataURL('image/png');
       }
 
-      // ── Collect valid chart entries ─────────────────────────────────
-      const entries: { chart: (typeof charts)[0]; png: string }[] = [];
+      const entries: { chart: Chart; png: string }[] = [];
       for (const item of layoutItems) {
         const chart = charts.find((c) => c.id === item.chartId);
         const container = document.querySelector(`[data-chart-id="${item.chartId}"]`);
@@ -310,246 +338,248 @@ export default function DashboardCanvasPage() {
         entries.push({ chart, png: canvasToPng(canvas) });
       }
 
-      // ── Page 1: Cover / Report header ──────────────────────────────
-      // Accent bar at top
-      doc.setFillColor(59, 130, 246);
-      doc.rect(0, 0, pageW, 38, 'F');
+      let currentPage = 1;
+      function addHeader() {
+        doc.setFillColor(59, 130, 246);
+        doc.rect(0, 0, pageW, 38, 'F');
+        doc.setFontSize(22);
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.text(dashTitle, marginL, 22);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text('ISET Tozeur — Adaptive Digital Observatory', marginL, 31);
+      }
 
-      // Dashboard title
-      doc.setFontSize(22);
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.text(dashTitle, marginL, 22);
+      function addFooter() {
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(150, 150, 170);
+        doc.text(`Generated: ${exportDate}`, marginL, pageH - 8);
+        doc.text(`Page ${currentPage}`, pageW - marginR, pageH - 8, { align: 'right' });
+        doc.setDrawColor(220, 220, 235);
+        doc.setLineWidth(0.3);
+        doc.line(marginL, pageH - 12, pageW - marginR, pageH - 12);
+      }
 
-      // Subtitle row
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.text('ISET Tozeur — Adaptive Digital Observatory', marginL, 31);
+      addHeader();
 
-      // Meta row below bar
       doc.setTextColor(90, 90, 110);
       doc.setFontSize(8.5);
-      doc.text(`Generated: ${exportDate}   ·   ${entries.length} chart${entries.length !== 1 ? 's' : ''}`, marginL, 47);
-
-      // Divider
+      doc.text(`Generated: ${exportDate} · ${entries.length} chart${entries.length !== 1 ? 's' : ''}`, marginL, 47);
       doc.setDrawColor(220, 220, 235);
       doc.setLineWidth(0.4);
       doc.line(marginL, 50, pageW - marginR, 50);
 
-      // ── Charts: one per page section, full width ───────────────────
-      // Two charts per page stacked vertically on the first page,
-      // then fresh pages for the rest.
-      const imgH = 88; // image height in mm
-      const titleBlockH = 14; // space for chart title above image
-      const sectionH = titleBlockH + imgH + 10; // total height per chart block
-
-      let y = 56; // start Y on first page
-      let pageIndex = 0;
+      const imgH = 88;
+      const titleBlockH = 14;
+      const sectionH = titleBlockH + imgH + 10;
+      let y = 56;
 
       for (let i = 0; i < entries.length; i++) {
         const { chart, png } = entries[i];
-
-        // Check if this chart fits on the current page
-        if (y + sectionH > pageH - 12) {
+        if (y + sectionH > pageH - 20) {
+          addFooter();
           doc.addPage();
-          pageIndex++;
-
-          // Thin accent bar on continued pages
-          doc.setFillColor(59, 130, 246);
-          doc.rect(0, 0, pageW, 10, 'F');
-          doc.setFontSize(7.5);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(255, 255, 255);
-          doc.text(`${dashTitle} (continued)`, marginL, 7);
-
-          y = 18;
+          currentPage++;
+          addHeader();
+          y = 50;
         }
-
-        // Chart title
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(25, 25, 50);
         doc.text(chart.title, marginL, y + 6, { maxWidth: usableW });
-
-        // Chart meta (type · dataset)
-        const meta = [chart.chart_type, chart.dataset_name].filter(Boolean).join('  ·  ');
+        const meta = [chart.chart_type, chart.dataset_name].filter(Boolean).join(' · ');
         if (meta) {
           doc.setFontSize(7.5);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(130, 130, 150);
           doc.text(meta.toUpperCase(), marginL, y + 11);
         }
-
-        // Thin separator under title
         doc.setDrawColor(235, 235, 245);
         doc.setLineWidth(0.3);
         doc.line(marginL, y + titleBlockH - 2, pageW - marginR, y + titleBlockH - 2);
-
-        // Chart image
         doc.addImage(png, 'PNG', marginL, y + titleBlockH, usableW, imgH);
-
-        // Page number in footer
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(180);
-        doc.text(`Page ${pageIndex + 1}`, pageW - marginR, pageH - 8, { align: 'right' });
-
         y += sectionH;
       }
 
+      addFooter();
       doc.save(`${dashTitle.replace(/\s+/g, '_')}_report.pdf`);
+      message.success('PDF exported.');
     } catch (err) {
       console.error('PDF export error:', err);
-      alert('Failed to export PDF. Check the browser console for details.');
+      message.error('Failed to export PDF.');
     }
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--ag-accent)' }} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 256 }}>
+        <Spin size="large" />
       </div>
     );
   }
 
   if (activeDashboard) {
+    const filteredCharts = charts.filter((c) => {
+      if (!pickerSearch.trim()) return true;
+      const q = pickerSearch.toLowerCase();
+      return c.title.toLowerCase().includes(q) || c.chart_type.toLowerCase().includes(q) || (c.dataset_name ?? '').toLowerCase().includes(q);
+    });
+
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => { setActiveDashboard(null); setLayoutItems([]); setChartDataMap({}); }}
-              className="p-2 rounded-lg transition-colors"
-              style={{ color: 'var(--ag-text3)' }}
-              onMouseOver={(e) => (e.currentTarget.style.color = 'var(--ag-text)')}
-              onMouseOut={(e) => (e.currentTarget.style.color = 'var(--ag-text3)')}
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{
+          display: 'flex',
+          alignItems: isMobile ? 'flex-start' : 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 12,
+          flexDirection: isMobile ? 'column' : 'row',
+        }}>
+          <Space size="middle">
+            <Button
+              icon={<ArrowLeftOutlined />}
+              onClick={() => {
+                setActiveDashboard(null);
+                setLayoutItems([]);
+                setChartDataMap({});
+                setAutoRefresh(false);
+              }}
+            />
             <div>
-              <h1 className="text-xl font-bold" style={{ color: 'var(--ag-text)' }}>{activeDashboard.title}</h1>
-              {activeDashboard.description && (
-                <p className="text-sm" style={{ color: 'var(--ag-text2)' }}>{activeDashboard.description}</p>
+              {editingTitle ? (
+                <Input
+                  autoFocus
+                  value={titleInput}
+                  onChange={(e) => setTitleInput(e.target.value)}
+                  onBlur={() => saveTitle(titleInput)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') saveTitle(titleInput); if (e.key === 'Escape') setEditingTitle(false); }}
+                  style={{ fontWeight: 600, fontSize: 16, marginBottom: 2 }}
+                />
+              ) : (
+                <Title
+                  level={4}
+                  style={{ margin: 0, cursor: 'pointer' }}
+                  onClick={() => { setTitleInput(activeDashboard.title); setEditingTitle(true); }}
+                >
+                  {activeDashboard.title}
+                  <EditOutlined style={{ fontSize: 14, marginLeft: 8, color: token.colorTextQuaternary }} />
+                </Title>
               )}
+              {activeDashboard.description && <Text type="secondary">{activeDashboard.description}</Text>}
             </div>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={exportPDF}
-              disabled={layoutItems.length === 0}
-              className="ag-btn-ghost flex items-center gap-2 px-3 py-2 text-sm disabled:opacity-50"
-            >
-              <Download className="w-4 h-4" /> PDF
-            </button>
-            <button onClick={() => setShowPicker(true)} className="ag-btn-ghost flex items-center gap-2 px-3 py-2 text-sm">
-              <PlusCircle className="w-4 h-4" /> Add Chart
-            </button>
-            <button
-              onClick={saveLayout}
-              disabled={saving}
-              className="ag-btn-primary flex items-center gap-2 px-4 py-2 text-sm disabled:opacity-50"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Save
-            </button>
-          </div>
+          </Space>
+          <Space wrap>
+            <Tooltip title={autoRefresh ? 'Auto-refresh ON (30s)' : 'Auto-refresh OFF'}>
+              <Button
+                icon={<ReloadOutlined spin={autoRefresh} />}
+                type={autoRefresh ? 'primary' : 'default'}
+                onClick={() => setAutoRefresh((v) => !v)}
+              />
+            </Tooltip>
+            <Button icon={<ReloadOutlined />} onClick={refreshAllCharts} disabled={layoutItems.length === 0}>Refresh</Button>
+            <Button icon={<DownloadOutlined />} onClick={exportPDF} disabled={layoutItems.length === 0}>PDF</Button>
+            <Button icon={<PlusOutlined />} onClick={() => { setShowPicker(true); setPickerSearch(''); }}>Add Chart</Button>
+            <Button type="primary" icon={<SaveOutlined />} onClick={saveLayout} loading={saving}>Save</Button>
+          </Space>
         </div>
 
-        {/* Chart Picker Modal */}
-        {showPicker && (
-          <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(0 0 0 / 0.55)' }}>
-            <div
-              className="rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto"
-              style={{ background: 'var(--ag-surface)', border: '1px solid var(--ag-border)', backdropFilter: 'blur(12px)' }}
-            >
-              <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--ag-text)' }}>Add Chart to Dashboard</h2>
-              {charts.length === 0 ? (
-                <p className="text-sm" style={{ color: 'var(--ag-text2)' }}>
-                  No charts available. Create charts first in the Visualizations page.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {charts.map((chart) => {
-                    const alreadyAdded = layoutItems.some((it) => it.chartId === chart.id);
-                    return (
-                      <button
-                        key={chart.id}
-                        onClick={() => !alreadyAdded && addChart(chart.id)}
-                        disabled={alreadyAdded}
-                        className="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
-                        style={{
-                          background: alreadyAdded ? 'var(--ag-surface2)' : 'var(--ag-bg2, var(--ag-surface2))',
-                          color: alreadyAdded ? 'var(--ag-text3)' : 'var(--ag-text)',
-                          cursor: alreadyAdded ? 'not-allowed' : 'pointer',
-                          opacity: alreadyAdded ? 0.6 : 1,
-                        }}
-                        onMouseOver={(e) => !alreadyAdded && ((e.currentTarget as HTMLButtonElement).style.background = 'var(--ag-accent-lo)')}
-                        onMouseOut={(e) => !alreadyAdded && ((e.currentTarget as HTMLButtonElement).style.background = 'var(--ag-surface2)')}
-                      >
-                        <BarChart3 className="w-5 h-5 shrink-0" style={{ color: 'var(--ag-accent)' }} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{chart.title}</p>
-                          <p className="text-xs" style={{ color: 'var(--ag-text3)' }}>
-                            {chart.chart_type} · {chart.dataset_name || `Dataset #${chart.dataset_id}`}
-                          </p>
-                        </div>
-                        {alreadyAdded && <span className="text-xs" style={{ color: 'var(--ag-text3)' }}>Added</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              <button onClick={() => setShowPicker(false)} className="ag-btn-ghost w-full mt-4 px-4 py-2 text-sm">
-                Close
-              </button>
+        <Modal
+          title="Add Chart to Dashboard"
+          open={showPicker}
+          onCancel={() => setShowPicker(false)}
+          footer={<Button onClick={() => setShowPicker(false)}>Close</Button>}
+          width={560}
+        >
+          <Input
+            placeholder="Search charts by title, type, or dataset…"
+            prefix={<span style={{ color: token.colorTextQuaternary }}>🔍</span>}
+            value={pickerSearch}
+            onChange={(e) => setPickerSearch(e.target.value)}
+            allowClear
+            style={{ marginBottom: 12 }}
+          />
+          {charts.length === 0 ? (
+            <Empty description="No charts available. Create charts first in the Visualizations page." image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          ) : filteredCharts.length === 0 ? (
+            <Empty description="No charts match your search." image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          ) : (
+            <div style={{ maxHeight: 400, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {filteredCharts.map((chart) => {
+                const alreadyAdded = layoutItems.some((it) => it.chartId === chart.id);
+                return (
+                  <Card
+                    key={chart.id}
+                    hoverable={!alreadyAdded}
+                    size="small"
+                    style={{
+                      opacity: alreadyAdded ? 0.6 : 1,
+                      cursor: alreadyAdded ? 'not-allowed' : 'pointer',
+                    }}
+                    onClick={() => !alreadyAdded && addChart(chart.id)}
+                  >
+                    <Space>
+                      <BarChartOutlined style={{ color: token.colorPrimary, fontSize: 18 }} />
+                      <div>
+                        <Text strong>{chart.title}</Text>
+                        <br />
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          <Tag color={token.colorPrimary} style={{ fontSize: 10 }}>{chart.chart_type}</Tag>
+                          {chart.dataset_name || `Dataset #${chart.dataset_id}`}
+                        </Text>
+                      </div>
+                      {alreadyAdded && <Tag color="success">Added</Tag>}
+                    </Space>
+                  </Card>
+                );
+              })}
             </div>
-          </div>
-        )}
+          )}
+        </Modal>
 
-        {/* Canvas */}
         {layoutItems.length === 0 ? (
-          <div
-            className="rounded-xl p-16 text-center border-2 border-dashed"
-            style={{ background: 'var(--ag-surface2)', borderColor: 'var(--ag-border)' }}
-          >
-            <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-30" style={{ color: 'var(--ag-text3)' }} />
-            <h3 className="font-medium mb-2" style={{ color: 'var(--ag-text)' }}>Empty Dashboard</h3>
-            <p className="text-sm mb-4" style={{ color: 'var(--ag-text3)' }}>
-              Add charts from your saved visualizations to build this dashboard.
-            </p>
-            <button onClick={() => setShowPicker(true)} className="ag-btn-primary px-4 py-2 text-sm">
-              Add Chart
-            </button>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '80px 24px',
+            textAlign: 'center',
+          }}>
+            <div style={{
+              width: 80, height: 80, borderRadius: '50%',
+              background: `linear-gradient(135deg, ${token.colorPrimaryBg}, ${token.colorBgContainer})`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginBottom: 24,
+            }}>
+              <AppstoreOutlined style={{ fontSize: 36, color: token.colorPrimary }} />
+            </div>
+            <Title level={4} style={{ color: token.colorTextSecondary, marginBottom: 8 }}>
+              Empty Dashboard
+            </Title>
+            <Text type="secondary" style={{ fontSize: 14, maxWidth: 400, marginBottom: 24 }}>
+              Add charts from your saved visualizations to build a comprehensive dashboard view.
+            </Text>
+            <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => { setShowPicker(true); setPickerSearch(''); }}>
+              Add Your First Chart
+            </Button>
           </div>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={layoutItems.map((it) => it.chartId)} strategy={verticalListSortingStrategy}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {layoutItems.map((item) => {
-                  const chart = charts.find((c) => c.id === item.chartId);
-                  const chartData = chartDataMap[item.chartId];
-                  // Issue #21: show placeholder if chart missing or data resolved empty
-                  const unavailable = !chart || (chartData !== undefined && chartData.labels.length === 0);
-                  if (unavailable) {
-                    return (
-                      <UnavailablePlaceholder
-                        key={item.chartId}
-                        chartId={item.chartId}
-                        onRemove={removeChart}
-                      />
-                    );
-                  }
-                  return (
+            <SortableContext items={layoutItems.map((it) => it.chartId)} strategy={rectSortingStrategy}>
+              <Row gutter={[16, 16]}>
+                {layoutItems.map((item) => (
+                  <Col xs={24} md={12} lg={8} key={item.chartId}>
                     <SortableChartCard
-                      key={item.chartId}
                       chartId={item.chartId}
-                      chart={chart}
-                      chartData={chartData}
+                      chart={charts.find((c) => c.id === item.chartId)}
+                      chartData={chartDataMap[item.chartId]}
                       onRemove={removeChart}
                     />
-                  );
-                })}
-              </div>
+                  </Col>
+                ))}
+              </Row>
             </SortableContext>
           </DndContext>
         )}
@@ -558,118 +588,117 @@ export default function DashboardCanvasPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--ag-text)' }}>
-            <LayoutDashboard className="w-7 h-7" style={{ color: 'var(--ag-accent)' }} />
-            Dashboards
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--ag-text2)' }}>
-            Compose multi-chart dashboards with drag-and-drop
-          </p>
-        </div>
-        <button onClick={() => setShowCreate(true)} className="ag-btn-primary flex items-center gap-2 px-4 py-2 text-sm">
-          <PlusCircle className="w-4 h-4" /> New Dashboard
-        </button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{
+        display: 'flex',
+        alignItems: isMobile ? 'flex-start' : 'center',
+        justifyContent: 'space-between',
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: 12,
+      }}>
+        <Space size="middle">
+          <AppstoreOutlined style={{ fontSize: 24, color: token.colorPrimary }} />
+          <div>
+            <Title level={3} style={{ margin: 0 }}>Dashboards</Title>
+            <Text type="secondary">Compose multi-chart dashboards with drag-and-drop</Text>
+          </div>
+        </Space>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setShowCreate(true)}>New Dashboard</Button>
       </div>
 
-      {showCreate && (
-        <div className="ag-card p-6 space-y-4">
-          <h2 className="text-base font-semibold" style={{ color: 'var(--ag-text)' }}>Create Dashboard</h2>
+      <Modal
+        title={<Space><FormOutlined style={{ color: token.colorPrimary }} /> Create Dashboard</Space>}
+        open={showCreate}
+        onCancel={() => { setShowCreate(false); setNewTitle(''); setNewDescription(''); }}
+        onOk={handleCreate}
+        okText="Create"
+        okButtonProps={{ loading: saving, disabled: !newTitle.trim() }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <label className="block text-sm mb-1" style={{ color: 'var(--ag-text2)' }}>Title</label>
-            <input
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="e.g. Student Performance Overview"
-              className="ag-input w-full px-3 py-2 text-sm"
-            />
+            <Text strong style={{ display: 'block', marginBottom: 8 }}>Title</Text>
+            <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="e.g. Student Performance Overview" />
           </div>
           <div>
-            <label className="block text-sm mb-1" style={{ color: 'var(--ag-text2)' }}>Description (optional)</label>
-            <input
+            <Text strong style={{ display: 'block', marginBottom: 8 }}>Description (optional)</Text>
+            <Input.TextArea
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
               placeholder="Briefly describe this dashboard"
-              className="ag-input w-full px-3 py-2 text-sm"
+              rows={3}
             />
           </div>
-          <div className="flex gap-3">
-            <button
-              onClick={handleCreate}
-              disabled={!newTitle.trim() || saving}
-              className="ag-btn-primary flex items-center gap-2 px-4 py-2 text-sm disabled:opacity-50"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Create
-            </button>
-            <button
-              onClick={() => { setShowCreate(false); setNewTitle(''); setNewDescription(''); }}
-              className="ag-btn-ghost px-4 py-2 text-sm"
-            >
-              Cancel
-            </button>
-          </div>
         </div>
-      )}
+      </Modal>
 
       {dashboards.length === 0 && !showCreate ? (
-        <div
-          className="rounded-xl p-12 text-center border"
-          style={{ background: 'var(--ag-surface2)', borderColor: 'var(--ag-border)' }}
-        >
-          <LayoutDashboard className="w-12 h-12 mx-auto mb-4 opacity-30" style={{ color: 'var(--ag-text3)' }} />
-          <h3 className="font-medium mb-2" style={{ color: 'var(--ag-text)' }}>No dashboards yet</h3>
-          <p className="text-sm mb-4" style={{ color: 'var(--ag-text3)' }}>
-            Create a dashboard to combine multiple charts in one view.
-          </p>
-          <button onClick={() => setShowCreate(true)} className="ag-btn-primary px-4 py-2 text-sm">
-            Create Dashboard
-          </button>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '80px 24px',
+          textAlign: 'center',
+        }}>
+          <div style={{
+            width: 80, height: 80, borderRadius: '50%',
+            background: `linear-gradient(135deg, ${token.colorPrimaryBg}, ${token.colorBgContainer})`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            marginBottom: 24,
+          }}>
+            <AppstoreOutlined style={{ fontSize: 36, color: token.colorPrimary }} />
+          </div>
+          <Title level={4} style={{ color: token.colorTextSecondary, marginBottom: 8 }}>
+            No Dashboards Yet
+          </Title>
+          <Text type="secondary" style={{ fontSize: 14, maxWidth: 400, marginBottom: 24 }}>
+            Create a dashboard to combine multiple charts into a single, organized view for presentations and analysis.
+          </Text>
+          <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => setShowCreate(true)}>
+            Create Your First Dashboard
+          </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Row gutter={[16, 16]}>
           {dashboards.map((db) => {
             const chartCount = Array.isArray(db.layout) ? db.layout.length : 0;
             return (
-              <div
-                key={db.id}
-                className="ag-card p-5 cursor-pointer transition-all"
-                onClick={() => openDashboard(db)}
-                onMouseOver={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = 'var(--ag-accent)')}
-                onMouseOut={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = 'var(--ag-border)')}
-              >
-                <div className="flex items-start justify-between mb-1">
-                  <h3 className="text-sm font-semibold" style={{ color: 'var(--ag-text)' }}>{db.title}</h3>
-                  <span
-                    className="text-xs px-2 py-0.5 rounded-full"
-                    style={{ background: 'var(--ag-surface2)', color: 'var(--ag-text3)' }}
-                  >
-                    {chartCount} chart{chartCount !== 1 ? 's' : ''}
-                  </span>
-                </div>
-                {db.description && (
-                  <p className="text-xs mb-3 line-clamp-2" style={{ color: 'var(--ag-text3)' }}>{db.description}</p>
-                )}
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-xs" style={{ color: 'var(--ag-text3)' }}>
-                    {new Date(db.updated_at).toLocaleDateString()}
-                  </span>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); deleteDashboard(db.id); }}
-                    className="transition-colors"
-                    style={{ color: 'var(--ag-text3)' }}
-                    onMouseOver={(e) => (e.currentTarget.style.color = 'var(--ag-red)')}
-                    onMouseOut={(e) => (e.currentTarget.style.color = 'var(--ag-text3)')}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
+              <Col xs={24} sm={12} lg={8} key={db.id}>
+                <Card
+                  hoverable
+                  onClick={() => openDashboard(db)}
+                  style={{ cursor: 'pointer', height: '100%' }}
+                  styles={{ body: { display: 'flex', flexDirection: 'column', height: '100%' } }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                    <Text strong style={{ fontSize: 16 }}>{db.title}</Text>
+                    <Tag color={chartCount > 0 ? 'blue' : 'default'}>{chartCount} chart{chartCount !== 1 ? 's' : ''}</Tag>
+                  </div>
+                  {db.description && <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 12 }}>{db.description}</Text>}
+                  {chartCount > 0 && (
+                    <div style={{ display: 'flex', gap: 4, marginBottom: 12, flexWrap: 'wrap' }}>
+                      {Array.isArray(db.layout) && db.layout.slice(0, 4).map((item) => {
+                        const c = charts.find((ch) => ch.id === item.chartId);
+                        return c ? (
+                          <Tag key={item.chartId} style={{ fontSize: 11 }}>
+                            <BarChartOutlined /> {c.title.length > 16 ? c.title.slice(0, 16) + '…' : c.title}
+                          </Tag>
+                        ) : null;
+                      })}
+                      {chartCount > 4 && <Tag>+{chartCount - 4} more</Tag>}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: 8, borderTop: `1px solid ${token.colorBorderSecondary}` }}>
+                    <Text type="secondary" style={{ fontSize: 12 }}>{new Date(db.updated_at).toLocaleDateString()}</Text>
+                    <Popconfirm title="Delete this dashboard?" onConfirm={() => deleteDashboard(db.id)} okText="Delete" okButtonProps={{ danger: true }}>
+                      <Button type="text" danger size="small" icon={<DeleteOutlined />} onClick={(e) => e.stopPropagation()} />
+                    </Popconfirm>
+                  </div>
+                </Card>
+              </Col>
             );
           })}
-        </div>
+        </Row>
       )}
     </div>
   );

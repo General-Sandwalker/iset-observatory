@@ -1,32 +1,67 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
+import {
+  Card,
+  Form,
+  Input,
+  Button,
+  Alert,
+  Spin,
+  Checkbox,
+  Typography,
+  Row,
+  Col,
+  Divider,
+  Tooltip,
+  theme,
+} from 'antd';
+import {
+  ThunderboltOutlined,
+  MailOutlined,
+  LockOutlined,
+  LoginOutlined,
+  RobotOutlined,
+  DatabaseOutlined,
+  BarChartOutlined,
+  SafetyOutlined,
+} from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
-import { Activity, LogIn, AlertCircle } from 'lucide-react';
-import { Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, useLocation } from 'react-router-dom';
+
+const { Title, Text, Paragraph } = Typography;
+
+const features = [
+  { icon: <RobotOutlined />, label: 'AI Analysis', description: 'Intelligent data insights & analytics' },
+  { icon: <DatabaseOutlined />, label: 'Data Import', description: 'Seamless multi-source data integration' },
+  { icon: <BarChartOutlined />, label: 'Chart Builder', description: 'Interactive visualizations & dashboards' },
+  { icon: <SafetyOutlined />, label: 'Role-Based Access', description: 'Secure permission management' },
+];
 
 export default function LoginPage() {
   const { login, isAuthenticated, isLoading } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const { token } = theme.useToken();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const from = (location.state as any)?.from?.pathname || '/dashboard';
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--ag-bg)' }}>
-        <div className="w-8 h-8 rounded-full border-2 border-transparent animate-spin"
-          style={{ borderTopColor: 'var(--ag-accent)' }} />
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Spin size="large" />
       </div>
     );
   }
 
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  if (isAuthenticated) return <Navigate to={from} replace />;
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (values: { email: string; password: string }) => {
     setError('');
     setSubmitting(true);
     try {
-      await login({ email, password });
+      await login({ email: values.email, password: values.password });
+      navigate(from, { replace: true });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {
@@ -34,100 +69,280 @@ export default function LoginPage() {
     }
   };
 
-  return (
+  const brandPanelGradient = `linear-gradient(135deg, ${token.colorPrimary} 0%, ${token.colorPrimaryActive} 50%, ${token.colorInfo} 100%)`;
+
+  const brandPanel = (
     <div
-      className="min-h-screen flex items-center justify-center px-4"
-      style={{ background: 'var(--ag-bg)' }}
+      style={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '48px 40px',
+        background: brandPanelGradient,
+        borderRadius: token.borderRadiusLG,
+        position: 'relative',
+        overflow: 'hidden',
+        color: '#fff',
+        textAlign: 'center',
+      }}
     >
-      {/* Aerogel ambient glow */}
       <div
-        className="absolute inset-0 pointer-events-none"
         style={{
-          background:
-            'radial-gradient(ellipse 60% 55% at 50% 40%, rgba(96 165 250 / 0.08) 0%, transparent 70%)',
+          position: 'absolute',
+          top: '-60px',
+          right: '-60px',
+          width: 200,
+          height: 200,
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.08)',
         }}
       />
-
-      <div className="w-full max-w-md relative z-10">
-        {/* Logo / title */}
-        <div className="text-center mb-8">
-          <div
-            className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4"
-            style={{ background: 'var(--ag-accent-lo)', boxShadow: '0 0 0 1px var(--ag-accent)' }}
-          >
-            <Activity className="w-7 h-7" style={{ color: 'var(--ag-accent)' }} />
-          </div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--ag-text)' }}>
-            ISET Observatory
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--ag-text2)' }}>
-            Sign in to access your dashboard
-          </p>
-        </div>
-
-        {/* Card */}
-        <div className="ag-card p-8">
-          {error && (
-            <div className="ag-alert-red flex items-center gap-2 text-sm px-4 py-3 mb-6">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium mb-1.5"
-                style={{ color: 'var(--ag-text2)' }}
-              >
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@iset-tozeur.tn"
-                className="ag-input w-full px-3 py-2.5 text-sm"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium mb-1.5"
-                style={{ color: 'var(--ag-text2)' }}
-              >
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="ag-input w-full px-3 py-2.5 text-sm"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="ag-btn-primary w-full flex items-center justify-center gap-2 py-2.5 text-sm"
-            >
-              <LogIn className="w-4 h-4" />
-              {submitting ? 'Signing in…' : 'Sign in'}
-            </button>
-          </form>
-        </div>
-
-        <p className="text-center text-xs mt-6" style={{ color: 'var(--ag-text3)' }}>
-          ISET Tozeur — Adaptive Digital Observatory
-        </p>
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '-40px',
+          left: '-40px',
+          width: 140,
+          height: 140,
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.06)',
+        }}
+      />
+      <div
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 80,
+          height: 80,
+          borderRadius: '50%',
+          backgroundColor: 'rgba(255,255,255,0.15)',
+          border: '2px solid rgba(255,255,255,0.3)',
+          marginBottom: 24,
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <ThunderboltOutlined style={{ fontSize: 40, color: '#fff' }} />
       </div>
+
+      <Title level={2} style={{ color: '#fff', margin: 0, marginBottom: 8, position: 'relative', zIndex: 1 }}>
+        ISET Observatory
+      </Title>
+      <Paragraph
+        style={{
+          color: 'rgba(255,255,255,0.85)',
+          fontSize: 15,
+          maxWidth: 320,
+          marginBottom: 40,
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        Adaptive Digital Observatory for Data Management & AI Analytics
+      </Paragraph>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%', maxWidth: 280, position: 'relative', zIndex: 1 }}>
+        {features.map((f) => (
+          <div key={f.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, textAlign: 'left' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                borderRadius: token.borderRadius,
+                backgroundColor: 'rgba(255,255,255,0.12)',
+                flexShrink: 0,
+                fontSize: 18,
+              }}
+            >
+              {f.icon}
+            </div>
+            <div>
+              <Text strong style={{ color: '#fff', fontSize: 14, display: 'block' }}>
+                {f.label}
+              </Text>
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>{f.description}</Text>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const mobileLogo = (
+    <div style={{ textAlign: 'center', marginBottom: 24 }}>
+      <div
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 56,
+          height: 56,
+          borderRadius: '50%',
+          backgroundColor: token.colorPrimaryBg,
+          border: `1px solid ${token.colorPrimary}`,
+          marginBottom: 12,
+        }}
+      >
+        <ThunderboltOutlined style={{ fontSize: 28, color: token.colorPrimary }} />
+      </div>
+      <Title level={4} style={{ margin: 0, color: token.colorText }}>
+        ISET Observatory
+      </Title>
+    </div>
+  );
+
+  const loginForm = (
+    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', padding: '40px 32px' }}>
+      <div style={{ maxWidth: 400, width: '100%', margin: '0 auto' }}>
+        <div style={{ marginBottom: 28 }}>
+          <Title level={3} style={{ margin: 0, marginBottom: 4 }}>
+            Welcome back
+          </Title>
+          <Text type="secondary">Sign in to your account to continue</Text>
+        </div>
+
+        <Card
+          style={{
+            borderRadius: token.borderRadiusLG,
+            boxShadow: token.boxShadowSecondary,
+          }}
+          styles={{ body: { padding: 0 } }}
+        >
+          <div style={{ padding: 24 }}>
+            {error && (
+              <Alert
+                type="error"
+                message={error}
+                showIcon
+                closable
+                onClose={() => setError('')}
+                style={{ marginBottom: 24 }}
+              />
+            )}
+
+            <Form layout="vertical" onFinish={handleSubmit} requiredMark={false} initialValues={{ remember: true }}>
+              <Form.Item
+                label="Email"
+                name="email"
+                rules={[
+                  { required: true, message: 'Please enter your email' },
+                  { type: 'email', message: 'Please enter a valid email' },
+                ]}
+              >
+                <Input prefix={<MailOutlined style={{ color: token.colorTextQuaternary }} />} placeholder="admin@iset-tozeur.tn" size="large" />
+              </Form.Item>
+
+              <Form.Item
+                label="Password"
+                name="password"
+                rules={[{ required: true, message: 'Please enter your password' }]}
+              >
+                <Input.Password prefix={<LockOutlined style={{ color: token.colorTextQuaternary }} />} placeholder="••••••••" size="large" />
+              </Form.Item>
+
+              <Form.Item>
+                <Row justify="space-between" align="middle">
+                  <Col>
+                    <Checkbox name="remember" defaultChecked>
+                      Remember me
+                    </Checkbox>
+                  </Col>
+                  <Col>
+                    <Tooltip title="Contact your administrator">
+                      <Typography.Link disabled style={{ fontSize: 13 }}>
+                        Forgot password?
+                      </Typography.Link>
+                    </Tooltip>
+                  </Col>
+                </Row>
+              </Form.Item>
+
+              <Form.Item style={{ marginBottom: 0 }}>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={submitting}
+                  icon={!submitting ? <LoginOutlined /> : undefined}
+                  block
+                  size="large"
+                >
+                  {submitting ? 'Signing in…' : 'Sign in'}
+                </Button>
+              </Form.Item>
+            </Form>
+          </div>
+        </Card>
+
+        <Divider style={{ margin: '24px 0 16px' }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            ISET Tozeur
+          </Text>
+        </Divider>
+        <Text type="tertiary" style={{ display: 'block', textAlign: 'center', fontSize: 11 }}>
+          Adaptive Digital Observatory
+        </Text>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ minHeight: '100vh', background: token.colorBgLayout }}>
+      <Row style={{ minHeight: '100vh' }} align="stretch">
+        <Col
+          xs={0}
+          lg={12}
+          style={{
+            padding: 24,
+            display: 'flex',
+          }}
+        >
+          {brandPanel}
+        </Col>
+        <Col
+          xs={24}
+          lg={12}
+          style={{
+            padding: '24px 16px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
+          <div
+            className="lg-hidden"
+            style={{
+              display: 'block',
+              width: '100%',
+              maxWidth: 400,
+            }}
+          >
+            <div className="show-on-mobile" style={{ display: 'none' }}>
+              {mobileLogo}
+            </div>
+          </div>
+          <div
+            style={{
+              display: 'block',
+              width: '100%',
+              maxWidth: 400,
+            }}
+          >
+            <style>{`
+              @media (max-width: 991px) {
+                .show-on-mobile { display: block !important; }
+              }
+            `}</style>
+            {mobileLogo}
+            {loginForm}
+          </div>
+        </Col>
+      </Row>
     </div>
   );
 }

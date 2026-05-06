@@ -51,7 +51,7 @@ services:
       - ./backend:/app
       - /app/node_modules
 
-  # ─── Frontend (React + Vite + Tailwind) ────────────────────
+  # ─── Frontend (React + Vite + Ant Design) ────────────────────
   frontend:
     build:
       context: ./frontend

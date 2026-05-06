@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import RoleRoute from './components/auth/RoleRoute';
 import AppLayout from './components/layout/AppLayout';
 import LoginPage from './pages/LoginPage';
 import LandingPage from './pages/LandingPage';
@@ -16,6 +18,8 @@ import DashboardCanvasPage from './pages/DashboardCanvasPage';
 import SettingsPage from './pages/SettingsPage';
 import DatabaseExplorerPage from './pages/DatabaseExplorerPage';
 import TableEditorPage from './pages/TableEditorPage';
+import ForeignKeyManagerPage from './pages/ForeignKeyManagerPage';
+import SavedQueriesPage from './pages/SavedQueriesPage';
 
 export default function App() {
   return (
@@ -31,13 +35,15 @@ export default function App() {
           <Route
             element={
               <ProtectedRoute>
-                <AppLayout />
+                <NotificationProvider>
+                  <AppLayout />
+                </NotificationProvider>
               </ProtectedRoute>
             }
           >
             <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="users" element={<UsersPage />} />
-            <Route path="roles" element={<RolesPage />} />
+            <Route path="users" element={<RoleRoute roles={['super_admin', 'admin']}><UsersPage /></RoleRoute>} />
+            <Route path="roles" element={<RoleRoute roles={['super_admin', 'admin']}><RolesPage /></RoleRoute>} />
             <Route path="import" element={<DataImportPage />} />
             <Route path="ai" element={<AIAnalysisPage />} />
             <Route path="charts" element={<ChartBuilderPage />} />
@@ -46,6 +52,8 @@ export default function App() {
             <Route path="settings" element={<SettingsPage />} />
             <Route path="explore" element={<DatabaseExplorerPage />} />
             <Route path="explore/:id" element={<TableEditorPage />} />
+            <Route path="relations" element={<ForeignKeyManagerPage />} />
+            <Route path="queries" element={<SavedQueriesPage />} />
           </Route>
 
           {/* Fallback */}
