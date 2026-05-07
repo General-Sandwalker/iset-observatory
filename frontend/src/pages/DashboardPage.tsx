@@ -164,9 +164,10 @@ export default function DashboardPage() {
     try {
       const { data } = await api.get<{ success: boolean; data: Chart[] }>('/charts');
       if (data.success) setCharts(data.data ?? []);
-    } catch {
-      setCharts([]);
-    } finally {
+  } catch {
+    setCharts([]);
+    message.warning('Could not load charts.');
+  } finally {
       setChartsLoading(false);
     }
   };

@@ -5,6 +5,7 @@ import {
   Modal, Form, Switch, Tabs,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { useNavigate } from 'react-router-dom';
 import {
   CodeOutlined, PlusOutlined, DeleteOutlined,
   PlayCircleOutlined, EditOutlined, SaveOutlined,
@@ -23,6 +24,7 @@ const { TextArea } = Input;
 export default function SavedQueriesPage() {
   const { token } = theme.useToken();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [queries, setQueries] = useState<SavedQuery[]>([]);
   const [loading, setLoading] = useState(true);
@@ -306,44 +308,46 @@ export default function SavedQueriesPage() {
       key: 'actions',
       width: 160,
       align: 'right' as const,
-      render: (_: unknown, record: SavedQuery) => (
-        <Space size={4}>
-          <Tooltip title="Execute">
-            <Button
-              type="text"
-              size="small"
-              icon={<PlayCircleOutlined />}
-              style={{ color: token.colorSuccess }}
-              onClick={() => executeQuery(record)}
-            />
-          </Tooltip>
-          {record.created_by === user?.id && (
-            <>
-              <Tooltip title="Edit">
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<EditOutlined />}
-                  style={{ color: token.colorPrimary }}
-                  onClick={() => openEditModal(record)}
-                />
+    render: (_: unknown, record: SavedQuery) => (
+      <Space size={4}>
+        <Tooltip title="Execute">
+          <Button
+            type="text"
+            size="small"
+            icon={<PlayCircleOutlined />}
+            style={{ color: token.colorSuccess }}
+            onClick={() => executeQuery(record)}
+            aria-label="Execute query"
+          />
+        </Tooltip>
+        {record.created_by === user?.id && (
+          <>
+            <Tooltip title="Edit">
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                style={{ color: token.colorPrimary }}
+                onClick={() => openEditModal(record)}
+                aria-label="Edit query"
+              />
+            </Tooltip>
+            <Popconfirm
+              title="Delete this query?"
+              description="This action cannot be undone."
+              onConfirm={() => handleDelete(record.id)}
+              okText="Delete"
+              cancelText="Cancel"
+              okButtonProps={{ danger: true }}
+            >
+              <Tooltip title="Delete">
+                <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label="Delete query" />
               </Tooltip>
-              <Popconfirm
-                title="Delete this query?"
-                description="This action cannot be undone."
-                onConfirm={() => handleDelete(record.id)}
-                okText="Delete"
-                cancelText="Cancel"
-                okButtonProps={{ danger: true }}
-              >
-                <Tooltip title="Delete">
-                  <Button type="text" size="small" danger icon={<DeleteOutlined />} />
-                </Tooltip>
-              </Popconfirm>
-            </>
-          )}
-        </Space>
-      ),
+            </Popconfirm>
+          </>
+        )}
+      </Space>
+    ),
     },
   ];
 
@@ -584,14 +588,16 @@ export default function SavedQueriesPage() {
                 )}
               </Space>
             </div>
-            <Space>
-              <Button
-                icon={<BarChartOutlined />}
-                onClick={() => message.success('Navigate to Charts page with SQL pre-filled')}
-              >
-                Save as Chart
-              </Button>
-            </Space>
+              <Space>
+                <Tooltip title="Create a chart from this query's data">
+                  <Button
+                    icon={<BarChartOutlined />}
+                    onClick={() => navigate('/charts')}
+                  >
+                    Save as Chart
+                  </Button>
+                </Tooltip>
+              </Space>
           </div>
 
           {resultsLoading ? (

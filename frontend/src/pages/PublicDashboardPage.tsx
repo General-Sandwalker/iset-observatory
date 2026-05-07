@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Card, Row, Col, Space, Typography, Tag, Spin, Empty,
-  Button, theme, Grid, Avatar, Divider, Modal, List,
+  Button, theme, Grid, Avatar, Divider, Modal, List, Alert, message,
 } from 'antd';
 import {
   AppstoreOutlined, FileTextOutlined, BarChartOutlined,
@@ -23,6 +23,7 @@ export default function PublicDashboardPage() {
   const [dashboards, setDashboards] = useState<any[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [viewReport, setViewReport] = useState<Report | null>(null);
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -30,6 +31,7 @@ export default function PublicDashboardPage() {
   useEffect(() => {
     async function fetchPublic() {
       setLoading(true);
+      setError(null);
       try {
         const [dashRes, repRes] = await Promise.all([
           api.get('/public/dashboards'),
@@ -38,7 +40,7 @@ export default function PublicDashboardPage() {
         setDashboards(dashRes.data.data || []);
         setReports(repRes.data.data || []);
       } catch {
-        // silently fail — public endpoints
+        setError('Failed to load public content. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -52,7 +54,7 @@ export default function PublicDashboardPage() {
       setViewReport(res.data.data);
       setReportModalOpen(true);
     } catch {
-      // ignore
+      message.error('Failed to load report.');
     }
   }, []);
 
@@ -111,11 +113,15 @@ export default function PublicDashboardPage() {
 
       {/* Content */}
       <div style={{ maxWidth: 1100, width: '100%', margin: '0 auto', padding: isMobile ? '24px 16px' : '32px 24px', flex: 1 }}>
-        {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80 }}>
-            <Spin size="large" />
-          </div>
-        ) : (
+    {loading ? (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80 }}>
+        <Spin size="large" />
+      </div>
+    ) : error ? (
+      <div style={{ maxWidth: 500, margin: '48px auto' }}>
+        <Alert type="error" message={error} showIcon />
+      </div>
+    ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
             {/* Published Dashboards */}
             <div>

@@ -29,19 +29,17 @@ function ProfileCard() {
   const { token } = antTheme.useToken();
   const { user, updateUser } = useAuth();
   const [saving, setSaving] = useState(false);
-  const [alert, setAlert] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
   const initials = getInitials(user?.fullName || user?.email || '?');
 
   async function handleSave(values: { fullName: string; email: string }) {
     setSaving(true);
-    setAlert(null);
     try {
       const { data } = await api.put('/auth/me', { fullName: values.fullName, email: values.email });
       updateUser({ fullName: data.user.fullName, email: data.user.email });
-      setAlert({ type: 'success', msg: 'Profile updated successfully.' });
+      message.success('Profile updated successfully.');
     } catch (err: any) {
-      setAlert({ type: 'error', msg: err.response?.data?.message || 'Failed to update profile.' });
+      message.error(err.response?.data?.message || 'Failed to update profile.');
     } finally {
       setSaving(false);
     }
@@ -88,14 +86,13 @@ function ProfileCard() {
               <Input placeholder="you@example.com" />
             </Form.Item>
           </Col>
-        </Row>
-        {alert && <Alert type={alert.type} message={alert.msg} showIcon style={{ marginBottom: 16 }} />}
-        <div style={{ textAlign: 'right' }}>
-          <Button type="primary" htmlType="submit" icon={<CheckOutlined />} loading={saving}>
-            Save Profile
-          </Button>
-        </div>
-      </Form>
+      </Row>
+      <div style={{ textAlign: 'right' }}>
+        <Button type="primary" htmlType="submit" icon={<CheckOutlined />} loading={saving}>
+          Save Profile
+        </Button>
+      </div>
+    </Form>
     </Card>
   );
 }
@@ -103,24 +100,22 @@ function ProfileCard() {
 function PasswordCard() {
   const { token } = antTheme.useToken();
   const [saving, setSaving] = useState(false);
-  const [alert, setAlert] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
   async function handleSave(values: { currentPassword: string; newPassword: string; confirmPassword: string }) {
-    setAlert(null);
     if (values.newPassword.length < 6) {
-      setAlert({ type: 'error', msg: 'Password must be at least 6 characters.' });
+      message.error('Password must be at least 6 characters.');
       return;
     }
     if (values.newPassword !== values.confirmPassword) {
-      setAlert({ type: 'error', msg: 'New passwords do not match.' });
+      message.error('New passwords do not match.');
       return;
     }
     setSaving(true);
     try {
       await api.put('/auth/me/password', { currentPassword: values.currentPassword, newPassword: values.newPassword });
-      setAlert({ type: 'success', msg: 'Password changed successfully.' });
+      message.success('Password changed successfully.');
     } catch (err: any) {
-      setAlert({ type: 'error', msg: err.response?.data?.message || 'Failed to change password.' });
+      message.error(err.response?.data?.message || 'Failed to change password.');
     } finally {
       setSaving(false);
     }
@@ -143,14 +138,13 @@ function PasswordCard() {
               <Input.Password />
             </Form.Item>
           </Col>
-        </Row>
-        {alert && <Alert type={alert.type} message={alert.msg} showIcon style={{ marginBottom: 16 }} />}
-        <div style={{ textAlign: 'right' }}>
-          <Button type="primary" htmlType="submit" icon={<LockOutlined />} loading={saving}>
-            Update Password
-          </Button>
-        </div>
-      </Form>
+    </Row>
+    <div style={{ textAlign: 'right' }}>
+      <Button type="primary" htmlType="submit" icon={<LockOutlined />} loading={saving}>
+        Update Password
+      </Button>
+    </div>
+  </Form>
     </Card>
   );
 }

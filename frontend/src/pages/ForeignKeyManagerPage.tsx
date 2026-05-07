@@ -1030,16 +1030,25 @@ export default function ForeignKeyManagerPage() {
         }
         open={suggestionsModalOpen}
         onCancel={() => { setSuggestionsModalOpen(false); setSuggestions([]); }}
-        footer={[
-          <Button key="close" onClick={() => { setSuggestionsModalOpen(false); setSuggestions([]); }}>
-            Dismiss
-          </Button>,
-          suggestions.length > 0 && (
-            <Button key="all" type="primary" onClick={applyAllSuggestions} icon={<CheckCircleOutlined />}>
+      footer={[
+        <Button key="close" onClick={() => { setSuggestionsModalOpen(false); setSuggestions([]); }}>
+          Dismiss
+        </Button>,
+        suggestions.length > 0 && (
+          <Popconfirm
+            key="all"
+            title={`Apply all ${suggestions.length} suggestions?`}
+            description="This will create foreign key links for all suggested relationships."
+            onConfirm={applyAllSuggestions}
+            okText="Apply All"
+            cancelText="Cancel"
+          >
+            <Button type="primary" icon={<CheckCircleOutlined />}>
               Apply All ({suggestions.length})
             </Button>
-          ),
-        ]}
+          </Popconfirm>
+        ),
+      ]}
         width={720}
       >
         {suggestionsLoading ? (

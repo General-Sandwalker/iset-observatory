@@ -98,11 +98,11 @@ function SortableChartCard({
         background: token.colorBgContainer, borderRadius: 8, padding: 16,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <button {...attributes} {...listeners} style={{ cursor: 'grab', border: 'none', background: 'none', padding: 0, color: token.colorTextQuaternary }}>
+          <button {...attributes} {...listeners} aria-label="Drag to reorder" style={{ cursor: 'grab', border: 'none', background: 'none', padding: 0, color: token.colorTextQuaternary }}>
             <HolderOutlined />
           </button>
           <Text type="secondary" style={{ fontSize: 12, flex: 1 }}>Chart #{chartId}</Text>
-          <Button type="text" danger size="small" icon={<DeleteOutlined />} onClick={() => onRemove(chartId)} />
+          <Button type="text" danger size="small" icon={<DeleteOutlined />} onClick={() => onRemove(chartId)} aria-label="Remove chart" />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, height: 220 }}>
           <BarChartOutlined style={{ fontSize: 32, opacity: 0.3, color: token.colorTextQuaternary }} />
@@ -119,7 +119,7 @@ function SortableChartCard({
       background: token.colorBgContainer, borderRadius: 8, padding: 16,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <button {...attributes} {...listeners} style={{ cursor: 'grab', border: 'none', background: 'none', padding: 0, color: token.colorTextQuaternary }}>
+        <button {...attributes} {...listeners} aria-label="Drag to reorder" style={{ cursor: 'grab', border: 'none', background: 'none', padding: 0, color: token.colorTextQuaternary }}>
           <HolderOutlined />
         </button>
         <Text strong style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -171,7 +171,9 @@ export default function DashboardCanvasPage() {
     Promise.all([
       api.get('/dashboards').then((r) => setDashboards(r.data.data)),
       api.get('/charts').then((r) => setCharts(r.data.data)),
-    ]).finally(() => setLoading(false));
+    ]).catch(() => {
+      message.error('Failed to load dashboards or charts.');
+    }).finally(() => setLoading(false));
   }, []);
 
   const loadChartData = useCallback(async (items: DashboardLayoutItem[]) => {
@@ -182,6 +184,7 @@ export default function DashboardCanvasPage() {
         results[it.chartId] = res.data.data;
       } catch {
         results[it.chartId] = { labels: [], values: [] };
+        message.warning(`Failed to load data for chart #${it.chartId}.`);
       }
     }));
     setChartDataMap((prev) => ({ ...prev, ...results }));
@@ -425,10 +428,9 @@ export default function DashboardCanvasPage() {
       addFooter();
       doc.save(`${dashTitle.replace(/\s+/g, '_')}_report.pdf`);
       message.success('PDF exported.');
-    } catch (err) {
-      console.error('PDF export error:', err);
-      message.error('Failed to export PDF.');
-    }
+  } catch (err) {
+    message.error('Failed to export PDF.');
+  }
   }
 
   if (loading) {
@@ -490,14 +492,21 @@ export default function DashboardCanvasPage() {
             </div>
           </Space>
         <Space wrap>
-          <Tooltip title={isPublic ? 'Published — click to unpublish' : 'Private — click to publish'}>
+        <Tooltip title={isPublic ? 'Published — click to unpublish' : 'Private — click to publish'}>
+          <Popconfirm
+            title={isPublic ? 'Unpublish this dashboard?' : 'Publish this dashboard?'}
+            description={isPublic ? 'It will no longer be visible to the public.' : 'It will be visible to anyone, including unauthenticated users.'}
+            onConfirm={togglePublic}
+            okText={isPublic ? 'Unpublish' : 'Publish'}
+            cancelText="Cancel"
+          >
             <Switch
               checked={isPublic}
-              onChange={togglePublic}
               checkedChildren={<GlobalOutlined />}
               unCheckedChildren={<LockOutlined />}
             />
-          </Tooltip>
+          </Popconfirm>
+        </Tooltip>
           <Tooltip title={autoRefresh ? 'Auto-refresh ON (30s)' : 'Auto-refresh OFF'}>
               <Button
                 icon={<ReloadOutlined spin={autoRefresh} />}

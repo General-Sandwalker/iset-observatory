@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Card, Input, Button, Space, Typography, Spin, Collapse, Select, Tag,
-  Empty, Popconfirm, Table, message, Tooltip, Avatar, Divider, theme,
+  Empty, Popconfirm, Table, message, Tooltip, Avatar, Divider, theme, Alert,
 } from 'antd';
 import {
   RobotOutlined, SendOutlined, DeleteOutlined, SaveOutlined,
@@ -24,7 +24,6 @@ ChartJS.register(
 );
 
 const { Title, Text, Paragraph } = Typography;
-const { Panel } = Collapse;
 
 const PALETTE = [
   'rgba(59,130,246,0.75)', 'rgba(16,185,129,0.75)', 'rgba(245,158,11,0.75)',
@@ -445,18 +444,21 @@ export default function AIAnalysisPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
+  const [historyError, setHistoryError] = useState(false);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages, loading, scrollToBottom]);
 
   useEffect(() => {
+    setHistoryError(false);
     api.get('/ai/history')
       .then((r) => setMessages(r.data.data || []))
-      .catch(() => {});
+      .catch(() => { setHistoryError(true); });
     setTablesLoading(true);
     api.get('/ai/tables')
       .then((r) => setTables(r.data.data || []))
-      .catch(() => {})
+      .catch(() => { message.error('Failed to load available tables.'); })
       .finally(() => setTablesLoading(false));
   }, []);
 
@@ -631,18 +633,27 @@ export default function AIAnalysisPage() {
           backgroundColor: token.colorBgLayout,
         }}
       >
-        {chatEmpty && (
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%',
-            maxWidth: 640,
-            margin: '0 auto',
-            textAlign: 'center',
-          }}>
-            <Avatar
+    {chatEmpty && (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%',
+        maxWidth: 640,
+        margin: '0 auto',
+        textAlign: 'center',
+      }}>
+        {historyError && (
+          <Alert
+            type="warning"
+            message="Could not load chat history"
+            description="Starting a fresh conversation."
+            showIcon
+            style={{ marginBottom: 16, width: '100%' }}
+          />
+        )}
+        <Avatar
               size={64}
               style={{
                 backgroundColor: token.colorPrimaryBg,

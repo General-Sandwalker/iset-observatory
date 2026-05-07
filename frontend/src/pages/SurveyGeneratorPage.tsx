@@ -178,7 +178,9 @@ export default function SurveyGeneratorPage() {
     try {
       const { data } = await api.get<{ success: boolean; data: SavedSurvey[] }>('/surveys');
       if (data.success) setSaved(data.data);
-    } catch { /* non-fatal */ }
+    } catch {
+    message.error('Failed to load saved surveys.');
+  }
     finally { setLoadingSaved(false); }
   }, []);
 

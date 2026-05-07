@@ -330,7 +330,9 @@ export default function ChartBuilderPage() {
     Promise.all([
       api.get('/charts').then((r) => setCharts(r.data.data)),
       api.get('/datasets').then((r) => setDatasets(r.data.data.filter((d: Dataset) => d.status === 'imported'))),
-    ]).finally(() => setLoading(false));
+    ]).catch(() => {
+      message.error('Failed to load charts or datasets.');
+    }).finally(() => setLoading(false));
   }, []);
 
   const resetBuilder = useCallback(() => {
@@ -1069,30 +1071,30 @@ export default function ChartBuilderPage() {
                     </Text>
                   </div>
 
-                  <div style={{ marginTop: 12, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    <Tooltip title="View">
-                      <Button size="small" icon={<EyeOutlined />} onClick={() => viewChart(chart)} />
-                    </Tooltip>
-                    {chart.dataset_id && (
-                      <Tooltip title="Edit">
-                        <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(chart)} />
-                      </Tooltip>
-                    )}
-                    <Tooltip title="Duplicate">
-                      <Button size="small" icon={<CopyOutlined />} onClick={() => handleDuplicate(chart)} />
-                    </Tooltip>
-                    <Popconfirm
-                      title="Delete this chart?"
-                      description="This action cannot be undone."
-                      onConfirm={() => handleDelete(chart.id)}
-                      okText="Delete"
-                      okButtonProps={{ danger: true }}
-                    >
-                      <Tooltip title="Delete">
-                        <Button size="small" danger icon={<DeleteOutlined />} />
-                      </Tooltip>
-                    </Popconfirm>
-                  </div>
+        <div style={{ marginTop: 12, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <Tooltip title="View">
+            <Button size="small" icon={<EyeOutlined />} onClick={() => viewChart(chart)} aria-label="View chart" />
+          </Tooltip>
+          {chart.dataset_id && (
+            <Tooltip title="Edit">
+              <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(chart)} aria-label="Edit chart" />
+            </Tooltip>
+          )}
+          <Tooltip title="Duplicate">
+            <Button size="small" icon={<CopyOutlined />} onClick={() => handleDuplicate(chart)} aria-label="Duplicate chart" />
+          </Tooltip>
+          <Popconfirm
+            title="Delete this chart?"
+            description="This action cannot be undone."
+            onConfirm={() => handleDelete(chart.id)}
+            okText="Delete"
+            okButtonProps={{ danger: true }}
+          >
+            <Tooltip title="Delete">
+              <Button size="small" danger icon={<DeleteOutlined />} aria-label="Delete chart" />
+            </Tooltip>
+          </Popconfirm>
+        </div>
                 </Card>
               </Col>
             );

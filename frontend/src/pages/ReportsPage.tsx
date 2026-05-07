@@ -187,20 +187,27 @@ export default function ReportsPage() {
       ),
     },
     {
-      title: 'Status',
-      key: 'is_public',
-      width: 100,
-      responsive: ['md' as const],
-      render: (_: unknown, r: Report) => (
+    title: 'Status',
+    key: 'is_public',
+    width: 100,
+    responsive: ['md' as const],
+    render: (_: unknown, r: Report) => (
+      <Popconfirm
+        title={r.is_public ? 'Unpublish this report?' : 'Publish this report?'}
+        description={r.is_public ? 'It will no longer be visible to the public.' : 'It will be visible to anyone, including unauthenticated users.'}
+        onConfirm={() => handleTogglePublic(r)}
+        okText={r.is_public ? 'Unpublish' : 'Publish'}
+        cancelText="Cancel"
+      >
         <Tag
           color={r.is_public ? 'green' : 'default'}
           icon={r.is_public ? <GlobalOutlined /> : <LockOutlined />}
           style={{ margin: 0, cursor: 'pointer' }}
-          onClick={() => handleTogglePublic(r)}
         >
           {r.is_public ? 'Public' : 'Private'}
         </Tag>
-      ),
+      </Popconfirm>
+    ),
     },
     {
       title: 'Created By',
@@ -225,12 +232,13 @@ export default function ReportsPage() {
       align: 'right' as const,
       render: (_: unknown, r: Report) => (
         <Space size={4}>
-          <Tooltip title="View">
-            <Button
-              type="text"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={async () => {
+        <Tooltip title="View">
+          <Button
+            type="text"
+            size="small"
+            icon={<EyeOutlined />}
+            aria-label="View report"
+            onClick={async () => {
                 try {
                   const res = await api.get(`/reports/${r.id}`);
                   setViewReport(res.data.data);
@@ -241,12 +249,13 @@ export default function ReportsPage() {
               }}
             />
           </Tooltip>
-          <Tooltip title="Edit">
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => {
+            <Tooltip title="Edit">
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                aria-label="Edit report"
+                onClick={() => {
                 setEditingReport(r);
                 editForm.setFieldsValue({
                   title: r.title,
@@ -257,22 +266,29 @@ export default function ReportsPage() {
               }}
             />
           </Tooltip>
-          <Tooltip title={r.is_public ? 'Unpublish' : 'Publish'}>
-            <Button
-              type="text"
-              size="small"
-              icon={r.is_public ? <LockOutlined /> : <GlobalOutlined />}
-              onClick={() => handleTogglePublic(r)}
-            />
-          </Tooltip>
+            <Tooltip title={r.is_public ? 'Unpublish' : 'Publish'}>
+              <Popconfirm
+                title={r.is_public ? 'Unpublish this report?' : 'Publish this report?'}
+                description={r.is_public ? 'It will no longer be visible to the public.' : 'It will be visible to anyone.'}
+                onConfirm={() => handleTogglePublic(r)}
+                okText={r.is_public ? 'Unpublish' : 'Publish'}
+                cancelText="Cancel"
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  icon={r.is_public ? <LockOutlined /> : <GlobalOutlined />}
+                />
+              </Popconfirm>
+            </Tooltip>
           <Popconfirm
             title="Delete this report?"
             onConfirm={() => handleDelete(r.id)}
             okText="Delete"
             okButtonProps={{ danger: true }}
           >
-            <Tooltip title="Delete">
-              <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+              <Tooltip title="Delete">
+                <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label="Delete report" />
             </Tooltip>
           </Popconfirm>
         </Space>
