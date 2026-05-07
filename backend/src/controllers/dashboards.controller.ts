@@ -66,17 +66,18 @@ export async function getDashboard(req: Request, res: Response): Promise<void> {
 
 export async function updateDashboard(req: Request, res: Response): Promise<void> {
   try {
-    const { title, description, layout } = req.body;
+    const { title, description, layout, isPublic } = req.body;
 
     const result = await pool.query(
       `UPDATE dashboards
        SET title = COALESCE($1, title),
-           description = COALESCE($2, description),
-           layout = COALESCE($3, layout),
-           updated_at = NOW()
-       WHERE id = $4
+       description = COALESCE($2, description),
+       layout = COALESCE($3, layout),
+       is_public = COALESCE($4, is_public),
+       updated_at = NOW()
+       WHERE id = $5
        RETURNING *`,
-      [title, description, layout ? JSON.stringify(layout) : null, req.params.id],
+      [title, description, layout ? JSON.stringify(layout) : null, isPublic !== undefined ? isPublic : null, req.params.id],
     );
 
     if (result.rows.length === 0) {

@@ -5,8 +5,10 @@ import pool from '../config/database';
 
 export interface JwtPayload {
   id: number;
-  email: string;
+  email?: string;
+  username?: string;
   role: string;
+  userType?: 'staff' | 'client';
 }
 
 declare global {
@@ -66,14 +68,20 @@ export function requirePermission(...requiredPermissions: string[]) {
       return next();
     }
 
+    // Client users don't use RBAC — deny by default unless the route explicitly allows client roles
+    if ((req.user as any).userType === 'client') {
+      res.status(403).json({ success: false, message: 'Client accounts cannot access this resource.' });
+      return;
+    }
+
     try {
       const result = await pool.query(
         `SELECT DISTINCT p.name
-         FROM user_roles ur
-         JOIN role_permissions rp ON rp.role_id = ur.role_id
-         JOIN permissions p ON p.id = rp.permission_id
-         WHERE ur.user_id = $1
-           AND p.name = ANY($2)`,
+        FROM user_roles ur
+        JOIN role_permissions rp ON rp.role_id = ur.role_id
+        JOIN permissions p ON p.id = rp.permission_id
+        WHERE ur.user_id = $1
+        AND p.name = ANY($2)`,
         [req.user.id, requiredPermissions]
       );
 

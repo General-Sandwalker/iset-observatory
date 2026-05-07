@@ -11,6 +11,7 @@ import type { User, AuthState, LoginCredentials } from '../lib/types';
 
 interface AuthContextValue extends AuthState {
   login: (creds: LoginCredentials) => Promise<void>;
+  clientLogin: (creds: { username: string; password: string }) => Promise<void>;
   logout: () => void;
   updateUser: (patch: Partial<User>) => void;
 }
@@ -34,14 +35,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      try {
-        const { data } = await api.get('/auth/me');
-        setState({
-          user: data.user,
-          token,
-          isAuthenticated: true,
-          isLoading: false,
-        });
+    try {
+      const { data } = await api.get('/auth/me');
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setState({
+        user: data.user,
+        token,
+        isAuthenticated: true,
+        isLoading: false,
+      });
       } catch {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -66,6 +68,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const clientLogin = useCallback(async (creds: { username: string; password: string }) => {
+    const { data } = await api.post('/auth/client-login', creds);
+
+    const user = { ...data.user, userType: 'client' as const };
+
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(user));
+
+    setState({
+      user,
+      token: data.token,
+      isAuthenticated: true,
+      isLoading: false,
+    });
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -82,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout, updateUser }}>
+    <AuthContext.Provider value={{ ...state, login, clientLogin, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

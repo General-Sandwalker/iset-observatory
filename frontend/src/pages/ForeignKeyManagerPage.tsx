@@ -255,27 +255,23 @@ export default function ForeignKeyManagerPage() {
         columns: s.columns.map((c) => `${c.columnName} (${c.columnType})`),
       }));
 
-      const res = await api.post('/ai/query', {
-        question: `Given these tables and their columns, suggest foreign key relationships. For each suggestion, provide: source_table, source_column, target_table, target_column, and a brief reason. Tables: ${JSON.stringify(tableInfo)}. Return ONLY a JSON array of objects with keys: sourceTable, sourceColumn, targetTable, targetColumn, reason. No markdown, no explanation, just the JSON array.`,
-      });
+      const res = await api.post('/foreign-keys/ai-suggest', { tables: tableInfo });
 
-      const raw = res.data.insights || res.data.answer || res.data.content || '';
-      const jsonMatch = raw.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        const aiSuggestions: SuggestedLink[] = parsed.map((s: any) => ({
+      const raw = res.data.suggestions || res.data.data || [];
+      if (Array.isArray(raw) && raw.length > 0) {
+        const aiSuggestions: SuggestedLink[] = raw.map((s: any) => ({
           sourceTable: s.sourceTable || s.source_table,
           sourceColumn: s.sourceColumn || s.source_column,
           targetTable: s.targetTable || s.target_table,
           targetColumn: s.targetColumn || s.target_column,
-          confidence: 'medium' as const,
+          confidence: (s.confidence || 'medium') as 'high' | 'medium' | 'low',
           reason: s.reason || 'AI suggested',
         }));
         setSuggestions(aiSuggestions);
         setSuggestionsModalOpen(true);
         message.success(`AI found ${aiSuggestions.length} potential relationships.`);
       } else {
-        message.info('AI did not return structured suggestions. Try the auto-detect feature instead.');
+        message.info('AI did not find any relationships. Try the auto-detect feature instead.');
       }
     } catch {
       message.error('AI suggestion failed. Try the auto-detect feature instead.');
@@ -953,6 +949,52 @@ export default function ForeignKeyManagerPage() {
             />
           </Col>
         </Row>
+
+        {sourceColumn && targetColumn && (() => {
+          const srcCol = sourceSchema?.columns.find((c) => c.columnName === sourceColumn);
+          const tgtCol = targetSchema?.columns.find((c) => c.columnName === targetColumn);
+          if (!srcCol || !tgtCol) return null;
+          const srcIsText = srcCol.columnType === 'TEXT';
+          const tgtIsText = tgtCol.columnType === 'TEXT';
+          const srcIsNum = ['INTEGER', 'NUMERIC'].includes(srcCol.columnType);
+          const tgtIsNum = ['INTEGER', 'NUMERIC'].includes(tgtCol.columnType);
+          if (srcIsNum && tgtIsText) {
+            return (
+              <Alert
+                type="warning"
+                showIcon
+                icon={<WarningOutlined />}
+                message="Type mismatch"
+                description={`Source column "${sourceColumn}" is ${srcCol.columnType} but target "${targetColumn}" is ${tgtCol.columnType}. This link may be rejected by the server.`}
+                style={{ marginTop: 16, borderRadius: token.borderRadius }}
+              />
+            );
+          }
+          if (srcIsText && tgtIsNum) {
+            return (
+              <Alert
+                type="warning"
+                showIcon
+                icon={<WarningOutlined />}
+                message="Type mismatch"
+                description={`Source column "${sourceColumn}" is ${srcCol.columnType} but target "${targetColumn}" is ${tgtCol.columnType}. This link may be rejected by the server.`}
+                style={{ marginTop: 16, borderRadius: token.borderRadius }}
+              />
+            );
+          }
+          if (srcCol.columnType !== tgtCol.columnType && !(srcIsNum && tgtIsNum)) {
+            return (
+              <Alert
+                type="info"
+                showIcon
+                message="Different types"
+                description={`Source is ${srcCol.columnType}, target is ${tgtCol.columnType}. The link will still be created but may not work as expected.`}
+                style={{ marginTop: 16, borderRadius: token.borderRadius }}
+              />
+            );
+          }
+          return null;
+        })()}
 
         {bestAutoColumns.length > 0 && !sourceColumn && !targetColumn && (
           <div style={{ marginTop: 16 }}>

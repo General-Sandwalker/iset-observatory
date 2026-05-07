@@ -252,8 +252,84 @@ const migrations = [
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
       CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
-      CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(user_id, is_read);
-    `,
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(user_id, is_read);
+  `,
+  },
+  {
+    name: '012_clients_schema',
+    sql: `
+    CREATE TABLE IF NOT EXISTS clients (
+      id SERIAL PRIMARY KEY,
+      cin VARCHAR(50) UNIQUE NOT NULL,
+      username VARCHAR(100) UNIQUE NOT NULL,
+      full_name VARCHAR(255) NOT NULL,
+      email VARCHAR(255),
+      phone VARCHAR(50),
+      client_type VARCHAR(50) NOT NULL DEFAULT 'student',
+      is_active BOOLEAN NOT NULL DEFAULT true,
+      password_hash VARCHAR(255) NOT NULL,
+      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_clients_type ON clients(client_type);
+    CREATE INDEX IF NOT EXISTS idx_clients_cin ON clients(cin);
+
+    INSERT INTO roles (name, description, is_system) VALUES
+      ('student', 'Student - can view published dashboards, take surveys, and generate performance reports', true),
+      ('alumni', 'Alumni - can view published dashboards and generate performance reports', true),
+      ('teacher', 'Teacher - can manage data, view analytics, and manage surveys', true)
+    ON CONFLICT (name) DO NOTHING;
+
+    INSERT INTO permissions (name, description, category) VALUES
+      ('clients.view', 'View client accounts', 'users'),
+      ('clients.create', 'Create client accounts', 'users'),
+      ('clients.edit', 'Edit client accounts', 'users'),
+      ('clients.delete', 'Delete client accounts', 'users'),
+      ('clients.import', 'Bulk import clients from CSV', 'users'),
+      ('reports.generate', 'Generate AI performance reports', 'analytics'),
+      ('reports.view', 'View published reports', 'analytics'),
+      ('dashboards.publish', 'Publish dashboards for public viewing', 'analytics')
+    ON CONFLICT (name) DO NOTHING;
+
+    INSERT INTO role_permissions (role_id, permission_id)
+      SELECT r.id, p.id FROM roles r CROSS JOIN permissions p
+      WHERE r.name = 'super_admin' AND p.name IN ('clients.view','clients.create','clients.edit','clients.delete','clients.import','reports.generate','reports.view','dashboards.publish')
+    ON CONFLICT DO NOTHING;
+
+    INSERT INTO role_permissions (role_id, permission_id)
+      SELECT r.id, p.id FROM roles r CROSS JOIN permissions p
+      WHERE r.name = 'admin' AND p.name IN ('clients.view','clients.create','clients.edit','clients.delete','clients.import','reports.generate','reports.view','dashboards.publish')
+    ON CONFLICT DO NOTHING;
+
+    INSERT INTO role_permissions (role_id, permission_id)
+      SELECT r.id, p.id FROM roles r CROSS JOIN permissions p
+      WHERE r.name = 'teacher' AND p.name IN ('data.view','data.import','analytics.view','analytics.create','ai.query','surveys.view','surveys.create','surveys.manage','clients.view','clients.create','reports.generate','reports.view')
+    ON CONFLICT DO NOTHING;
+
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS user_type VARCHAR(50) DEFAULT 'staff';
+  `,
+  },
+  {
+    name: '013_published_dashboards_reports',
+    sql: `
+    ALTER TABLE dashboards ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT false;
+
+    CREATE TABLE IF NOT EXISTS reports (
+      id SERIAL PRIMARY KEY,
+      title VARCHAR(255) NOT NULL,
+      content TEXT NOT NULL,
+      report_type VARCHAR(50) NOT NULL DEFAULT 'performance',
+      client_id INTEGER REFERENCES clients(id) ON DELETE SET NULL,
+      dataset_id INTEGER REFERENCES datasets(id) ON DELETE SET NULL,
+      is_public BOOLEAN NOT NULL DEFAULT false,
+      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_reports_client ON reports(client_id);
+    CREATE INDEX IF NOT EXISTS idx_reports_public ON reports(is_public);
+  `,
   },
 ];
 

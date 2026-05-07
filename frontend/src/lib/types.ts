@@ -12,6 +12,9 @@ export interface User {
   updated_at?: string;
   roles?: Role[];
   preferences?: Record<string, unknown>;
+  userType?: 'staff' | 'client';
+  cin?: string;
+  username?: string;
 }
 
 export interface Role {
@@ -182,7 +185,9 @@ export interface Dashboard {
   title: string;
   description?: string;
   layout: DashboardLayoutItem[];
+  is_public?: boolean;
   created_by: number;
+  created_by_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -274,4 +279,35 @@ export interface ChartAdvancedConfig {
   animation?: boolean;
   maxDataPoints?: number;
   colorScheme?: string;
+}
+
+export interface Client {
+  id: number;
+  cin: string;
+  username: string;
+  full_name: string;
+  email?: string;
+  phone?: string;
+  client_type: 'student' | 'alumni' | 'teacher';
+  is_active: boolean;
+  created_by?: number;
+  created_by_name?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Report {
+  id: number;
+  title: string;
+  content: string;
+  report_type: string;
+  client_id?: number | null;
+  dataset_id?: number | null;
+  is_public: boolean;
+  created_by?: number;
+  created_by_name?: string;
+  client_name?: string;
+  client_cin?: string;
+  created_at: string;
+  updated_at: string;
 }

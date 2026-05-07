@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Card, Row, Col, Button, Space, Typography, Input, Spin, Tag,
-  Empty, Modal, Popconfirm, message, theme, Grid, Tooltip,
+  Empty, Modal, Popconfirm, message, theme, Grid, Tooltip, Switch,
 } from 'antd';
 import {
   AppstoreOutlined, PlusOutlined, SaveOutlined, DeleteOutlined,
   HolderOutlined, ArrowLeftOutlined, BarChartOutlined, DownloadOutlined,
-  EditOutlined, ReloadOutlined, FormOutlined,
+  EditOutlined, ReloadOutlined, FormOutlined, GlobalOutlined, LockOutlined,
 } from '@ant-design/icons';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
@@ -158,6 +158,7 @@ export default function DashboardCanvasPage() {
   const [titleInput, setTitleInput] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState<ReturnType<typeof setInterval> | null>(null);
+  const [isPublic, setIsPublic] = useState(false);
 
   const isMobile = !screens.md;
 
@@ -213,6 +214,7 @@ export default function DashboardCanvasPage() {
 
   async function openDashboard(dashboard: Dashboard) {
     setActiveDashboard(dashboard);
+    setIsPublic((dashboard as any).is_public || false);
     const raw: DashboardLayoutItem[] = Array.isArray(dashboard.layout) ? dashboard.layout : [];
     const knownIds = new Set(charts.map((c) => c.id));
     const items = raw.filter((it) => knownIds.has(it.chartId));
@@ -264,6 +266,23 @@ export default function DashboardCanvasPage() {
       message.success('Title updated.');
     } catch { message.error('Failed to update title.'); }
     setEditingTitle(false);
+  }
+
+  async function togglePublic() {
+    if (!activeDashboard) return;
+    try {
+      const newValue = !isPublic;
+      await api.put(`/dashboards/${activeDashboard.id}`, {
+        title: activeDashboard.title,
+        description: activeDashboard.description,
+        layout: layoutItems,
+        isPublic: newValue,
+      });
+      setIsPublic(newValue);
+      setActiveDashboard((prev) => prev ? { ...prev, is_public: newValue } as any : prev);
+      setDashboards((prev) => prev.map((d) => d.id === activeDashboard.id ? { ...d, is_public: newValue } as any : d));
+      message.success(newValue ? 'Dashboard published.' : 'Dashboard unpublished.');
+    } catch { message.error('Failed to update visibility.'); }
   }
 
   function addChart(chartId: number) {
@@ -470,8 +489,16 @@ export default function DashboardCanvasPage() {
               {activeDashboard.description && <Text type="secondary">{activeDashboard.description}</Text>}
             </div>
           </Space>
-          <Space wrap>
-            <Tooltip title={autoRefresh ? 'Auto-refresh ON (30s)' : 'Auto-refresh OFF'}>
+        <Space wrap>
+          <Tooltip title={isPublic ? 'Published — click to unpublish' : 'Private — click to publish'}>
+            <Switch
+              checked={isPublic}
+              onChange={togglePublic}
+              checkedChildren={<GlobalOutlined />}
+              unCheckedChildren={<LockOutlined />}
+            />
+          </Tooltip>
+          <Tooltip title={autoRefresh ? 'Auto-refresh ON (30s)' : 'Auto-refresh OFF'}>
               <Button
                 icon={<ReloadOutlined spin={autoRefresh} />}
                 type={autoRefresh ? 'primary' : 'default'}

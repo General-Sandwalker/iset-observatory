@@ -2,24 +2,12 @@ import { useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu, Button, Avatar, Tooltip, theme } from 'antd';
 import {
-  DashboardOutlined,
-  ImportOutlined,
-  DatabaseOutlined,
-  RobotOutlined,
-  BarChartOutlined,
-  AppstoreOutlined,
-  FileTextOutlined,
-  TeamOutlined,
-  SafetyOutlined,
-  SettingOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  SunOutlined,
-  MoonOutlined,
-  LogoutOutlined,
-  ThunderboltOutlined,
-  ApartmentOutlined,
-  CodeOutlined,
+  DashboardOutlined, ImportOutlined, DatabaseOutlined, RobotOutlined,
+  BarChartOutlined, AppstoreOutlined, FileTextOutlined, TeamOutlined,
+  SafetyOutlined, SettingOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
+  SunOutlined, MoonOutlined, LogoutOutlined, ThunderboltOutlined,
+  ApartmentOutlined, CodeOutlined, UserOutlined, FileSearchOutlined,
+  GlobalOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -48,7 +36,7 @@ interface NavGroup {
 const navGroups: NavGroup[] = [
   {
     label: 'Overview',
-    items: [{ key: '/dashboard', label: 'Dashboard', icon: DashboardOutlined }],
+    items: [{ key: '/dashboard', label: 'Dashboard', icon: DashboardOutlined, roles: ['super_admin', 'admin', 'editor', 'viewer', 'teacher'] }],
   },
   {
     label: 'Data',
@@ -74,11 +62,26 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
+    label: 'Clients',
+    roles: ['super_admin', 'admin', 'teacher'],
+    items: [
+      { key: '/clients', label: 'Clients', icon: UserOutlined, roles: ['super_admin', 'admin', 'teacher'] },
+      { key: '/reports', label: 'Reports', icon: FileSearchOutlined, roles: ['super_admin', 'admin', 'teacher'] },
+    ],
+  },
+  {
     label: 'Admin',
     roles: ['super_admin', 'admin'],
     items: [
       { key: '/users', label: 'Users', icon: TeamOutlined, roles: ['super_admin', 'admin'] },
       { key: '/roles', label: 'Roles', icon: SafetyOutlined, roles: ['super_admin', 'admin'] },
+    ],
+  },
+  {
+    label: 'My Portal',
+    roles: ['student', 'alumni'],
+    items: [
+      { key: '/portal', label: 'My Portal', icon: UserOutlined, roles: ['student', 'alumni'] },
     ],
   },
 ];

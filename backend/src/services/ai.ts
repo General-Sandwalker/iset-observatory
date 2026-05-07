@@ -283,3 +283,97 @@ RULES:
     goal,
   };
 }
+
+export async function suggestForeignKeys(tableSchemas: { table: string; columns: { name: string; type: string }[] }[]): Promise<Array<{ sourceTable: string; sourceColumn: string; targetTable: string; targetColumn: string; reason: string; confidence: string }>> {
+  const groq = getGroq();
+
+  const prompt = `You are a database expert analyzing tables for a higher-education institute (ISET Tozeur).
+Given these tables and their columns, suggest foreign key relationships.
+
+TABLES:
+${JSON.stringify(tableSchemas, null, 2)}
+
+RULES:
+1. Look for columns that reference other tables (e.g., student_id references students.id, class_id references classes.id, cin references clients.cin).
+2. Consider column name patterns: columns ending in "_id", "cin", "code" that match another table's primary key.
+3. Consider data type compatibility between linked columns.
+4. Return ONLY a JSON array. Each object must have: sourceTable, sourceColumn, targetTable, targetColumn, reason (string), confidence ("high", "medium", or "low").
+5. Do NOT include markdown code fences or any text outside the JSON array.
+6. If no relationships are found, return an empty array [].
+
+EXAMPLE OUTPUT:
+[
+  {"sourceTable":"dyn_grades","sourceColumn":"student_cin","targetTable":"clients","targetColumn":"cin","reason":"student_cin references the CIN of a student","confidence":"high"},
+  {"sourceTable":"dyn_enrollments","sourceColumn":"class_id","targetTable":"dyn_classes","targetColumn":"id","reason":"class_id references the primary key of classes table","confidence":"high"}
+]`;
+
+  const completion = await withRetry(() =>
+    groq.chat.completions.create({
+      model: config.groq.model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3,
+    }),
+  );
+
+  const text = (completion.choices[0].message.content ?? '').trim();
+
+  try {
+    const cleaned = cleanJSON(text);
+    const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return [];
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((s: any) => ({
+      sourceTable: s.sourceTable || s.source_table || '',
+      sourceColumn: s.sourceColumn || s.source_column || '',
+      targetTable: s.targetTable || s.target_table || '',
+      targetColumn: s.targetColumn || s.target_column || '',
+      reason: s.reason || 'AI suggested',
+      confidence: ['high', 'medium', 'low'].includes(s.confidence) ? s.confidence : 'medium',
+    })).filter((s: any) => s.sourceTable && s.sourceColumn && s.targetTable && s.targetColumn);
+  } catch {
+    return [];
+  }
+}
+
+export async function generateReport(
+  reportType: string,
+  clientInfo: string,
+  dataContext: string,
+  title: string,
+): Promise<string> {
+  const groq = getGroq();
+
+  const prompt = `You are an academic performance analyst at ISET Tozeur (a higher education institute in Tunisia).
+Generate a detailed, professional performance report in markdown format.
+
+REPORT TITLE: ${title}
+REPORT TYPE: ${reportType}
+
+${clientInfo ? `CLIENT INFORMATION:\n${clientInfo}\n` : ''}
+DATA CONTEXT:
+${dataContext}
+
+INSTRUCTIONS:
+1. Write a comprehensive analytical report in well-structured markdown.
+2. Include sections: Executive Summary, Key Metrics, Detailed Analysis, Observations, and Recommendations.
+3. Use specific numbers from the data — do not fabricate statistics.
+4. If data is missing or insufficient, note it honestly.
+5. For student performance reports, focus on: grades, progression, strengths, areas for improvement.
+6. For general data reports, focus on: trends, distributions, outliers, actionable insights.
+7. Write in a professional, academic tone.
+8. Keep the report concise but thorough (aim for 500-1000 words).
+9. Use markdown headers (##), bullet points, and bold text for readability.
+10. Do NOT include a code block fence around the output.`;
+
+  const completion = await withRetry(() =>
+    groq.chat.completions.create({
+      model: config.groq.model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.5,
+    }),
+  );
+
+  const raw = (completion.choices[0].message.content ?? '').trim();
+  return raw.replace(/^```markdown?\s*/im, '').replace(/\s*```$/im, '').trim();
+}

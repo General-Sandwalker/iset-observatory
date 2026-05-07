@@ -165,6 +165,9 @@ export default function LandingPage() {
             <Button type="text" onClick={() => navTo('#features')} style={{ color: token.colorTextSecondary }}>
               Features
             </Button>
+            <Button type="text" onClick={() => navigate('/public')} style={{ color: token.colorTextSecondary }}>
+              Public Dashboards
+            </Button>
             <Button onClick={() => navigate('/docs')} style={{ borderColor: token.colorBorder }}>
               Docs
             </Button>

@@ -1,28 +1,12 @@
 import { useState } from 'react';
 import {
-  Card,
-  Form,
-  Input,
-  Button,
-  Alert,
-  Spin,
-  Checkbox,
-  Typography,
-  Row,
-  Col,
-  Divider,
-  Tooltip,
-  theme,
+  Card, Form, Input, Button, Alert, Spin, Checkbox, Typography,
+  Row, Col, Divider, Tooltip, theme, Segmented, Space,
 } from 'antd';
 import {
-  ThunderboltOutlined,
-  MailOutlined,
-  LockOutlined,
-  LoginOutlined,
-  RobotOutlined,
-  DatabaseOutlined,
-  BarChartOutlined,
-  SafetyOutlined,
+  ThunderboltOutlined, MailOutlined, LockOutlined, LoginOutlined,
+  RobotOutlined, DatabaseOutlined, BarChartOutlined, SafetyOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Navigate, useLocation } from 'react-router-dom';
@@ -36,10 +20,13 @@ const features = [
   { icon: <SafetyOutlined />, label: 'Role-Based Access', description: 'Secure permission management' },
 ];
 
+type LoginMode = 'staff' | 'client';
+
 export default function LoginPage() {
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login, clientLogin, isAuthenticated, isLoading, user } = useAuth();
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [loginMode, setLoginMode] = useState<LoginMode>('staff');
   const { token } = theme.useToken();
   const navigate = useNavigate();
   const location = useLocation();
@@ -54,14 +41,30 @@ export default function LoginPage() {
     );
   }
 
-  if (isAuthenticated) return <Navigate to={from} replace />;
+  if (isAuthenticated) {
+    const dest = user?.userType === 'client' ? '/portal' : from;
+    return <Navigate to={dest} replace />;
+  }
 
-  const handleSubmit = async (values: { email: string; password: string }) => {
+  const handleStaffSubmit = async (values: { email: string; password: string }) => {
     setError('');
     setSubmitting(true);
     try {
       await login({ email: values.email, password: values.password });
       navigate(from, { replace: true });
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleClientSubmit = async (values: { username: string; password: string }) => {
+    setError('');
+    setSubmitting(true);
+    try {
+      await clientLogin({ username: values.username, password: values.password });
+      navigate('/portal', { replace: true });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {
@@ -207,6 +210,18 @@ export default function LoginPage() {
           <Text type="secondary">Sign in to your account to continue</Text>
         </div>
 
+        <div style={{ marginBottom: 20, textAlign: 'center' }}>
+          <Segmented
+            value={loginMode}
+            onChange={(v) => { setLoginMode(v as LoginMode); setError(''); }}
+            options={[
+              { label: <Space><MailOutlined /> Staff</Space>, value: 'staff' },
+              { label: <Space><UserOutlined /> Client</Space>, value: 'client' },
+            ]}
+            block
+          />
+        </div>
+
         <Card
           style={{
             borderRadius: token.borderRadiusLG,
@@ -226,56 +241,92 @@ export default function LoginPage() {
               />
             )}
 
-            <Form layout="vertical" onFinish={handleSubmit} requiredMark={false} initialValues={{ remember: true }}>
-              <Form.Item
-                label="Email"
-                name="email"
-                rules={[
-                  { required: true, message: 'Please enter your email' },
-                  { type: 'email', message: 'Please enter a valid email' },
-                ]}
-              >
-                <Input prefix={<MailOutlined style={{ color: token.colorTextQuaternary }} />} placeholder="admin@iset-tozeur.tn" size="large" />
-              </Form.Item>
-
-              <Form.Item
-                label="Password"
-                name="password"
-                rules={[{ required: true, message: 'Please enter your password' }]}
-              >
-                <Input.Password prefix={<LockOutlined style={{ color: token.colorTextQuaternary }} />} placeholder="••••••••" size="large" />
-              </Form.Item>
-
-              <Form.Item>
-                <Row justify="space-between" align="middle">
-                  <Col>
-                    <Checkbox name="remember" defaultChecked>
-                      Remember me
-                    </Checkbox>
-                  </Col>
-                  <Col>
-                    <Tooltip title="Contact your administrator">
-                      <Typography.Link disabled style={{ fontSize: 13 }}>
-                        Forgot password?
-                      </Typography.Link>
-                    </Tooltip>
-                  </Col>
-                </Row>
-              </Form.Item>
-
-              <Form.Item style={{ marginBottom: 0 }}>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={submitting}
-                  icon={!submitting ? <LoginOutlined /> : undefined}
-                  block
-                  size="large"
+            {loginMode === 'staff' ? (
+              <Form layout="vertical" onFinish={handleStaffSubmit} requiredMark={false} initialValues={{ remember: true }}>
+                <Form.Item
+                  label="Email"
+                  name="email"
+                  rules={[
+                    { required: true, message: 'Please enter your email' },
+                    { type: 'email', message: 'Please enter a valid email' },
+                  ]}
                 >
-                  {submitting ? 'Signing in…' : 'Sign in'}
-                </Button>
-              </Form.Item>
-            </Form>
+                  <Input prefix={<MailOutlined style={{ color: token.colorTextQuaternary }} />} placeholder="admin@iset-tozeur.tn" size="large" />
+                </Form.Item>
+
+                <Form.Item
+                  label="Password"
+                  name="password"
+                  rules={[{ required: true, message: 'Please enter your password' }]}
+                >
+                  <Input.Password prefix={<LockOutlined style={{ color: token.colorTextQuaternary }} />} placeholder="••••••••" size="large" />
+                </Form.Item>
+
+                <Form.Item>
+                  <Row justify="space-between" align="middle">
+                    <Col>
+                      <Checkbox name="remember" defaultChecked>
+                        Remember me
+                      </Checkbox>
+                    </Col>
+                    <Col>
+                      <Tooltip title="Contact your administrator">
+                        <Typography.Link disabled style={{ fontSize: 13 }}>
+                          Forgot password?
+                        </Typography.Link>
+                      </Tooltip>
+                    </Col>
+                  </Row>
+                </Form.Item>
+
+                <Form.Item style={{ marginBottom: 0 }}>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    loading={submitting}
+                    icon={!submitting ? <LoginOutlined /> : undefined}
+                    block
+                    size="large"
+                  >
+                    {submitting ? 'Signing in…' : 'Sign in'}
+                  </Button>
+                </Form.Item>
+              </Form>
+            ) : (
+              <Form layout="vertical" onFinish={handleClientSubmit} requiredMark={false}>
+                <Form.Item
+                  label="Username"
+                  name="username"
+                  rules={[{ required: true, message: 'Please enter your username' }]}
+                >
+                  <Input prefix={<UserOutlined style={{ color: token.colorTextQuaternary }} />} placeholder="Your username" size="large" />
+                </Form.Item>
+
+                <Form.Item
+                  label="Password"
+                  name="password"
+                  rules={[{ required: true, message: 'Please enter your password' }]}
+                >
+                  <Input.Password prefix={<LockOutlined style={{ color: token.colorTextQuaternary }} />} placeholder="••••••••" size="large" />
+                </Form.Item>
+
+                <Form.Item style={{ marginBottom: 8 }}>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    loading={submitting}
+                    icon={!submitting ? <LoginOutlined /> : undefined}
+                    block
+                    size="large"
+                  >
+                    {submitting ? 'Signing in…' : 'Sign in'}
+                  </Button>
+                </Form.Item>
+                <Text type="secondary" style={{ display: 'block', textAlign: 'center', fontSize: 11 }}>
+                  Default password is your CIN number
+                </Text>
+              </Form>
+            )}
           </div>
         </Card>
 

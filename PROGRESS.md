@@ -76,6 +76,61 @@
 - [x] Fix `updateUser()` in AuthContext — now persists updated user data to `localStorage` so page refreshes don't show stale data
 - [x] Add role-based route protection — new `RoleRoute` component wraps admin routes (`/users`, `/roles`) and shows 403 page for unauthorized users
 
+## Phase 8: Client System & AI Reports ✅
+
+### Backend
+- [x] Migration 012: `clients` table (cin, username, full_name, email, phone, client_type, password_hash, is_active, created_by)
+- [x] Migration 012: New roles (student, alumni, teacher) + 8 new permissions (clients.view/create/edit/delete/import, reports.generate/view, dashboards.publish)
+- [x] Migration 012: `user_type` column on users table (default 'staff')
+- [x] Migration 012: Role-permission mappings for super_admin, admin, teacher
+- [x] Migration 013: `is_public` column on dashboards table
+- [x] Migration 013: `reports` table (title, content, report_type, client_id, dataset_id, is_public, created_by)
+- [x] Clients controller: Full CRUD + `bulkImportClients` (CSV column mapping, configurable password column, CIN as default, row-by-row with error collection)
+- [x] Reports controller: listReports, getReport, generateReportHandler (AI-generated performance reports), updateReport (title/content/isPublic), deleteReport, listPublicReports
+- [x] Auth controller: `clientLogin` function (username+password auth against clients table, returns JWT with userType:'client', cin, username)
+- [x] Auth controller: `getMe` updated to check JWT userType — queries `clients` table for client tokens, `users` table for staff tokens
+- [x] Auth controller: `updateMe`, `changePassword`, `updatePreferences` updated to handle client tokens (query correct table)
+- [x] Auth routes: `POST /api/auth/client-login` (public)
+- [x] Staff login JWT now includes `userType: 'staff'` for consistency
+- [x] AI service: `suggestForeignKeys()` (dedicated FK suggestion endpoint, structured JSON output, confidence levels)
+- [x] AI service: `generateReport()` (academic performance report generation in markdown)
+- [x] FK controller: `aiSuggestForeignKeys` endpoint + type checking in `createForeignKey` (rejects numeric↔text mismatches)
+- [x] FK routes: `POST /api/foreign-keys/ai-suggest` endpoint
+- [x] Dashboards controller: `updateDashboard` supports `isPublic` field
+- [x] Middleware: `JwtPayload` interface updated with `userType`, `username` fields
+- [x] Middleware: `requirePermission` blocks client users (no RBAC mapping) with clear error
+- [x] Server: 4 public API endpoints (GET /api/public/dashboards, /public/dashboards/:id, /public/reports, /public/reports/:id)
+- [x] Server: 2 client-specific endpoints (GET /api/client/reports, /api/client/reports/:id) — returns client's own + public reports
+
+### Frontend
+- [x] ForeignKeyManagerPage: Updated `handleAiSuggest` to use `/foreign-keys/ai-suggest` endpoint (structured response)
+- [x] ForeignKeyManagerPage: Added type compatibility warnings in Column Link Modal (numeric↔text mismatch warning, different types info)
+- [x] ClientsPage: Full CRUD table with avatar initials, client type color tags, search, stats cards
+- [x] ClientsPage: CSV Bulk Import wizard with 3 steps (Upload CSV → Map Columns with auto-detect + configurable password column → Result with created/skipped/errors)
+- [x] ClientsPage: Template CSV download
+- [x] ReportsPage: Reports table with type tags, public/private status, AI generate modal (title, type, client, dataset selection)
+- [x] ReportsPage: View Report modal (markdown rendering), Edit Report modal (title/content/publish toggle), delete with confirm
+- [x] ClientDashboardPage: Client portal page — reads client info from AuthContext (userType, cin, fullName)
+- [x] ClientDashboardPage: Stats (dashboards, reports, AI reports), "My Performance Reports" list, "Published Dashboards" grid
+- [x] ClientDashboardPage: Uses `/client/reports` endpoint for authenticated clients, `/public/reports` for fallback
+- [x] PublicDashboardPage: Standalone public page (no sidebar, no login required) with gradient header, published dashboards/reports, view report modal, "Sign in" link
+- [x] DashboardCanvasPage: Added `isPublic` state, publish/unpublish Switch with GlobalOutlined/LockOutlined icons in toolbar
+- [x] Sidebar: Added "Clients" nav group (Clients, Reports) for super_admin/admin/teacher roles
+- [x] Sidebar: Added "My Portal" nav group for student/alumni roles
+- [x] Sidebar: Dashboard link hidden for client users (roles filter)
+- [x] App.tsx: Routes for /clients, /reports (RoleRoute), /portal, /public (public, no auth)
+- [x] AppLayout: Route titles for /clients, /reports, /portal
+- [x] LoginPage: Segmented toggle between Staff (email) and Client (username) login forms
+- [x] LoginPage: Client login form with username+password, "Default password is your CIN number" hint
+- [x] LoginPage: Authenticated client users redirect to /portal instead of /dashboard
+- [x] AuthContext: `clientLogin` function (calls /auth/client-login, sets userType:'client' on user object)
+- [x] AuthContext: Verify-on-mount flow persists user from getMe to localStorage (handles both staff and client tokens)
+- [x] types.ts: User interface extended with `userType`, `cin`, `username` fields
+- [x] types.ts: Dashboard interface extended with `is_public`, `created_by_name` fields
+- [x] types.ts: Client and Report interfaces added
+- [x] Installed papaparse + @types/papaparse in frontend
+- [x] Frontend `tsc --noEmit` passes with 0 errors
+
 ---
 
 ## Architecture Overview
@@ -94,12 +149,12 @@
 │  ┌─────▼────────────▼──────────────▼───────────────▼──────┐ │
 │  │               Ant Design Components                     │ │
 │  │                                                         │ │
-│  │ Pages (16 routes):                                      │ │
-│  │  /dashboard  /import  /explore  /explore/:id  /ai       │ │
-│  │  /charts  /dashboards  /surveys  /queries  /relations   │ │
-│  │  /users  /roles  /settings                             │ │
-│  │                                                         │ │
-│  │ Public: /  /docs  /login                               │ │
+│ │ Pages (20 routes): │ │
+│ │ /dashboard /import /explore /explore/:id /ai │ │
+│ │ /charts /dashboards /surveys /queries /relations │ │
+│ │ /users /roles /clients /reports /portal /settings │ │
+│ │ │ │
+│ │ Public: / /docs /login /public │ │
 │  └─────────────────────┬───────────────────────────────────┘ │
 └────────────────────────┼─────────────────────────────────────┘
                          │ Axios (JWT interceptor, 401 redirect)
@@ -107,25 +162,28 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                Express Backend (Port 5000)                    │
 │                                                              │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────────────┐ │
-│  │  Auth    │ │ Datasets │ │   AI     │ │ Charts/Dashbd  │ │
-│  │  Routes  │ │  Routes  │ │  Routes  │ │    Routes      │ │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └──────┬─────────┘ │
-│       │            │            │              │            │
-│  ┌────▼────────────▼────────────▼──────────────▼──────────┐ │
-│  │     Foreign Keys  │  Saved Queries  │  Notifications   │ │
-│  └───────────────────────┬────────────────────────────────┘ │
-│                           │                                  │
-│  ┌────────────────────────▼────────────────────────────────┐ │
+│ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────────────┐ │
+│ │ Auth │ │ Datasets │ │ AI │ │ Charts/Dashbd │ │
+│ │ Routes │ │ Routes │ │ Routes │ │ Routes │ │
+│ └────┬─────┘ └────┬─────┘ └────┬─────┘ └──────┬─────────┘ │
+│ │ │ │ │ │
+│ ┌────▼────────────▼────────────▼──────────────▼──────────┐ │
+│ │ Foreign Keys │ Saved Queries │ Notifications │ │
+│ └───────────────────────┬────────────────────────────────┘ │
+│ │ │
+│ ┌────────────────────────▼────────────────────────────────┐ │
+│ │ Clients │ Reports │ Public Endpoints │ │
+│ └───────────────────────┬────────────────────────────────┘ │
 │  │         Middleware (JWT Auth, RBAC, Multer)              │ │
 │  └───────────────────────────┬────────────────────────────┘ │
 │                              │                               │
 │  ┌───────────────────────────▼────────────────────────────┐ │
 │  │           PostgreSQL 15 (Docker Volume)                 │ │
 │  │                                                         │ │
-│  │  Tables: users, roles, permissions, role_permissions,   │ │
-│  │  user_roles, datasets, charts, dashboards, surveys,    │ │
-│  │  ai_queries, foreign_keys, saved_queries, notifications│ │
+│ │ Tables: users, roles, permissions, role_permissions, │ │
+│ │ user_roles, datasets, charts, dashboards, surveys, │ │
+│ │ ai_queries, foreign_keys, saved_queries, notifications,│ │
+│ │ clients, reports │ │
 │  └─────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -174,29 +232,33 @@ main.tsx
     └── App
         └── BrowserRouter
             ├── AuthProvider
-            │   ├── / → LandingPage [public]
-            │   ├── /docs → DocsPage [public]
-            │   ├── /login → LoginPage [public]
-            │   └── ProtectedRoute
-            │       └── NotificationProvider
-            │           └── AppLayout
-            │               ├── Layout.Sider → Sidebar (nav, user, theme)
-            │               └── Layout
-            │                   ├── Header Bar (title, bell, avatar)
-            │                   └── Content → Outlet
-            │                       ├── /dashboard → DashboardPage
-            │                       ├── /import → DataImportPage
-            │                       ├── /explore → DatabaseExplorerPage
-            │                       ├── /explore/:id → TableEditorPage
-            │                       ├── /ai → AIAnalysisPage
-            │                       ├── /charts → ChartBuilderPage
-            │                       ├── /dashboards → DashboardCanvasPage
-            │                       ├── /surveys → SurveyGeneratorPage
-            │                       ├── /queries → SavedQueriesPage
-            │                       ├── /relations → ForeignKeyManagerPage
-            │                       ├── /users → UsersPage
-            │                       ├── /roles → RolesPage
-            │                       └── /settings → SettingsPage
+│ ├── / → LandingPage [public]
+│ ├── /docs → DocsPage [public]
+│ ├── /login → LoginPage [public]
+│ ├── /public → PublicDashboardPage [public]
+│ └── ProtectedRoute
+│ └── NotificationProvider
+│ └── AppLayout
+│ ├── Layout.Sider → Sidebar (nav, user, theme)
+│ └── Layout
+│ ├── Header Bar (title, bell, avatar)
+│ └── Content → Outlet
+│ ├── /dashboard → DashboardPage
+│ ├── /import → DataImportPage
+│ ├── /explore → DatabaseExplorerPage
+│ ├── /explore/:id → TableEditorPage
+│ ├── /ai → AIAnalysisPage
+│ ├── /charts → ChartBuilderPage
+│ ├── /dashboards → DashboardCanvasPage
+│ ├── /surveys → SurveyGeneratorPage
+│ ├── /queries → SavedQueriesPage
+│ ├── /relations → ForeignKeyManagerPage
+│ ├── /users → UsersPage [RoleRoute]
+│ ├── /roles → RolesPage [RoleRoute]
+│ ├── /clients → ClientsPage [RoleRoute]
+│ ├── /reports → ReportsPage [RoleRoute]
+│ ├── /portal → ClientDashboardPage [client users]
+│ └── /settings → SettingsPage
             └── * → Navigate to /
 ```
 
@@ -268,9 +330,28 @@ main.tsx
        │     │ description  │     │ created_at       │
        │     │ goal         │     └──────────────────┘
        │     │ schema       │
-       │     │ created_at   │
-       │     └──────────────┘
-       └─────────────────────────────────────────────────────
+│ │ created_at │
+│ └──────────────┘
+│
+│ ┌──────────────┐ ┌──────────────────┐
+├────>│ clients │ │ reports │
+│ │──────────────│ │──────────────────│
+│ │ id (PK) │ │ id (PK) │
+│ │ cin (UNIQUE) │ │ title │
+│ │ username │ │ content │
+│ │ full_name │ │ report_type │
+│ │ email │ │ client_id (FK) │
+│ │ phone │ │ dataset_id (FK) │
+│ │ client_type │ │ is_public │
+│ │ is_active │ │ created_by (FK) │
+│ │ password_hash│ │ created_at │
+│ │ created_by │ │ updated_at │
+│ │ created_at │ └──────────────────┘
+│ │ updated_at │
+│ └──────────────┘
+│
+│ dashboards: +is_public column
+└─────────────────────────────────────────────────────
 ```
 
 ## API Endpoints (Complete)
@@ -278,11 +359,12 @@ main.tsx
 ### Authentication
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | /api/auth/login | None | Login with email+password |
-| GET | /api/auth/me | JWT | Get current user |
-| PUT | /api/auth/me | JWT | Update profile |
-| PUT | /api/auth/me/password | JWT | Change password |
-| PATCH | /api/auth/me/preferences | JWT | Update preferences |
+| POST | /api/auth/login | None | Staff login (email+password) |
+| POST | /api/auth/client-login | None | Client login (username+password) |
+| GET | /api/auth/me | JWT | Get current user (handles staff & client tokens) |
+| PUT | /api/auth/me | JWT | Update profile (handles staff & client tokens) |
+| PUT | /api/auth/me/password | JWT | Change password (handles staff & client tokens) |
+| PATCH | /api/auth/me/preferences | JWT | Update preferences (staff only) |
 
 ### Users & Roles
 | Method | Path | Permission | Description |
@@ -320,7 +402,8 @@ main.tsx
 | Method | Path | Permission | Description |
 |--------|------|-----------|-------------|
 | GET | /api/foreign-keys | data.view | List FK links |
-| POST | /api/foreign-keys | data.import | Create FK link |
+| POST | /api/foreign-keys | data.import | Create FK link (with type checking) |
+| POST | /api/foreign-keys/ai-suggest | ai.query | AI FK suggestions |
 | DELETE | /api/foreign-keys/:id | data.import | Delete FK link |
 
 ### Charts & Dashboards
@@ -364,6 +447,39 @@ main.tsx
 | PATCH | /api/notifications/read-all | auth | Mark all as read |
 | DELETE | /api/notifications/:id | auth | Delete notification |
 
+### Clients
+| Method | Path | Permission | Description |
+|--------|------|-----------|-------------|
+| GET | /api/clients | clients.view | List clients |
+| GET | /api/clients/:id | clients.view | Get client |
+| POST | /api/clients | clients.create | Create client |
+| PUT | /api/clients/:id | clients.edit | Update client |
+| DELETE | /api/clients/:id | clients.delete | Delete client |
+| POST | /api/clients/bulk-import | clients.import | Bulk import from CSV |
+
+### Reports
+| Method | Path | Permission | Description |
+|--------|------|-----------|-------------|
+| GET | /api/reports | reports.view | List reports |
+| GET | /api/reports/:id | reports.view | Get report |
+| POST | /api/reports/generate | reports.generate | Generate AI report |
+| PUT | /api/reports/:id | reports.generate | Update report |
+| DELETE | /api/reports/:id | reports.generate | Delete report |
+
+### Client Portal (authenticated clients)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | /api/client/reports | JWT (client) | List client's own + public reports |
+| GET | /api/client/reports/:id | JWT (client) | Get single report (own or public) |
+
+### Public (no auth required)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | /api/public/dashboards | None | List published dashboards |
+| GET | /api/public/dashboards/:id | None | Get public dashboard |
+| GET | /api/public/reports | None | List published reports |
+| GET | /api/public/reports/:id | None | Get public report |
+
 ### Surveys & Stats
 | Method | Path | Permission | Description |
 |--------|------|-----------|-------------|
@@ -377,25 +493,32 @@ main.tsx
 
 ## RBAC Permission Matrix
 
-```
-                    super_admin  admin  analyst  viewer
-users.view              ✓         ✓       ✗        ✗
-users.create            ✓         ✓       ✗        ✗
-users.edit              ✓         ✓       ✗        ✗
-users.delete            ✓         ✓       ✗        ✗
-roles.view              ✓         ✓       ✗        ✗
-roles.create            ✓         ✓       ✗        ✗
-roles.edit              ✓         ✓       ✗        ✗
-roles.delete            ✓         ✗       ✗        ✗
-data.import             ✓         ✓       ✗        ✗
-data.view               ✓         ✓       ✓        ✓
-data.delete             ✓         ✓       ✗        ✗
-analytics.view          ✓         ✓       ✓        ✓
-analytics.create        ✓         ✓       ✓        ✗
-ai.query                ✓         ✓       ✓        ✗
-surveys.view            ✓         ✓       ✓        ✓
-surveys.create          ✓         ✓       ✗        ✗
-surveys.manage          ✓         ✓       ✗        ✗
+``` Permissions    super_admin admin teacher analyst viewer student alumni
+users.view      ✓          ✓     ✗       ✗      ✗      ✗       ✗
+users.create    ✓          ✓     ✗       ✗      ✗      ✗       ✗
+users.edit      ✓          ✓     ✗       ✗      ✗      ✗       ✗
+users.delete    ✓          ✓     ✗       ✗      ✗      ✗       ✗
+roles.view      ✓          ✓     ✗       ✗      ✗      ✗       ✗
+roles.create    ✓          ✓     ✗       ✗      ✗      ✗       ✗
+roles.edit      ✓          ✓     ✗       ✗      ✗      ✗       ✗
+roles.delete    ✓          ✗     ✗       ✗      ✗      ✗       ✗
+data.import     ✓          ✓     ✓       ✗      ✗      ✗       ✗
+data.view       ✓          ✓     ✓       ✓      ✓      ✗       ✗
+data.delete     ✓          ✓     ✗       ✗      ✗      ✗       ✗
+analytics.view  ✓          ✓     ✓       ✓      ✓      ✗       ✗
+analytics.create ✓         ✓     ✓       ✓      ✗      ✗       ✗
+ai.query        ✓          ✓     ✓       ✓      ✗      ✗       ✗
+surveys.view    ✓          ✓     ✓       ✓      ✓      ✗       ✗
+surveys.create  ✓          ✓     ✓       ✗      ✗      ✗       ✗
+surveys.manage  ✓          ✓     ✓       ✗      ✗      ✗       ✗
+clients.view    ✓          ✓     ✓       ✗      ✗      ✗       ✗
+clients.create  ✓          ✓     ✓       ✗      ✗      ✗       ✗
+clients.edit    ✓          ✓     ✗       ✗      ✗      ✗       ✗
+clients.delete  ✓          ✓     ✗       ✗      ✗      ✗       ✗
+clients.import  ✓          ✓     ✗       ✗      ✗      ✗       ✗
+reports.generate ✓         ✓     ✓       ✗      ✗      ✗       ✗
+reports.view    ✓          ✓     ✓       ✗      ✗      ✗       ✗
+dashboards.publish ✓       ✓     ✗       ✗      ✗      ✗       ✗
 ```
 
 ## Tech Stack

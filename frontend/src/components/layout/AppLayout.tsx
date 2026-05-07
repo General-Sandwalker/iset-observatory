@@ -28,6 +28,9 @@ const ROUTE_TITLES: Record<string, string> = {
   '/surveys': 'Surveys',
   '/users': 'Users',
   '/roles': 'Roles',
+  '/clients': 'Clients',
+  '/reports': 'Reports',
+  '/portal': 'My Portal',
   '/settings': 'Settings',
 };
 
