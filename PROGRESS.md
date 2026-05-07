@@ -131,6 +131,26 @@
 - [x] Installed papaparse + @types/papaparse in frontend
 - [x] Frontend `tsc --noEmit` passes with 0 errors
 
+## Phase 9: Polish ✅
+- [x] PublicDashboardPage: Error state with Alert component; `handleViewReport` shows `message.error` on failure
+- [x] AIAnalysisPage: Removed unused `React` import and `const { Panel } = Collapse`; added `historyError` state + Alert banner when chat history fails; tables fetch shows `message.error` instead of silent catch
+- [x] SavedQueriesPage: Fixed "Save as Chart" button — now navigates to `/charts` instead of fake `message.success`; added `useNavigate` hook; added `aria-label` attributes to all icon-only action buttons
+- [x] DashboardCanvasPage: Added `.catch()` on `Promise.all` with `message.error`; removed `console.error` from PDF export; wrapped publish/unpublish `Switch` in `Popconfirm`; added `aria-label` on drag handles and remove buttons; chart data fetch shows `message.warning` per failed chart
+- [x] ChartBuilderPage: Added `.catch()` on `Promise.all` with `message.error`; added `aria-label` attributes to View, Edit, Duplicate, Delete chart buttons
+- [x] ReportsPage: Wrapped publish/unpublish in `Popconfirm` with descriptive messages; added `aria-label` attributes to action buttons
+- [x] SettingsPage: Replaced local `alert` state + `<Alert>` component with `message.success/error` for consistency
+- [x] DashboardPage: Charts fetch failure shows `message.warning` instead of silent catch
+- [x] SurveyGeneratorPage: Saved surveys fetch failure shows `message.error` instead of silent catch
+- [x] ForeignKeyManagerPage: Wrapped "Apply All" button in `Popconfirm` to confirm before bulk-creating FK links
+
+### Remaining Polish Items (lower priority)
+- [ ] Integrate i18n (react-i18next) for ~500+ hardcoded strings across all 28 files
+- [ ] Convert manual form validation to Ant Design Form.Item rules in 5 pages
+- [ ] Fix non-reactive `window.innerWidth` for modal widths (5 occurrences in SavedQueriesPage, DataImportPage)
+- [ ] Add keyboard handlers to DatabaseExplorerPage cards for accessibility
+- [ ] Add `<Empty>` component to AIAnalysisPage chat area and UsersPage desktop table
+- [ ] Fix eslint-disable comments for useEffect dependencies in DashboardCanvasPage and TableEditorPage
+
 ---
 
 ## Architecture Overview
