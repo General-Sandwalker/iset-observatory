@@ -144,12 +144,16 @@
 - [x] ForeignKeyManagerPage: Wrapped "Apply All" button in `Popconfirm` to confirm before bulk-creating FK links
 
 ### Remaining Polish Items (lower priority)
-- [x] ~~Integrate i18n (react-i18next) for ~500+ hardcoded strings across all 28 files~~ → Done in Phase 11-12
+- [x] ~~Integrate i18n (react-i18next) for ~500+ hardcoded strings across all 28 files~~ → Done in Phase 11-13
 - [x] ~~Convert manual form validation to Ant Design Form.Item rules in 5 pages~~ → Done in Phase 10
 - [x] ~~Fix non-reactive `window.innerWidth` for modal widths~~ → Done in Phase 10 (useModalWidth hook)
 - [x] ~~Add keyboard handlers to DatabaseExplorerPage cards for accessibility~~ → Done in Phase 10
 - [x] ~~Add `<Empty>` component to AIAnalysisPage chat area and UsersPage desktop table~~ → Done in Phase 10
+- [x] ~~Fix blank white screen (DataImportPage STATUS_MAP module-level t() crash)~~ → Done in Phase 13
+- [x] ~~i18n for AIAnalysisPage MINI_CHART_TYPES and SUGGESTED_QUESTIONS~~ → Done in Phase 13
 - [ ] Fix eslint-disable comments for useEffect dependencies in DashboardCanvasPage and TableEditorPage
+- [ ] i18n for DocsPage API_ENDPOINTS descriptions (hardcoded English)
+- [ ] Consider code-splitting for production build (main chunk is 2.4MB)
 
 ## Phase 10: Further Polish ✅
 - [x] Fixed non-reactive `window.innerWidth` for modals — created `useModalWidth` hook using `Grid.useBreakpoint()`
@@ -181,6 +185,24 @@
 - [x] Added new translation keys: `roles.system`, `roles.permissionCount`, `roles.category`, `roles.compareDifferent`, `users.selectedCount`, `dashboards.pdf`, `dashboards.chartCount`, `dashboards.moreCount` (with French translations)
 - [x] `tsc --noEmit` passes with 0 errors
 - [x] `vite build` succeeds
+
+## Phase 13: Blank White Screen Fix & AIAnalysisPage i18n ✅
+- [x] Added `ErrorBoundary` component (`src/components/ErrorBoundary.tsx`) — catches React render errors and displays stack trace instead of blank white screen
+- [x] Added boot error detection script in `index.html` — captures `window.onerror` and `unhandledrejection` events, displays debug div after 6 seconds if `#root` is still empty
+- [x] Moved `<noscript>` outside `<div id="root">` to prevent visible fallback text when JS fails
+- [x] **Root cause fix**: `DataImportPage.tsx` `STATUS_MAP` module-level constant called `t('common.uploaded')` etc., but `t` is only available inside the component via `useTranslation()` — this caused `ReferenceError: t is not defined` at module evaluation time, which prevented the entire React app from mounting
+  - Fix: Changed `STATUS_MAP` to use `labelKey` (string keys like `'common.uploaded'`) instead of `label: t('...')`, and call `t(s.labelKey)` at the render site
+- [x] Fixed `t` variable shadowing in TableEditorPage (`TYPES.map((tp))`), DataImportPage (`COLUMN_TYPES.map((tp))`), AIAnalysisPage (`tables.map((tbl))`)
+- [x] Complete i18n for AIAnalysisPage:
+  - Replaced hardcoded `MINI_CHART_TYPES` with `MINI_CHART_TYPE_KEYS` using translation key references
+  - Replaced hardcoded `SUGGESTED_QUESTIONS` with `SUGGESTED_QUESTION_KEYS` using translation key references
+  - Added `useTranslation()` to `MessageBubble` and `DataResultTable` sub-components
+  - Replaced all hardcoded strings in MessageBubble (Insights, row/rows, Visualize, Hide Chart, Show/Hide Data, View/Hide SQL, no results)
+  - Replaced hardcoded header (AI Analysis, subtitle), Available Tables label, rows count, Popconfirm texts
+  - Replaced welcome/empty state strings (Welcome to AI Analysis, welcomeDesc, tryAsking)
+  - Replaced input placeholder, disclaimer text, analyzing text, clear/error messages
+  - Added translation keys: `ai.miniBar`, `ai.miniLine`, `ai.miniPie`, `ai.miniDoughnut`, `ai.row`, `ai.rows`, `ai.closeChart`, `ai.labelCol`, `ai.valueCol`, `ai.tablesCount`
+- [x] Verified: `tsc --noEmit` passes, `vite build` succeeds, Docker containers healthy, frontend returns HTTP 200
 
 ---
 
