@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Spin, theme, Typography } from 'antd';
 import { ThunderboltOutlined } from '@ant-design/icons';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const { Title, Text } = Typography;
 
@@ -14,6 +15,7 @@ export default function ProtectedRoute({ children }: Props) {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
   const { token } = theme.useToken();
+  const { t } = useTranslation();
 
   if (isLoading) {
     return (
@@ -98,7 +100,7 @@ export default function ProtectedRoute({ children }: Props) {
               fontSize: 13,
             }}
           >
-            Loading your workspace...
+            {t('common.loading')}
           </Text>
 
           <Spin size="large" />

@@ -7,6 +7,7 @@ import {
   LockOutlined,
 } from '@ant-design/icons';
 import type { User, Role } from '../../lib/types';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   user: User | null;
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export default function UserModal({ user, roles, onSave, onClose }: Props) {
+  const { t } = useTranslation();
   const isEdit = !!user;
   const [form] = Form.useForm();
   const [selectedRoles, setSelectedRoles] = useState<number[]>(
@@ -34,7 +36,7 @@ export default function UserModal({ user, roles, onSave, onClose }: Props) {
       setSubmitting(true);
 
       if (!isEdit && !values.password) {
-        setError('Password is required for new users.');
+        setError(t('users.passwordRequired'));
         setSubmitting(false);
         return;
       }
@@ -50,7 +52,7 @@ export default function UserModal({ user, roles, onSave, onClose }: Props) {
       await onSave(data);
     } catch (err: any) {
       if (err.errorFields) return;
-      setError(err.response?.data?.message || 'Operation failed.');
+      setError(err.response?.data?.message || t('users.operationFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -58,20 +60,20 @@ export default function UserModal({ user, roles, onSave, onClose }: Props) {
 
   return (
     <Modal
-      title={isEdit ? 'Edit User' : 'Add User'}
+      title={isEdit ? t('users.editUser') : t('users.addUser')}
       open
       onCancel={onClose}
       footer={[
-        <Button key="cancel" onClick={onClose}>
-          Cancel
-        </Button>,
-        <Button
-          key="submit"
-          type="primary"
-          loading={submitting}
-          onClick={handleSubmit}
-        >
-          {isEdit ? 'Update User' : 'Create User'}
+      <Button key="cancel" onClick={onClose}>
+        {t('common.cancel')}
+      </Button>,
+      <Button
+        key="submit"
+        type="primary"
+        loading={submitting}
+        onClick={handleSubmit}
+      >
+        {isEdit ? t('users.updateUser') : t('users.createUser')}
         </Button>,
       ]}
       destroyOnClose
@@ -98,49 +100,49 @@ export default function UserModal({ user, roles, onSave, onClose }: Props) {
         }}
       >
         <Form.Item
-          label="Full Name"
-          name="fullName"
-          rules={[{ required: true, message: 'Full name is required' }]}
-        >
-          <Input prefix={<UserOutlined />} placeholder="Full Name" />
+      label={t('users.fullName')}
+      name="fullName"
+      rules={[{ required: true, message: t('users.fullNameRequired') }]}
+    >
+      <Input prefix={<UserOutlined />} placeholder={t('users.fullName')} />
         </Form.Item>
 
         <Form.Item
-          label="Email"
-          name="email"
-          rules={[
-            { required: true, message: 'Email is required' },
-            { type: 'email', message: 'Please enter a valid email' },
-          ]}
-        >
-          <Input prefix={<MailOutlined />} type="email" placeholder="Email" />
+      label={t('users.email')}
+      name="email"
+      rules={[
+        { required: true, message: t('users.emailRequired') },
+        { type: 'email', message: t('users.emailInvalid') },
+      ]}
+    >
+      <Input prefix={<MailOutlined />} type="email" placeholder={t('users.email')} />
         </Form.Item>
 
         <Form.Item
-          label={
-            <span>
-              Password{' '}
-              {isEdit && (
-                <span style={{ color: '#999', fontWeight: 'normal' }}>
-                  (leave blank to keep current)
-                </span>
-              )}
+      label={
+        <span>
+          {t('users.password')}{' '}
+          {isEdit && (
+            <span style={{ color: '#999', fontWeight: 'normal' }}>
+              ({t('users.leaveBlankToKeep')})
             </span>
-          }
-          name="password"
-          rules={
-            isEdit
-              ? []
-              : [{ required: true, message: 'Password is required' }]
-          }
-        >
-          <Input.Password
-            prefix={<LockOutlined />}
-            placeholder={isEdit ? '••••••••' : 'Password'}
+          )}
+        </span>
+      }
+      name="password"
+      rules={
+        isEdit
+          ? []
+          : [{ required: true, message: t('users.passwordRequired') }]
+      }
+    >
+      <Input.Password
+        prefix={<LockOutlined />}
+        placeholder={isEdit ? '••••••••' : t('users.password')}
           />
         </Form.Item>
 
-        <Form.Item label="Roles">
+        <Form.Item label={t('users.roles')}>
           <Checkbox.Group
             value={selectedRoles}
             onChange={(values) => setSelectedRoles(values as number[])}
@@ -161,7 +163,7 @@ export default function UserModal({ user, roles, onSave, onClose }: Props) {
         </Form.Item>
 
         {isEdit && (
-          <Form.Item label="Account active">
+          <Form.Item label={t('users.accountActive')}>
             <Switch checked={isActive} onChange={setIsActive} />
           </Form.Item>
         )}

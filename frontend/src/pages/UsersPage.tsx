@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Table, Button, Input, Space, Typography, Alert, Spin, Tag,
-  Popconfirm, Avatar, Card, Row, Col, Checkbox, Dropdown,
+  Popconfirm, Avatar, Card, Row, Col, Checkbox, Dropdown, Empty,
 } from 'antd';
 import { Grid, theme } from 'antd';
 import {
@@ -14,6 +14,7 @@ import api from '../lib/api';
 import type { User, Role } from '../lib/types';
 import UserModal from '../components/layout/UserModal';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const { useBreakpoint } = Grid;
 const { Title, Text } = Typography;
@@ -53,6 +54,7 @@ function getHighestRole(user: User): string {
 export default function UsersPage() {
   const { token } = theme.useToken();
   const { user: currentUser } = useAuth();
+  const { t } = useTranslation();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
   const currentUserId = currentUser?.id;
@@ -78,18 +80,18 @@ export default function UsersPage() {
       setUsers(usersRes.data.users);
       setRoles(rolesRes.data.roles);
     } catch {
-      setError('Failed to load data.');
+      setError(t('users.fetchFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   useEffect(() => {
     if (error || success) {
-      const t = setTimeout(() => { setError(''); setSuccess(''); }, 3000);
-      return () => clearTimeout(t);
+    const timer = setTimeout(() => { setError(''); setSuccess(''); }, 3000);
+    return () => clearTimeout(timer);
     }
   }, [error, success]);
 
@@ -102,10 +104,10 @@ export default function UsersPage() {
   const handleDelete = async (user: User) => {
     try {
       await api.delete(`/users/${user.id}`);
-      setSuccess('User deleted.');
+      setSuccess(t('users.deleteSuccess'));
       fetchData();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Delete failed.');
+      setError(err.response?.data?.message || t('users.deleteFailed'));
     }
   };
 
@@ -113,10 +115,10 @@ export default function UsersPage() {
     try {
       if (editingUser) {
         await api.put(`/users/${editingUser.id}`, data);
-        setSuccess('User updated.');
+        setSuccess(t('users.updateSuccess'));
       } else {
         await api.post('/users', data);
-        setSuccess('User created.');
+        setSuccess(t('users.createSuccess'));
       }
       setModalOpen(false);
       setEditingUser(null);
@@ -132,11 +134,11 @@ export default function UsersPage() {
       await Promise.all(
         selectedRowKeys.map((id) => api.put(`/users/${id}`, { isActive: activate }))
       );
-      setSuccess(`${selectedRowKeys.length} user(s) ${activate ? 'activated' : 'deactivated'}.`);
+      setSuccess(t('users.bulkSuccess', { count: selectedRowKeys.length, action: activate ? t('common.active').toLowerCase() : t('common.inactive').toLowerCase() }));
       setSelectedRowKeys([]);
       fetchData();
     } catch {
-      setError('Bulk operation failed.');
+      setError(t('users.bulkFailed'));
     }
   };
 
@@ -148,8 +150,8 @@ export default function UsersPage() {
 
   const columns = [
     {
-      title: 'User',
-      key: 'user',
+    title: t('common.name'),
+    key: 'user',
       render: (_: any, record: User) => {
         const highestRole = getHighestRole(record);
         const isActive = (record.is_active ?? record.isActive) ?? true;
@@ -191,8 +193,8 @@ export default function UsersPage() {
       },
     },
     {
-      title: 'Roles',
-      key: 'roles',
+    title: t('roles.title').replace(' Management', ''),
+    key: 'roles',
       responsive: ['md' as const],
       render: (_: any, record: User) => (
         (record.roles && record.roles.length > 0)
@@ -210,19 +212,19 @@ export default function UsersPage() {
       ),
     },
     {
-      title: 'Status',
-      key: 'status',
+    title: t('common.type'),
+    key: 'status',
       align: 'center' as const,
       width: 80,
       responsive: ['lg' as const],
       render: (_: any, record: User) =>
         (record.is_active ?? record.isActive)
-          ? <Tag color="success" style={{ margin: 0 }}>Active</Tag>
-          : <Tag color="default" style={{ margin: 0 }}>Inactive</Tag>,
+      ? <Tag color="success" style={{ margin: 0 }}>{t('common.active')}</Tag>
+        : <Tag color="default" style={{ margin: 0 }}>{t('common.inactive')}</Tag>,
     },
     {
-      title: 'Actions',
-      key: 'actions',
+    title: t('common.actions'),
+    key: 'actions',
       align: 'right' as const,
       width: 100,
       render: (_: any, record: User) => (
@@ -234,10 +236,10 @@ export default function UsersPage() {
           />
           {record.id !== currentUserId && (record.role || record.legacy_role) !== 'super_admin' && (
             <Popconfirm
-              title={`Delete user "${record.full_name || record.fullName}"?`}
-              onConfirm={() => handleDelete(record)}
-              okText="Delete"
-              cancelText="Cancel"
+          title={t('users.deleteConfirm', { name: record.full_name || record.fullName })}
+          onConfirm={() => handleDelete(record)}
+          okText={t('common.delete')}
+          cancelText={t('common.cancel')}
               okButtonProps={{ danger: true }}
             >
               <Button type="text" danger icon={<DeleteOutlined />} />
@@ -251,13 +253,13 @@ export default function UsersPage() {
   const bulkMenuItems = [
     {
       key: 'activate',
-      label: 'Activate selected',
+      label: t('users.bulkActivate'),
       icon: <EyeOutlined />,
       onClick: () => handleBulkActivate(true),
     },
     {
       key: 'deactivate',
-      label: 'Deactivate selected',
+      label: t('users.bulkDeactivate'),
       icon: <EyeInvisibleOutlined />,
       danger: true,
       onClick: () => handleBulkActivate(false),
@@ -277,14 +279,14 @@ export default function UsersPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <Space size="middle">
           <TeamOutlined style={{ fontSize: 24, color: token.colorPrimary }} />
-          <Title level={3} style={{ margin: 0 }}>User Management</Title>
+          <Title level={3} style={{ margin: 0 }}>{t('users.title')}</Title>
         </Space>
         <Space size={8}>
           {selectedRowKeys.length > 0 && (
             <Dropdown menu={{ items: bulkMenuItems }}>
               <Button>
                 <Space>
-                  {selectedRowKeys.length} selected
+                  {t('users.selectedCount', { count: selectedRowKeys.length })}
                   <DownOutlined />
                 </Space>
               </Button>
@@ -295,7 +297,7 @@ export default function UsersPage() {
             icon={<PlusOutlined />}
             onClick={() => { setEditingUser(null); setModalOpen(true); }}
           >
-            {isMobile ? 'Add' : 'Add User'}
+            {isMobile ? t('users.add') : t('users.addUser')}
           </Button>
         </Space>
       </div>
@@ -304,7 +306,7 @@ export default function UsersPage() {
       {success && <Alert type="success" message={success} showIcon closable style={{ marginBottom: 16 }} />}
 
       <Input
-        placeholder="Search users…"
+        placeholder={t('users.searchPlaceholder')}
         prefix={<SearchOutlined />}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
@@ -370,10 +372,10 @@ export default function UsersPage() {
                       />
                       {user.id !== currentUserId && (user.role || user.legacy_role) !== 'super_admin' && (
                         <Popconfirm
-                          title={`Delete user "${name}"?`}
-                          onConfirm={() => handleDelete(user)}
-                          okText="Delete"
-                          cancelText="Cancel"
+          title={t('users.deleteConfirm', { name })}
+          onConfirm={() => handleDelete(user)}
+          okText={t('common.delete')}
+          cancelText={t('common.cancel')}
                           okButtonProps={{ danger: true }}
                         >
                           <Button type="text" size="small" danger icon={<DeleteOutlined />} />
@@ -391,7 +393,7 @@ export default function UsersPage() {
                       : <Tag color={ROLE_COLORS[user.legacy_role || user.role] || 'default'}>{user.legacy_role || user.role}</Tag>
                     }
                     <Tag color={isActive ? 'success' : 'default'} style={{ margin: 0, marginLeft: 4 }}>
-                      {isActive ? 'Active' : 'Inactive'}
+                      {isActive ? t('common.active') : t('common.inactive')}
                     </Tag>
                   </div>
                 </Card>
@@ -402,22 +404,23 @@ export default function UsersPage() {
             <Col xs={24}>
               <div style={{ textAlign: 'center', padding: 40, color: token.colorTextTertiary }}>
                 <TeamOutlined style={{ fontSize: 36, marginBottom: 8, display: 'block' }} />
-                No users found.
+                {t('users.noUsers')}
               </div>
             </Col>
           )}
         </Row>
       ) : (
-        <Table
-          dataSource={filtered}
-          columns={columns}
-          rowKey="id"
-          pagination={{ pageSize: 10, showSizeChanger: true }}
-          rowSelection={{
-            selectedRowKeys,
-            onChange: setSelectedRowKeys,
-          }}
-        />
+          <Table
+            dataSource={filtered}
+            columns={columns}
+            rowKey="id"
+            pagination={{ pageSize: 10, showSizeChanger: true }}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: setSelectedRowKeys,
+            }}
+            locale={{ emptyText: <Empty description={t('users.noUsers')} image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
+          />
       )}
 
       {modalOpen && (

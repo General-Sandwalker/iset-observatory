@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card, Row, Col, Button, Space, Typography, Table, Tag, Spin, Empty,
   Modal, Form, Input, Select, Popconfirm, message, theme, Grid, Tooltip,
@@ -37,6 +38,7 @@ function initials(name: string) {
 }
 
 export default function ClientsPage() {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
@@ -66,16 +68,16 @@ export default function ClientsPage() {
   } | null>(null);
 
   const fetchClients = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/clients');
-      setClients(res.data.data || []);
-    } catch {
-      message.error('Failed to load clients.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  setLoading(true);
+  try {
+    const res = await api.get('/clients');
+    setClients(res.data.data || []);
+  } catch {
+    message.error(t('clients.fetchFailed'));
+  } finally {
+    setLoading(false);
+  }
+}, [t]);
 
   useEffect(() => { fetchClients(); }, [fetchClients]);
 
@@ -92,7 +94,7 @@ export default function ClientsPage() {
         clientType: values.clientType || 'student',
         password: values.password || undefined,
       });
-      message.success('Client created successfully.');
+      message.success(t('clients.createSuccess'));
       setCreateOpen(false);
       createForm.resetFields();
       fetchClients();
@@ -100,14 +102,14 @@ export default function ClientsPage() {
       if (err.response?.data?.message) {
         message.error(err.response.data.message);
       } else if (err.errorFields) {
-        message.error('Please fill in all required fields.');
+        message.error(t('common.required'));
       } else {
         message.error('Failed to create client.');
       }
     } finally {
       setCreating(false);
     }
-  }, [createForm, fetchClients]);
+  }, [createForm, fetchClients, t]);
 
   const handleEdit = useCallback(async () => {
     if (!editingClient) return;
@@ -124,7 +126,7 @@ export default function ClientsPage() {
         isActive: values.isActive,
         password: values.password || undefined,
       });
-      message.success('Client updated successfully.');
+      message.success(t('clients.updateSuccess'));
       setEditOpen(false);
       editForm.resetFields();
       setEditingClient(null);
@@ -138,17 +140,17 @@ export default function ClientsPage() {
     } finally {
       setEditing(false);
     }
-  }, [editingClient, editForm, fetchClients]);
+  }, [editingClient, editForm, fetchClients, t]);
 
   const handleDelete = useCallback(async (id: number) => {
     try {
       await api.delete(`/clients/${id}`);
-      message.success('Client deleted.');
+      message.success(t('clients.deleteSuccess'));
       setClients((prev) => prev.filter((c) => c.id !== id));
     } catch {
-      message.error('Failed to delete client.');
-    }
-  }, []);
+    message.error(t('clients.deleteFailed'));
+  }
+}, [t]);
 
   const handleCsvFile = useCallback((file: File) => {
     Papa.parse(file, {
@@ -211,14 +213,14 @@ export default function ClientsPage() {
       });
       setImportResult(res.data);
       setImportStep(2);
-      message.success(`Imported ${res.data.created} clients successfully.`);
+          message.success(t('clients.import.success'));
       fetchClients();
     } catch (err: any) {
-      message.error(err.response?.data?.message || 'Import failed.');
+      message.error(t('clients.import.failed'));
     } finally {
       setImporting(false);
     }
-  }, [columnMapping, csvRows, passwordColumn, fetchClients]);
+  }, [columnMapping, csvRows, passwordColumn, fetchClients, t]);
 
   const resetImport = useCallback(() => {
     setImportStep(0);
@@ -250,7 +252,7 @@ export default function ClientsPage() {
 
   const columns: ColumnsType<Client> = [
     {
-      title: 'Client',
+      title: t('common.title'),
       key: 'client',
       ellipsis: true,
       render: (_: unknown, r: Client) => (
@@ -283,25 +285,25 @@ export default function ClientsPage() {
       ),
     },
     {
-      title: 'CIN',
+      title: t('clients.cin'),
       dataIndex: 'cin',
       key: 'cin',
       width: 120,
       render: (v: string) => <Text code style={{ fontSize: 12 }}>{v}</Text>,
     },
     {
-      title: 'Type',
+      title: t('clients.clientType'),
       dataIndex: 'client_type',
       key: 'client_type',
       width: 100,
       render: (v: ClientType) => (
         <Tag color={CLIENT_TYPE_COLORS[v]} style={{ margin: 0 }}>
-          {CLIENT_TYPE_LABELS[v]}
+          {t(`clients.${v}`)}
         </Tag>
       ),
     },
     {
-      title: 'Email',
+      title: t('clients.email'),
       dataIndex: 'email',
       key: 'email',
       width: 180,
@@ -310,14 +312,14 @@ export default function ClientsPage() {
       render: (v: string) => v ? <Text style={{ fontSize: 12 }}>{v}</Text> : <Text type="secondary" style={{ fontSize: 12 }}>—</Text>,
     },
     {
-      title: 'Status',
-      dataIndex: 'is_active',
-      key: 'is_active',
+    title: t('common.active'),
+    dataIndex: 'is_active',
+    key: 'is_active',
       width: 80,
       responsive: ['md' as const],
       render: (v: boolean) => (
         <Tag color={v ? 'success' : 'default'} icon={v ? <CheckCircleOutlined /> : <CloseCircleOutlined />} style={{ margin: 0 }}>
-          {v ? 'Active' : 'Inactive'}
+          {v ? t('common.active') : t('common.inactive')}
         </Tag>
       ),
     },
@@ -336,7 +338,7 @@ export default function ClientsPage() {
       align: 'right' as const,
       render: (_: unknown, r: Client) => (
         <Space size={4}>
-          <Tooltip title="Edit">
+          <Tooltip title={t('common.edit')}>
             <Button
               type="text"
               size="small"
@@ -356,14 +358,14 @@ export default function ClientsPage() {
               }}
             />
           </Tooltip>
-          <Popconfirm
-            title="Delete this client?"
-            description={`Remove ${r.full_name} (${r.cin}) from the system.`}
-            onConfirm={() => handleDelete(r.id)}
-            okText="Delete"
+      <Popconfirm
+        title={t('clients.deleteConfirm', { name: r.full_name })}
+        description={`Remove ${r.full_name} (${r.cin}) from the system.`}
+        onConfirm={() => handleDelete(r.id)}
+        okText={t('common.delete')}
             okButtonProps={{ danger: true }}
           >
-            <Tooltip title="Delete">
+            <Tooltip title={t('common.delete')}>
               <Button type="text" size="small" danger icon={<DeleteOutlined />} />
             </Tooltip>
           </Popconfirm>
@@ -393,19 +395,19 @@ export default function ClientsPage() {
               <TeamOutlined style={{ color: '#fff', fontSize: 22 }} />
             </div>
             <div>
-              <Title level={4} style={{ margin: 0 }}>Clients</Title>
-              <Text type="secondary">Manage students, alumni, and teachers</Text>
+<Title level={4} style={{ margin: 0 }}>{t('clients.title')}</Title>
+        <Text type="secondary">{t('clients.subtitle')}</Text>
             </div>
           </Space>
         </Col>
         <Col xs={24} sm={12} style={{ textAlign: 'right' }}>
           <Space wrap>
-            <Button icon={<ImportOutlined />} onClick={() => { resetImport(); setImportOpen(true); }}>
-              Bulk Import
-            </Button>
-            <Button type="primary" icon={<UserAddOutlined />} onClick={() => { createForm.resetFields(); setCreateOpen(true); }}>
-              Add Client
-            </Button>
+        <Button icon={<ImportOutlined />} onClick={() => { resetImport(); setImportOpen(true); }}>
+          {t('clients.bulkImport')}
+        </Button>
+        <Button type="primary" icon={<UserAddOutlined />} onClick={() => { createForm.resetFields(); setCreateOpen(true); }}>
+          {t('clients.addClient')}
+        </Button>
             <Tooltip title="Refresh">
               <Button icon={<ReloadOutlined spin={loading} />} onClick={fetchClients} />
             </Tooltip>
@@ -416,22 +418,22 @@ export default function ClientsPage() {
       <Row gutter={[12, 12]}>
         <Col xs={12} sm={6}>
           <Card size="small" style={{ borderColor: token.colorPrimary, background: token.colorPrimaryBg }} styles={{ body: { padding: '12px 16px' } }}>
-            <Statistic title="Total" value={stats.total} valueStyle={{ fontSize: 22, color: token.colorPrimary }} />
+            <Statistic title={t('clients.totalClients')} value={stats.total} valueStyle={{ fontSize: 22, color: token.colorPrimary }} />
           </Card>
         </Col>
         <Col xs={12} sm={6}>
           <Card size="small" style={{ borderColor: token.colorInfo, background: token.colorInfoBg }} styles={{ body: { padding: '12px 16px' } }}>
-            <Statistic title="Students" value={stats.students} valueStyle={{ fontSize: 22, color: token.colorInfo }} />
+            <Statistic title={t('clients.students')} value={stats.students} valueStyle={{ fontSize: 22, color: token.colorInfo }} />
           </Card>
         </Col>
         <Col xs={12} sm={6}>
           <Card size="small" style={{ borderColor: token.colorSuccess, background: token.colorSuccessBg }} styles={{ body: { padding: '12px 16px' } }}>
-            <Statistic title="Alumni" value={stats.alumni} valueStyle={{ fontSize: 22, color: token.colorSuccess }} />
+            <Statistic title={t('clients.alumni')} value={stats.alumni} valueStyle={{ fontSize: 22, color: token.colorSuccess }} />
           </Card>
         </Col>
         <Col xs={12} sm={6}>
           <Card size="small" style={{ borderColor: token.colorWarning, background: token.colorWarningBg }} styles={{ body: { padding: '12px 16px' } }}>
-            <Statistic title="Teachers" value={stats.teachers} valueStyle={{ fontSize: 22, color: token.colorWarning }} />
+            <Statistic title={t('clients.teachers')} value={stats.teachers} valueStyle={{ fontSize: 22, color: token.colorWarning }} />
           </Card>
         </Col>
       </Row>
@@ -440,13 +442,13 @@ export default function ClientsPage() {
         title={
           <Space>
             <TeamOutlined style={{ color: token.colorPrimary }} />
-            <Text strong>All Clients</Text>
+            <Text strong>{t('clients.title')}</Text>
             <Tag>{clients.length}</Tag>
           </Space>
         }
         extra={
           <Input
-            placeholder="Search clients..."
+            placeholder={t('clients.searchPlaceholder')}
             prefix={<SearchOutlined style={{ color: token.colorTextQuaternary }} />}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -458,7 +460,7 @@ export default function ClientsPage() {
       >
         {filteredClients.length === 0 ? (
           <Empty
-            description={search ? 'No clients match your search.' : 'No clients yet. Add clients individually or use bulk import.'}
+            description={search ? t('common.noData') : t('common.noData')}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           />
         ) : (
@@ -466,7 +468,7 @@ export default function ClientsPage() {
             dataSource={filteredClients}
             columns={columns}
             rowKey="id"
-            pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (total) => `${total} clients` }}
+            pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (total) => `${total} ${t('clients.title').toLowerCase()}` }}
             scroll={{ x: 600 }}
             size="middle"
           />
@@ -475,56 +477,56 @@ export default function ClientsPage() {
 
       {/* Create Client Modal */}
       <Modal
-        title={<Space><UserAddOutlined style={{ color: token.colorPrimary }} /> Add Client</Space>}
+        title={<Space><UserAddOutlined style={{ color: token.colorPrimary }} /> {t('clients.addClient')}</Space>}
         open={createOpen}
         onCancel={() => { setCreateOpen(false); createForm.resetFields(); }}
         onOk={handleCreate}
-        okText="Create"
+        okText={t('common.create')}
         confirmLoading={creating}
         width={520}
       >
-        <Form form={createForm} layout="vertical" requiredMark={false} initialValues={{ clientType: 'student' }}>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item label="CIN" name="cin" rules={[{ required: true, message: 'CIN is required' }]}>
+    <Form form={createForm} layout="vertical" requiredMark={false} initialValues={{ clientType: 'student' }}>
+      <Row gutter={12}>
+        <Col span={12}>
+          <Form.Item label={t('clients.cin')} name="cin" rules={[{ required: true, message: t('common.required') }]}>
                 <Input placeholder="e.g. 12345678" />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Username" name="username" rules={[{ required: true, message: 'Username is required' }]}>
-                <Input placeholder="e.g. johndoe" />
+          <Form.Item label={t('clients.username')} name="username" rules={[{ required: true, message: t('common.required') }]}>
+            <Input placeholder="e.g. johndoe" />
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item label="Full Name" name="fullName" rules={[{ required: true, message: 'Full name is required' }]}>
-            <Input placeholder="e.g. John Doe" />
-          </Form.Item>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item label="Email" name="email">
+      <Form.Item label={t('clients.fullName')} name="fullName" rules={[{ required: true, message: t('common.required') }]}>
+        <Input placeholder="e.g. John Doe" />
+      </Form.Item>
+      <Row gutter={12}>
+        <Col span={12}>
+          <Form.Item label={t('clients.email')} name="email">
                 <Input placeholder="john@example.com" />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Phone" name="phone">
-                <Input placeholder="+216..." />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item label="Client Type" name="clientType">
-                <Select
-                  options={[
-                    { value: 'student', label: 'Student' },
-                    { value: 'alumni', label: 'Alumni' },
-                    { value: 'teacher', label: 'Teacher' },
-                  ]}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Password" name="password" extra="Default: CIN if empty">
+          <Form.Item label={t('clients.phone')} name="phone">
+            <Input placeholder="+216..." />
+          </Form.Item>
+        </Col>
+      </Row>
+      <Row gutter={12}>
+        <Col span={12}>
+          <Form.Item label={t('clients.clientType')} name="clientType">
+            <Select
+              options={[
+                { value: 'student', label: t('clients.student') },
+                { value: 'alumni', label: t('clients.alumni') },
+                { value: 'teacher', label: t('clients.teacher') },
+              ]}
+            />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item label="Password" name="password" extra="Default: CIN if empty">
                 <Input.Password placeholder="Leave empty for CIN" />
               </Form.Item>
             </Col>
@@ -534,56 +536,56 @@ export default function ClientsPage() {
 
       {/* Edit Client Modal */}
       <Modal
-        title={<Space><EditOutlined style={{ color: token.colorPrimary }} /> Edit Client</Space>}
+        title={<Space><EditOutlined style={{ color: token.colorPrimary }} /> {t('common.edit')}</Space>}
         open={editOpen}
         onCancel={() => { setEditOpen(false); editForm.resetFields(); setEditingClient(null); }}
         onOk={handleEdit}
-        okText="Save"
+        okText={t('common.save')}
         confirmLoading={editing}
         width={520}
       >
-        <Form form={editForm} layout="vertical" requiredMark={false}>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item label="CIN" name="cin" rules={[{ required: true, message: 'CIN is required' }]}>
+      <Form form={editForm} layout="vertical" requiredMark={false}>
+      <Row gutter={12}>
+        <Col span={12}>
+          <Form.Item label={t('clients.cin')} name="cin" rules={[{ required: true, message: t('common.required') }]}>
                 <Input />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Username" name="username" rules={[{ required: true, message: 'Username is required' }]}>
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Form.Item label="Full Name" name="fullName" rules={[{ required: true, message: 'Full name is required' }]}>
+          <Form.Item label={t('clients.username')} name="username" rules={[{ required: true, message: t('common.required') }]}>
             <Input />
           </Form.Item>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item label="Email" name="email">
+        </Col>
+      </Row>
+      <Form.Item label={t('clients.fullName')} name="fullName" rules={[{ required: true, message: t('common.required') }]}>
+        <Input />
+      </Form.Item>
+      <Row gutter={12}>
+        <Col span={12}>
+          <Form.Item label={t('clients.email')} name="email">
                 <Input />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Phone" name="phone">
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item label="Client Type" name="clientType">
-                <Select
-                  options={[
-                    { value: 'student', label: 'Student' },
-                    { value: 'alumni', label: 'Alumni' },
-                    { value: 'teacher', label: 'Teacher' },
-                  ]}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Active" name="isActive" valuePropName="checked">
+          <Form.Item label={t('clients.phone')} name="phone">
+            <Input />
+          </Form.Item>
+        </Col>
+      </Row>
+      <Row gutter={12}>
+        <Col span={12}>
+          <Form.Item label={t('clients.clientType')} name="clientType">
+            <Select
+              options={[
+                { value: 'student', label: t('clients.student') },
+                { value: 'alumni', label: t('clients.alumni') },
+                { value: 'teacher', label: t('clients.teacher') },
+              ]}
+            />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item label={t('common.active')} name="isActive" valuePropName="checked">
                 <Switch />
               </Form.Item>
             </Col>
@@ -596,7 +598,7 @@ export default function ClientsPage() {
 
       {/* Bulk Import Modal */}
       <Modal
-        title={<Space><ImportOutlined style={{ color: token.colorPrimary }} /> Bulk Import Clients</Space>}
+        title={<Space><ImportOutlined style={{ color: token.colorPrimary }} /> {t('clients.import.title')}</Space>}
         open={importOpen}
         onCancel={() => { setImportOpen(false); resetImport(); }}
         footer={null}
@@ -606,9 +608,9 @@ export default function ClientsPage() {
         <Steps
           current={importStep}
           items={[
-            { title: 'Upload CSV' },
-            { title: 'Map Columns' },
-            { title: 'Result' },
+        { title: t('clients.import.stepUpload') },
+        { title: t('clients.import.stepMap') },
+        { title: t('clients.import.stepResult') },
           ]}
           style={{ marginBottom: 24 }}
         />
@@ -625,9 +627,9 @@ export default function ClientsPage() {
               </Button>
             </Upload>
             <div>
-              <Text type="secondary">
-                Upload a CSV file with client data. You'll map columns in the next step.
-              </Text>
+                <Text type="secondary">
+                  {t('clients.import.uploadDesc')}
+                </Text>
             </div>
             <div style={{ marginTop: 16 }}>
               <Button
@@ -644,9 +646,9 @@ export default function ClientsPage() {
                   a.click();
                   URL.revokeObjectURL(url);
                 }}
-              >
-                Download template CSV
-              </Button>
+                >
+                  {t('clients.import.template')}
+                </Button>
             </div>
           </div>
         )}
@@ -658,18 +660,18 @@ export default function ClientsPage() {
               showIcon
               icon={<FileTextOutlined />}
               message={`${csvRows.length} rows found in CSV`}
-              description="Map your CSV columns to the required client fields below."
+              description={t('clients.import.mapDesc')}
             />
 
             <div>
               <Text strong style={{ display: 'block', marginBottom: 12 }}>Column Mapping</Text>
               {[
-                { key: 'cin', label: 'CIN *', required: true },
-                { key: 'username', label: 'Username *', required: true },
-                { key: 'fullName', label: 'Full Name *', required: true },
-                { key: 'email', label: 'Email', required: false },
-                { key: 'phone', label: 'Phone', required: false },
-                { key: 'clientType', label: 'Client Type', required: false },
+          { key: 'cin', label: `${t('clients.cin')} *`, required: true },
+          { key: 'username', label: `${t('clients.username')} *`, required: true },
+          { key: 'fullName', label: `${t('clients.fullName')} *`, required: true },
+          { key: 'email', label: t('clients.email'), required: false },
+          { key: 'phone', label: t('clients.phone'), required: false },
+          { key: 'clientType', label: t('clients.clientType'), required: false },
               ].map((field) => (
                 <Row key={field.key} gutter={12} align="middle" style={{ marginBottom: 8 }}>
                   <Col span={8}>
@@ -683,7 +685,7 @@ export default function ClientsPage() {
                       value={columnMapping[field.key] || undefined}
                       onChange={(v) => setColumnMapping((prev) => ({ ...prev, [field.key]: v }))}
                       style={{ width: '100%' }}
-                      placeholder="Select CSV column..."
+                      placeholder={t('common.search')}
                       allowClear
                       options={csvHeaders.map((h) => ({ value: h, label: h }))}
                     />
@@ -693,22 +695,22 @@ export default function ClientsPage() {
             </div>
 
             <div>
-              <Text strong style={{ display: 'block', marginBottom: 8 }}>Password Column</Text>
-              <Text type="secondary" style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>
-                Select a column to use as the password. If not set, each client's CIN will be used as their password.
-              </Text>
+          <Text strong style={{ display: 'block', marginBottom: 8 }}>{t('clients.import.passwordColumn')}</Text>
+          <Text type="secondary" style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>
+            {t('clients.import.cinDefault')}
+          </Text>
               <Select
                 value={passwordColumn || undefined}
                 onChange={setPasswordColumn}
                 style={{ width: '100%' }}
-                placeholder="Use CIN as default password"
+                placeholder={t('clients.import.cinDefault')}
                 allowClear
                 options={csvHeaders.map((h) => ({ value: h, label: h }))}
               />
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Button onClick={() => setImportStep(0)}>Back</Button>
+              <Button onClick={() => setImportStep(0)}>{t('common.cancel')}</Button>
               <Button
                 type="primary"
                 onClick={handleImport}
@@ -727,7 +729,7 @@ export default function ClientsPage() {
             <Row gutter={16}>
               <Col span={8}>
                 <Card size="small" style={{ textAlign: 'center', borderColor: token.colorPrimary }}>
-                  <Statistic title="Total" value={importResult.total} valueStyle={{ color: token.colorPrimary }} />
+                  <Statistic title={t('common.title')} value={importResult.total} valueStyle={{ color: token.colorPrimary }} />
                 </Card>
               </Col>
               <Col span={8}>
@@ -757,8 +759,8 @@ export default function ClientsPage() {
             )}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <Button onClick={() => { setImportOpen(false); resetImport(); }}>Close</Button>
-              <Button type="primary" onClick={resetImport}>Import More</Button>
+          <Button onClick={() => { setImportOpen(false); resetImport(); }}>{t('common.close')}</Button>
+          <Button type="primary" onClick={resetImport}>{t('clients.bulkImport')}</Button>
             </div>
           </div>
         )}

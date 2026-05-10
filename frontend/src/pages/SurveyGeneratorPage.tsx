@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card, Row, Col, Input, Button, Space, Typography, Tag, Table, Spin,
   Popconfirm, Empty,
@@ -153,6 +154,7 @@ function SurveyFieldPreview({ field }: { field: SurveyField }) {
 }
 
 export default function SurveyGeneratorPage() {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const [goal, setGoal] = useState('');
   const [context, setContext] = useState('');
@@ -179,7 +181,7 @@ export default function SurveyGeneratorPage() {
       const { data } = await api.get<{ success: boolean; data: SavedSurvey[] }>('/surveys');
       if (data.success) setSaved(data.data);
     } catch {
-    message.error('Failed to load saved surveys.');
+    message.error(t('surveys.fetchFailed'));
   }
     finally { setLoadingSaved(false); }
   }, []);
@@ -203,7 +205,7 @@ export default function SurveyGeneratorPage() {
       setSurvey(res.data.data);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      message.error(msg || 'Survey generation failed.');
+      message.error(msg || t('surveys.generateFailed'));
     } finally {
       setGenerating(false);
     }
@@ -220,10 +222,10 @@ export default function SurveyGeneratorPage() {
         schema: survey,
       });
       setSavedId(data.data.id);
-      message.success('Survey saved.');
+      message.success(t('surveys.saveSuccess'));
       await fetchSaved();
     } catch {
-      message.error('Failed to save survey.');
+      message.error(t('surveys.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -291,9 +293,9 @@ export default function SurveyGeneratorPage() {
       await api.delete(`/surveys/${id}`);
       setSaved((prev) => prev.filter((s) => s.id !== id));
       if (savedId === id) setSavedId(null);
-      message.success('Survey deleted.');
+      message.success(t('surveys.deleteSuccess'));
     } catch {
-      message.error('Failed to delete.');
+      message.error(t('surveys.deleteFailed'));
     }
   }
 
@@ -361,7 +363,7 @@ export default function SurveyGeneratorPage() {
   const tabItems = [
     {
       key: 'generate',
-      label: <span><ThunderboltOutlined /> Generate</span>,
+      label: <span><ThunderboltOutlined /> {t('surveys.generate')}</span>,
       children: (
         <Row gutter={[24, 24]}>
           <Col xs={24} lg={14}>
@@ -378,23 +380,23 @@ export default function SurveyGeneratorPage() {
               <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
                   <Text strong style={{ display: 'block', marginBottom: 4 }}>
-                    Survey Goal <Text type="danger">*</Text>
+                    {t('surveys.goal')} <Text type="danger">*</Text>
                   </Text>
                   <Input.TextArea
                     value={goal}
                     onChange={(e) => setGoal(e.target.value)}
                     rows={3}
-                    placeholder='e.g. "Collect feedback from alumni about employment status and satisfaction with ISET education"'
+                    placeholder={t('surveys.goalPlaceholder')}
                   />
                 </div>
                 <div>
                   <Text strong style={{ display: 'block', marginBottom: 4 }}>
-                    Additional Context <Text type="secondary">(optional)</Text>
+                    {t('surveys.context')}
                   </Text>
                   <Input
                     value={context}
                     onChange={(e) => setContext(e.target.value)}
-                    placeholder="e.g. Target audience: 2020-2024 graduates, bilingual French/Arabic"
+                    placeholder={t('surveys.contextPlaceholder')}
                   />
                 </div>
                 <Button
@@ -406,7 +408,7 @@ export default function SurveyGeneratorPage() {
                   size="large"
                   block
                 >
-                  {generating ? 'Generating…' : 'Generate Survey'}
+                  {generating ? t('surveys.generating') : t('surveys.generate')}
                 </Button>
               </form>
             </Card>
@@ -414,13 +416,13 @@ export default function SurveyGeneratorPage() {
 
           <Col xs={24} lg={10}>
             <Card
-              title={<Space><BookOutlined style={{ color: token.colorPrimary }} /> Saved Surveys</Space>}
+              title={<Space><BookOutlined style={{ color: token.colorPrimary }} /> {t('surveys.savedSurveys')}</Space>}
               styles={{ body: { padding: loadingSaved ? 24 : 0 } }}
             >
               {loadingSaved ? (
                 <Spin style={{ display: 'block', margin: '16px auto' }} />
               ) : saved.length === 0 ? (
-                <Empty description="No saved surveys yet." image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ padding: 24 }} />
+                <Empty description={t('surveys.noSaved')} image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ padding: 24 }} />
               ) : (
                 <div style={{ maxHeight: 400, overflowY: 'auto' }}>
                   {saved.map((s) => (
@@ -473,15 +475,15 @@ export default function SurveyGeneratorPage() {
                       </Text>
                     </div>
                     <Space wrap>
-                      <Button icon={<EyeOutlined />} onClick={() => setPreviewMode(true)}>Preview</Button>
+                      <Button icon={<EyeOutlined />} onClick={() => setPreviewMode(true)}>{t('surveys.preview')}</Button>
                       <Button icon={copied ? <CheckOutlined /> : <CopyOutlined />} onClick={copyJSON}>
                         {copied ? 'Copied!' : 'Copy JSON'}
                       </Button>
-                      <Button icon={<DownloadOutlined />} onClick={handleDownloadHtml}>Download HTML</Button>
+                      <Button icon={<DownloadOutlined />} onClick={handleDownloadHtml}>{t('surveys.exportHTML')}</Button>
                       <Button type="primary" icon={<SaveOutlined />} onClick={handleSave} loading={saving} disabled={!!savedId}>
                         {savedId ? 'Saved' : saving ? 'Saving…' : 'Save'}
                       </Button>
-                      <Button icon={<ShareAltOutlined />} onClick={() => setShareOpen((v) => !v)}>Share</Button>
+                      <Button icon={<ShareAltOutlined />} onClick={() => setShareOpen((v) => !v)}>{t('surveys.share')}</Button>
                     </Space>
                   </div>
                 </Card>
@@ -489,7 +491,7 @@ export default function SurveyGeneratorPage() {
                 {shareOpen && (
                   <Card>
                     <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <ShareAltOutlined style={{ color: token.colorPrimary }} /> Share & Embed
+                      <ShareAltOutlined style={{ color: token.colorPrimary }} /> {t('surveys.shareLink')}
                     </Title>
 
                     <div style={{ marginBottom: 16 }}>
@@ -504,8 +506,8 @@ export default function SurveyGeneratorPage() {
                           placeholder="https://your-domain.com/survey.html"
                         />
                         {shareUrl.trim() && (
-                          <Button icon={copiedLink ? <CheckOutlined /> : <CopyOutlined />} onClick={copyLink}>
-                            {copiedLink ? 'Copied!' : 'Copy link'}
+          <Button icon={copiedLink ? <CheckOutlined /> : <CopyOutlined />} onClick={copyLink}>
+            {copiedLink ? 'Copied!' : t('surveys.copyLink')}
                           </Button>
                         )}
                       </Space.Compact>
@@ -550,7 +552,7 @@ export default function SurveyGeneratorPage() {
                 <Card
                   title={
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Space><EditOutlined style={{ color: token.colorPrimary }} /> Survey Fields</Space>
+                      <Space><EditOutlined style={{ color: token.colorPrimary }} /> {t('surveys.editFields')}</Space>
                       <Space>
                         <Button
                           size="small"
@@ -558,10 +560,10 @@ export default function SurveyGeneratorPage() {
                           icon={<EditOutlined />}
                           onClick={() => setEditingFields((v) => !v)}
                         >
-                          {editingFields ? 'Done Editing' : 'Edit Fields'}
+                          {editingFields ? t('common.close') : t('surveys.editFields')}
                         </Button>
                         {editingFields && (
-                          <Button size="small" icon={<PlusOutlined />} onClick={addField}>Add Field</Button>
+                          <Button size="small" icon={<PlusOutlined />} onClick={addField}>{t('surveys.addField')}</Button>
                         )}
                       </Space>
                     </div>
@@ -596,7 +598,7 @@ export default function SurveyGeneratorPage() {
                               </Space>
                             </Col>
                             <Col xs={24} sm={8} md={6}>
-                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Label</Text>
+                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>{t('surveys.fieldName')}</Text>
                               <Input
                                 size="small"
                                 value={field.label}
@@ -604,7 +606,7 @@ export default function SurveyGeneratorPage() {
                               />
                             </Col>
                             <Col xs={12} sm={6} md={4}>
-                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Type</Text>
+                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>{t('surveys.fieldType')}</Text>
                               <Select
                                 size="small"
                                 style={{ width: '100%' }}
@@ -622,7 +624,7 @@ export default function SurveyGeneratorPage() {
                               />
                             </Col>
                             <Col xs={12} sm={4} md={3}>
-                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Required</Text>
+                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>{t('surveys.fieldRequired')}</Text>
                               <Select
                                 size="small"
                                 style={{ width: '100%' }}
@@ -633,7 +635,7 @@ export default function SurveyGeneratorPage() {
                             </Col>
                             <Col xs={24} sm={12} md={5}>
                               <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
-                                Options <Text type="secondary">(comma-sep)</Text>
+                                {t('surveys.fieldOptions')} <Text type="secondary">(comma-sep)</Text>
                               </Text>
                               <Input
                                 size="small"
@@ -666,10 +668,10 @@ export default function SurveyGeneratorPage() {
                       size="small"
                       columns={[
                         { title: '#', dataIndex: 'idx', width: 40, render: (i: number) => i + 1 },
-                        { title: 'Label', dataIndex: 'label', ellipsis: true },
-                        { title: 'Type', dataIndex: 'type', width: 100, render: (v: string) => <Tag>{v}</Tag> },
-                        { title: 'Required', dataIndex: 'required', width: 80, render: (v: boolean) => v ? <Tag color="red">Yes</Tag> : <Tag>No</Tag> },
-                        { title: 'Options', dataIndex: 'options', render: (v: string[] | undefined) => v?.join(', ') || '—' },
+          { title: t('surveys.fieldName'), dataIndex: 'label', ellipsis: true },
+          { title: t('surveys.fieldType'), dataIndex: 'type', width: 100, render: (v: string) => <Tag>{v}</Tag> },
+          { title: t('surveys.fieldRequired'), dataIndex: 'required', width: 80, render: (v: boolean) => v ? <Tag color="red">Yes</Tag> : <Tag>No</Tag> },
+          { title: t('surveys.fieldOptions'), dataIndex: 'options', render: (v: string[] | undefined) => v?.join(', ') || '—' },
                       ]}
                     />
                   )}
@@ -715,9 +717,9 @@ export default function SurveyGeneratorPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div>
         <Title level={3} style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-          <FileTextOutlined style={{ color: token.colorPrimary }} /> AI Survey Generator
+          <FileTextOutlined style={{ color: token.colorPrimary }} /> {t('surveys.title')}
         </Title>
-        <Text type="secondary">Describe your survey goal and AI will generate a professional survey form.</Text>
+        <Text type="secondary">{t('surveys.subtitle')}</Text>
       </div>
 
       <Tabs items={tabItems} defaultActiveKey="generate" />

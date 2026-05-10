@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card, Form, Input, Button, Alert, Spin, Checkbox, Typography,
   Row, Col, Divider, Tooltip, theme, Segmented, Space,
@@ -23,6 +24,7 @@ const features = [
 type LoginMode = 'staff' | 'client';
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const { login, clientLogin, isAuthenticated, isLoading, user } = useAuth();
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -132,7 +134,7 @@ export default function LoginPage() {
       </div>
 
       <Title level={2} style={{ color: '#fff', margin: 0, marginBottom: 8, position: 'relative', zIndex: 1 }}>
-        ISET Observatory
+        {t('login.title')}
       </Title>
       <Paragraph
         style={{
@@ -144,7 +146,7 @@ export default function LoginPage() {
           zIndex: 1,
         }}
       >
-        Adaptive Digital Observatory for Data Management & AI Analytics
+        {t('login.subtitle')}
       </Paragraph>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%', maxWidth: 280, position: 'relative', zIndex: 1 }}>
@@ -195,9 +197,9 @@ export default function LoginPage() {
         <ThunderboltOutlined style={{ fontSize: 28, color: token.colorPrimary }} />
       </div>
       <Title level={4} style={{ margin: 0, color: token.colorText }}>
-        ISET Observatory
+{t('login.title')}
       </Title>
-    </div>
+      </div>
   );
 
   const loginForm = (
@@ -215,8 +217,8 @@ export default function LoginPage() {
             value={loginMode}
             onChange={(v) => { setLoginMode(v as LoginMode); setError(''); }}
             options={[
-              { label: <Space><MailOutlined /> Staff</Space>, value: 'staff' },
-              { label: <Space><UserOutlined /> Client</Space>, value: 'client' },
+{ label: <Space><MailOutlined /> {t('login.staffLogin')}</Space>, value: 'staff' },
+        { label: <Space><UserOutlined /> {t('login.clientLogin')}</Space>, value: 'client' },
             ]}
             block
           />
@@ -244,29 +246,29 @@ export default function LoginPage() {
             {loginMode === 'staff' ? (
               <Form layout="vertical" onFinish={handleStaffSubmit} requiredMark={false} initialValues={{ remember: true }}>
                 <Form.Item
-                  label="Email"
-                  name="email"
-                  rules={[
-                    { required: true, message: 'Please enter your email' },
-                    { type: 'email', message: 'Please enter a valid email' },
-                  ]}
-                >
-                  <Input prefix={<MailOutlined style={{ color: token.colorTextQuaternary }} />} placeholder="admin@iset-tozeur.tn" size="large" />
+label={t('login.email')}
+            name="email"
+            rules={[
+              { required: true, message: 'Please enter your email' },
+              { type: 'email', message: 'Please enter a valid email' },
+            ]}
+          >
+            <Input prefix={<MailOutlined style={{ color: token.colorTextQuaternary }} />} placeholder={t('login.emailPlaceholder')} size="large" />
                 </Form.Item>
 
                 <Form.Item
-                  label="Password"
-                  name="password"
-                  rules={[{ required: true, message: 'Please enter your password' }]}
-                >
-                  <Input.Password prefix={<LockOutlined style={{ color: token.colorTextQuaternary }} />} placeholder="••••••••" size="large" />
-                </Form.Item>
+label={t('login.password')}
+            name="password"
+            rules={[{ required: true, message: 'Please enter your password' }]}
+          >
+            <Input.Password prefix={<LockOutlined style={{ color: token.colorTextQuaternary }} />} placeholder={t('login.passwordPlaceholder')} size="large" />
+          </Form.Item>
 
-                <Form.Item>
-                  <Row justify="space-between" align="middle">
-                    <Col>
-                      <Checkbox name="remember" defaultChecked>
-                        Remember me
+          <Form.Item>
+            <Row justify="space-between" align="middle">
+              <Col>
+                <Checkbox name="remember" defaultChecked>
+                  Remember me
                       </Checkbox>
                     </Col>
                     <Col>
@@ -288,30 +290,30 @@ export default function LoginPage() {
                     block
                     size="large"
                   >
-                    {submitting ? 'Signing in…' : 'Sign in'}
-                  </Button>
-                </Form.Item>
-              </Form>
+{submitting ? 'Signing in…' : t('login.signIn')}
+              </Button>
+            </Form.Item>
+          </Form>
             ) : (
               <Form layout="vertical" onFinish={handleClientSubmit} requiredMark={false}>
                 <Form.Item
-                  label="Username"
-                  name="username"
-                  rules={[{ required: true, message: 'Please enter your username' }]}
-                >
-                  <Input prefix={<UserOutlined style={{ color: token.colorTextQuaternary }} />} placeholder="Your username" size="large" />
+label={t('login.username')}
+            name="username"
+            rules={[{ required: true, message: 'Please enter your username' }]}
+          >
+            <Input prefix={<UserOutlined style={{ color: token.colorTextQuaternary }} />} placeholder={t('login.usernamePlaceholder')} size="large" />
                 </Form.Item>
 
                 <Form.Item
-                  label="Password"
-                  name="password"
-                  rules={[{ required: true, message: 'Please enter your password' }]}
-                >
-                  <Input.Password prefix={<LockOutlined style={{ color: token.colorTextQuaternary }} />} placeholder="••••••••" size="large" />
-                </Form.Item>
+label={t('login.password')}
+            name="password"
+            rules={[{ required: true, message: 'Please enter your password' }]}
+          >
+            <Input.Password prefix={<LockOutlined style={{ color: token.colorTextQuaternary }} />} placeholder={t('login.passwordPlaceholder')} size="large" />
+          </Form.Item>
 
-                <Form.Item style={{ marginBottom: 8 }}>
-                  <Button
+          <Form.Item style={{ marginBottom: 8 }}>
+            <Button
                     type="primary"
                     htmlType="submit"
                     loading={submitting}
@@ -319,11 +321,11 @@ export default function LoginPage() {
                     block
                     size="large"
                   >
-                    {submitting ? 'Signing in…' : 'Sign in'}
-                  </Button>
-                </Form.Item>
-                <Text type="secondary" style={{ display: 'block', textAlign: 'center', fontSize: 11 }}>
-                  Default password is your CIN number
+{submitting ? 'Signing in…' : t('login.signIn')}
+              </Button>
+            </Form.Item>
+            <Text type="secondary" style={{ display: 'block', textAlign: 'center', fontSize: 11 }}>
+              {t('login.clientPasswordHint')}
                 </Text>
               </Form>
             )}
@@ -336,7 +338,7 @@ export default function LoginPage() {
           </Text>
         </Divider>
         <Text type="tertiary" style={{ display: 'block', textAlign: 'center', fontSize: 11 }}>
-          Adaptive Digital Observatory
+          {t('login.subtitle')}
         </Text>
       </div>
     </div>

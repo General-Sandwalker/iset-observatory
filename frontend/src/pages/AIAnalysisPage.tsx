@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card, Input, Button, Space, Typography, Spin, Collapse, Select, Tag,
   Empty, Popconfirm, Table, message, Tooltip, Avatar, Divider, theme, Alert,
@@ -34,20 +35,20 @@ const PALETTE = [
 
 type MiniChartType = 'bar' | 'line' | 'pie' | 'doughnut';
 
-const MINI_CHART_TYPES: { value: MiniChartType; label: string }[] = [
-  { value: 'bar', label: 'Bar' },
-  { value: 'line', label: 'Line' },
-  { value: 'pie', label: 'Pie' },
-  { value: 'doughnut', label: 'Donut' },
+const MINI_CHART_TYPE_KEYS: { value: MiniChartType; labelKey: string }[] = [
+  { value: 'bar', labelKey: 'ai.miniBar' },
+  { value: 'line', labelKey: 'ai.miniLine' },
+  { value: 'pie', labelKey: 'ai.miniPie' },
+  { value: 'doughnut', labelKey: 'ai.miniDoughnut' },
 ];
 
-const SUGGESTED_QUESTIONS = [
-  'How many records are in each dataset?',
-  'What are the top values in the largest table?',
-  'Show me a summary of all imported data',
-  'What is the distribution of values across categories?',
-  'Which table has the most columns?',
-  'What are the average values by group?',
+const SUGGESTED_QUESTION_KEYS = [
+  'ai.suggestedQ1',
+  'ai.suggestedQ2',
+  'ai.suggestedQ3',
+  'ai.suggestedQ4',
+  'ai.suggestedQ5',
+  'ai.suggestedQ6',
 ];
 
 function isNumeric(val: unknown): boolean {
@@ -63,6 +64,7 @@ function InlineChart({
   sql?: string;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const columns = Object.keys(data[0] || {});
   const numericCols = columns.filter((c) => data.slice(0, 10).every((r) => isNumeric(r[c])));
@@ -85,11 +87,11 @@ function InlineChart({
         config: { sql, labelCol, valueCol },
       });
       setSaved(true);
-      message.success('Chart saved successfully!');
+      message.success(t('ai.chartSaved'));
       setTimeout(() => setSaved(false), 3000);
       setSaveTitle('');
     } catch {
-      message.error('Failed to save chart.');
+      message.error(t('ai.chartSaveFailed'));
     } finally {
       setSaving(false);
     }
@@ -128,32 +130,32 @@ function InlineChart({
     <div style={{ padding: '0 16px 16px' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <Space size={4}>
-          {MINI_CHART_TYPES.map(({ value, label }) => (
-            <Tag
-              key={value}
-              color={chartType === value ? token.colorPrimary : undefined}
-              style={{ cursor: 'pointer' }}
-              onClick={() => setChartType(value)}
-            >
-              {label}
-            </Tag>
-          ))}
+{MINI_CHART_TYPE_KEYS.map(({ value, labelKey }) => (
+        <Tag
+          key={value}
+          color={chartType === value ? token.colorPrimary : undefined}
+          style={{ cursor: 'pointer' }}
+          onClick={() => setChartType(value)}
+        >
+          {t(labelKey)}
+        </Tag>
+      ))}
         </Space>
         <Select
           value={labelCol}
           onChange={setLabelCol}
           size="small"
           style={{ width: 140 }}
-          options={columns.map((c) => ({ value: c, label: `Label: ${c}` }))}
-        />
-        <Select
-          value={valueCol}
-          onChange={setValueCol}
-          size="small"
-          style={{ width: 140 }}
-          options={columns.map((c) => ({ value: c, label: `Value: ${c}` }))}
-        />
-        <Tooltip title="Close chart">
+options={columns.map((c) => ({ value: c, label: `${t('ai.labelCol')}: ${c}` }))}
+      />
+      <Select
+        value={valueCol}
+        onChange={setValueCol}
+        size="small"
+        style={{ width: 140 }}
+        options={columns.map((c) => ({ value: c, label: `${t('ai.valueCol')}: ${c}` }))}
+      />
+      <Tooltip title={t('ai.closeChart')}>
           <Button icon={<DeleteOutlined />} size="small" type="text" onClick={onClose} style={{ marginLeft: 'auto' }} />
         </Tooltip>
       </div>
@@ -174,7 +176,7 @@ function InlineChart({
           <Input
             value={saveTitle}
             onChange={(e) => setSaveTitle(e.target.value)}
-            placeholder="Chart title to save…"
+            placeholder={t('ai.chartTitlePlaceholder')}
             size="small"
             onPressEnter={handleSave}
           />
@@ -186,7 +188,7 @@ function InlineChart({
             icon={saved ? <></> : <SaveOutlined />}
             loading={saving}
           >
-            {saved ? 'Saved!' : 'Save Chart'}
+            {saved ? t('ai.saved') : t('ai.saveChart')}
           </Button>
         </Space.Compact>
       )}
@@ -195,6 +197,7 @@ function InlineChart({
 }
 
 function DataResultTable({ data }: { data: Record<string, unknown>[] }) {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   if (data.length === 0) return null;
   const columns = Object.keys(data[0]);
@@ -214,7 +217,7 @@ function DataResultTable({ data }: { data: Record<string, unknown>[] }) {
       columns={tableCols}
       rowKey="_key"
       size="small"
-      pagination={{ pageSize: 10, size: 'small', showSizeChanger: false, showTotal: (t) => `${t} rows` }}
+      pagination={{ pageSize: 10, size: 'small', showSizeChanger: false, showTotal: (total) => `${total} ${t('ai.rows')}` }}
       scroll={{ x: 'max-content', y: 320 }}
       style={{ marginTop: 8 }}
     />
@@ -268,6 +271,7 @@ function renderInlineMarkdown(text: string): React.ReactNode {
 }
 
 function MessageBubble({ message }: { message: ChatMessage }) {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const [showSql, setShowSql] = useState(false);
   const [showData, setShowData] = useState(true);
@@ -317,7 +321,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           <div style={{ marginBottom: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
               <BulbOutlined style={{ color: token.colorWarning }} />
-              <Text strong>Insights</Text>
+              <Text strong>{t('ai.insights')}</Text>
             </div>
             <div style={{ lineHeight: 1.6 }}>
               {renderInsights(message.insights!)}
@@ -337,47 +341,47 @@ function MessageBubble({ message }: { message: ChatMessage }) {
                   icon={<TableOutlined />}
                   style={{ margin: 0 }}
                 >
-                  {message.rowCount} {message.rowCount === 1 ? 'row' : 'rows'}
+                  {message.rowCount} {message.rowCount === 1 ? t('ai.row') : t('ai.rows')}
                 </Tag>
               )}
               {hasResults && (
-                <Tooltip title="Visualize data">
-                  <Button
-                    size="small"
-                    type={showChart ? 'primary' : 'text'}
-                    icon={<LineChartOutlined />}
-                    onClick={() => {
-                      setShowChart(!showChart);
-                      if (!showChart) setShowData(false);
-                    }}
-                  >
-                    {showChart ? 'Hide Chart' : 'Visualize'}
-                  </Button>
-                </Tooltip>
+<Tooltip title={t('ai.visualize')}>
+        <Button
+          size="small"
+          type={showChart ? 'primary' : 'text'}
+          icon={<LineChartOutlined />}
+          onClick={() => {
+            setShowChart(!showChart);
+            if (!showChart) setShowData(false);
+          }}
+        >
+          {showChart ? t('ai.hideChart') : t('ai.visualize')}
+        </Button>
+      </Tooltip>
               )}
               {hasResults && !showChart && (
-                <Tooltip title={showData ? 'Hide data' : 'Show data'}>
-                  <Button
-                    size="small"
-                    type="text"
-                    icon={<TableOutlined />}
-                    onClick={() => setShowData(!showData)}
-                  >
-                    {showData ? 'Hide Data' : 'Show Data'}
-                  </Button>
-                </Tooltip>
+<Tooltip title={showData ? t('ai.hideData') : t('ai.showData')}>
+        <Button
+          size="small"
+          type="text"
+          icon={<TableOutlined />}
+          onClick={() => setShowData(!showData)}
+        >
+          {showData ? t('ai.hideData') : t('ai.showData')}
+        </Button>
+      </Tooltip>
               )}
-              <Tooltip title={showSql ? 'Hide SQL' : 'View SQL query'}>
-                <Button
-                  size="small"
-                  type="text"
-                  icon={<CodeOutlined />}
-                  onClick={() => setShowSql(!showSql)}
-                  style={{ marginLeft: 'auto' }}
-                >
-                  {showSql ? 'Hide SQL' : 'View SQL'}
-                </Button>
-              </Tooltip>
+<Tooltip title={showSql ? t('ai.hideSQL') : t('ai.viewSQL')}>
+        <Button
+          size="small"
+          type="text"
+          icon={<CodeOutlined />}
+          onClick={() => setShowSql(!showSql)}
+          style={{ marginLeft: 'auto' }}
+        >
+          {showSql ? t('ai.hideSQL') : t('ai.viewSQL')}
+        </Button>
+      </Tooltip>
             </div>
           </>
         )}
@@ -406,7 +410,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             borderRadius: 8,
             border: `1px solid ${token.colorWarningBorder}`,
           }}>
-            <Text type="warning" style={{ fontSize: 13 }}>Query returned no results.</Text>
+            <Text type="warning" style={{ fontSize: 13 }}>{t('ai.noResults')}</Text>
           </div>
         )}
 
@@ -429,6 +433,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 }
 
 export default function AIAnalysisPage() {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -458,7 +463,7 @@ export default function AIAnalysisPage() {
     setTablesLoading(true);
     api.get('/ai/tables')
       .then((r) => setTables(r.data.data || []))
-      .catch(() => { message.error('Failed to load available tables.'); })
+      .catch(() => { message.error(t('ai.tablesFailed')); })
       .finally(() => setTablesLoading(false));
   }, []);
 
@@ -486,7 +491,7 @@ export default function AIAnalysisPage() {
         },
       ]);
     } catch (err: any) {
-      const errMsg = err.response?.data?.message || 'Something went wrong. Please try again.';
+      const errMsg = err.response?.data?.message || t('ai.queryFailed');
       message.error(errMsg);
       setMessages((prev) => [
         ...prev,
@@ -502,9 +507,9 @@ export default function AIAnalysisPage() {
     try {
       await api.delete('/ai/history');
       setMessages([]);
-      message.success('Chat history cleared.');
-    } catch {
-      message.error('Failed to clear history.');
+message.success(t('ai.clearSuccess'));
+  } catch {
+    message.error(t('ai.clearFailed'));
     }
   }
 
@@ -546,38 +551,38 @@ export default function AIAnalysisPage() {
             icon={<RobotOutlined style={{ color: token.colorPrimary, fontSize: 20 }} />}
           />
           <div>
-            <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-              AI Analysis
-            </Title>
-            <Text type="secondary" style={{ fontSize: 13 }}>
-              Ask questions about your data in plain language
-            </Text>
+<Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+          {t('ai.title')}
+        </Title>
+        <Text type="secondary" style={{ fontSize: 13 }}>
+          {t('ai.subtitle')}
+        </Text>
           </div>
         </div>
         <Space>
-          <Tooltip title="Available queryable tables">
-            <Button
-              icon={<DatabaseOutlined />}
-              size="middle"
-              loading={tablesLoading}
-              onClick={() => {}}
-              style={{ display: 'none' }}
-            >
-              Tables ({tables.length})
-            </Button>
-          </Tooltip>
+<Tooltip title={t('ai.availableTables')}>
+        <Button
+          icon={<DatabaseOutlined />}
+          size="middle"
+          loading={tablesLoading}
+          onClick={() => {}}
+          style={{ display: 'none' }}
+        >
+          {t('ai.tablesCount')} ({tables.length})
+        </Button>
+      </Tooltip>
           {messages.length > 0 && (
-            <Popconfirm
-              title="Clear all chat history?"
-              description="This action cannot be undone."
-              onConfirm={clearHistory}
-              okText="Clear"
-              okButtonProps={{ danger: true }}
-            >
-              <Button icon={<DeleteOutlined />} danger type="text" size="middle">
-                Clear
-              </Button>
-            </Popconfirm>
+<Popconfirm
+        title={t('ai.clearConfirm')}
+        description={t('ai.clearDesc')}
+        onConfirm={clearHistory}
+        okText={t('ai.clear')}
+        okButtonProps={{ danger: true }}
+      >
+        <Button icon={<DeleteOutlined />} danger type="text" size="middle">
+          {t('ai.clear')}
+        </Button>
+      </Popconfirm>
           )}
         </Space>
       </div>
@@ -597,22 +602,22 @@ export default function AIAnalysisPage() {
               label: (
                 <Space size={6}>
                   <DatabaseOutlined style={{ color: token.colorPrimary }} />
-                  <Text strong style={{ fontSize: 13 }}>Available Tables</Text>
+                  <Text strong style={{ fontSize: 13 }}>{t('ai.availableTables')}</Text>
                   <Tag color="blue" style={{ margin: 0 }}>{tables.length}</Tag>
                 </Space>
               ),
               children: (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {tables.map((t) => (
-                    <Tag
-                      key={t.id}
-                      icon={<TableOutlined />}
-                      color="default"
-                      style={{ padding: '4px 10px', borderRadius: 6 }}
-                    >
-                      <Text code style={{ fontSize: 12 }}>{t.table_name}</Text>
-                      <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
-                        ({t.row_count.toLocaleString()} rows)
+{tables.map((tbl) => (
+        <Tag
+          key={tbl.id}
+          icon={<TableOutlined />}
+          color="default"
+          style={{ padding: '4px 10px', borderRadius: 6 }}
+        >
+          <Text code style={{ fontSize: 12 }}>{tbl.table_name}</Text>
+          <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+            ({tbl.row_count.toLocaleString()} {t('ai.rows')})
                       </Text>
                     </Tag>
                   ))}
@@ -645,13 +650,13 @@ export default function AIAnalysisPage() {
         textAlign: 'center',
       }}>
         {historyError && (
-          <Alert
-            type="warning"
-            message="Could not load chat history"
-            description="Starting a fresh conversation."
-            showIcon
-            style={{ marginBottom: 16, width: '100%' }}
-          />
+<Alert
+      type="warning"
+      message={t('ai.historyError')}
+      description={t('ai.historyErrorDesc')}
+      showIcon
+      style={{ marginBottom: 16, width: '100%' }}
+    />
         )}
         <Avatar
               size={64}
@@ -661,42 +666,42 @@ export default function AIAnalysisPage() {
               }}
               icon={<RobotOutlined style={{ color: token.colorPrimary, fontSize: 32 }} />}
             />
-            <Title level={3} style={{ marginBottom: 8 }}>
-              Welcome to AI Analysis
-            </Title>
-            <Paragraph type="secondary" style={{ fontSize: 15, marginBottom: 24 }}>
-              Ask any question about your data and get instant insights with visualizations.
-            </Paragraph>
-            <Divider style={{ marginBottom: 24 }}>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                <BulbOutlined /> Try asking
-              </Text>
-            </Divider>
+<Title level={3} style={{ marginBottom: 8 }}>
+        {t('ai.welcome')}
+      </Title>
+      <Paragraph type="secondary" style={{ fontSize: 15, marginBottom: 24 }}>
+        {t('ai.welcomeDesc')}
+      </Paragraph>
+      <Divider style={{ marginBottom: 24 }}>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          <BulbOutlined /> {t('ai.tryAsking')}
+        </Text>
+      </Divider>
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
               gap: 10,
               width: '100%',
             }}>
-              {SUGGESTED_QUESTIONS.map((q) => (
-                <Card
-                  key={q}
-                  size="small"
-                  hoverable
-                  style={{
-                    borderRadius: 10,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    border: `1px solid ${token.colorBorderSecondary}`,
-                  }}
-                  onClick={() => {
-                    setQuestion(q);
-                    inputRef.current?.focus();
-                  }}
-                >
-                  <Text style={{ fontSize: 13 }}>{q}</Text>
-                </Card>
-              ))}
+{SUGGESTED_QUESTION_KEYS.map((key) => (
+          <Card
+            key={key}
+            size="small"
+            hoverable
+            style={{
+              borderRadius: 10,
+              cursor: 'pointer',
+              textAlign: 'left',
+              border: `1px solid ${token.colorBorderSecondary}`,
+            }}
+            onClick={() => {
+              setQuestion(t(key));
+              inputRef.current?.focus();
+            }}
+          >
+            <Text style={{ fontSize: 13 }}>{t(key)}</Text>
+          </Card>
+        ))}
             </div>
           </div>
         )}
@@ -724,7 +729,7 @@ export default function AIAnalysisPage() {
                   gap: 8,
                 }}>
                   <Spin size="small" />
-                  <Text type="secondary">Analyzing your data…</Text>
+                  <Text type="secondary">{t('ai.analyzing')}</Text>
                 </div>
               </div>
             )}
@@ -757,7 +762,7 @@ export default function AIAnalysisPage() {
             ref={inputRef}
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Ask a question about your data…"
+            placeholder={t('ai.placeholder')}
             size="large"
             disabled={loading}
             style={{ borderRadius: 10 }}
@@ -779,7 +784,7 @@ export default function AIAnalysisPage() {
         </form>
         <div style={{ textAlign: 'center', marginTop: 4 }}>
           <Text type="secondary" style={{ fontSize: 11 }}>
-            AI can make mistakes. Verify important results with your data.
+            {t('ai.disclaimer')}
           </Text>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card, Row, Col, Space, Typography, Tag, Spin, Empty,
   message, theme, Grid, Avatar, Divider, List, Modal, Button,
@@ -16,6 +17,7 @@ const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
 
 export default function ClientDashboardPage() {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const screens = useBreakpoint();
   const { user } = useAuth();
@@ -44,7 +46,7 @@ export default function ClientDashboardPage() {
       setPublicDashboards(dashRes.data.data || []);
       setReports(repRes as Report[]);
     } catch {
-      message.error('Failed to load data.');
+      message.error(t('portal.fetchFailed'));
     } finally {
       setLoading(false);
     }
@@ -59,7 +61,7 @@ export default function ClientDashboardPage() {
       setViewReport(res.data.data);
       setReportModalOpen(true);
     } catch {
-      message.error('Failed to load report.');
+      message.error(t('portal.fetchFailed'));
     }
   }, [clientId]);
 

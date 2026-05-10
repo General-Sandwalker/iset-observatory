@@ -15,23 +15,24 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import type { Notification } from '../../lib/types';
+import { useTranslation } from 'react-i18next';
 
 const { Sider, Content } = Layout;
 
-const ROUTE_TITLES: Record<string, string> = {
-  '/dashboard': 'Dashboard',
-  '/import': 'Data Import',
-  '/explore': 'DB Explorer',
-  '/ai': 'AI Analysis',
-  '/charts': 'Chart Builder',
-  '/dashboards': 'Dashboards',
-  '/surveys': 'Surveys',
-  '/users': 'Users',
-  '/roles': 'Roles',
-  '/clients': 'Clients',
-  '/reports': 'Reports',
-  '/portal': 'My Portal',
-  '/settings': 'Settings',
+const ROUTE_TITLE_KEYS: Record<string, string> = {
+  '/dashboard': 'nav.dashboard',
+  '/import': 'nav.import',
+  '/explore': 'nav.explore',
+  '/ai': 'nav.ai',
+  '/charts': 'nav.charts',
+  '/dashboards': 'nav.dashboards',
+  '/surveys': 'nav.surveys',
+  '/users': 'nav.users',
+  '/roles': 'nav.roles',
+  '/clients': 'nav.clients',
+  '/reports': 'nav.reports',
+  '/portal': 'nav.portal',
+  '/settings': 'nav.settings',
 };
 
 function typeIcon(type: Notification['type']) {
@@ -77,6 +78,7 @@ export default function AppLayout() {
   const { user } = useAuth();
   const { notifications, unreadCount, loading, markRead, markAllRead } = useNotifications();
   const location = useLocation();
+  const { t } = useTranslation();
 
   const handleCollapse = useCallback((next: boolean) => {
     setCollapsed(next);
@@ -91,8 +93,8 @@ export default function AppLayout() {
 
   const pageTitle = useMemo(() => {
     const firstSegment = '/' + location.pathname.split('/').filter(Boolean)[0];
-    return ROUTE_TITLES[firstSegment] || 'Observatory';
-  }, [location.pathname]);
+    return ROUTE_TITLE_KEYS[firstSegment] ? t(ROUTE_TITLE_KEYS[firstSegment]) : 'Observatory';
+  }, [location.pathname, t]);
 
   const notifContent = (
     <div style={{ width: 340, maxHeight: 420, overflowY: 'auto' }}>
@@ -110,9 +112,9 @@ export default function AppLayout() {
           <span style={{ fontWeight: 600, fontSize: 13, color: token.colorText }}>
             {unreadCount} unread
           </span>
-          <Button type="link" size="small" onClick={markAllRead} style={{ padding: 0 }}>
-            Mark all as read
-          </Button>
+        <Button type="link" size="small" onClick={markAllRead} style={{ padding: 0 }}>
+          {t('notifications.markAllRead')}
+        </Button>
         </div>
       )}
       {loading && notifications.length === 0 ? (
@@ -120,7 +122,7 @@ export default function AppLayout() {
           <Spin />
         </div>
       ) : notifications.length === 0 ? (
-        <Empty description="No notifications" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Empty description={t('notifications.noNotifications')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {notifications.map((n) => (
@@ -323,10 +325,10 @@ export default function AppLayout() {
               onOpenChange={setNotifOpen}
               trigger="click"
               placement="bottomRight"
-              title="Notifications"
-              content={notifContent}
-            >
-              <Tooltip title="Notifications">
+      title={t('notifications.title')}
+      content={notifContent}
+    >
+      <Tooltip title={t('notifications.title')}>
                 <Badge count={unreadCount} size="small" offset={[-2, 2]}>
                   <Button
                     type="text"

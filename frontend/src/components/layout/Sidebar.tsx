@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -33,64 +34,44 @@ interface NavGroup {
   roles?: string[];
 }
 
-const navGroups: NavGroup[] = [
+const navGroupDefs = [
   {
-    label: 'Overview',
-    items: [{ key: '/dashboard', label: 'Dashboard', icon: DashboardOutlined, roles: ['super_admin', 'admin', 'editor', 'viewer', 'teacher'] }],
-  },
-  {
-    label: 'Data',
+    labelKey: 'nav.data',
     items: [
-      { key: '/import', label: 'Data Import', icon: ImportOutlined },
-      { key: '/explore', label: 'DB Explorer', icon: DatabaseOutlined },
-      { key: '/ai', label: 'AI Analysis', icon: RobotOutlined },
-      { key: '/queries', label: 'Saved Queries', icon: CodeOutlined },
+      { key: '/dashboard', labelKey: 'nav.dashboard', icon: DashboardOutlined, roles: ['super_admin', 'admin', 'editor', 'viewer', 'teacher'] },
+      { key: '/import', labelKey: 'nav.import', icon: ImportOutlined },
+      { key: '/explore', labelKey: 'nav.explore', icon: DatabaseOutlined },
+      { key: '/ai', labelKey: 'nav.ai', icon: RobotOutlined },
+      { key: '/queries', labelKey: 'nav.queries', icon: CodeOutlined },
     ],
   },
   {
-    label: 'Visualize',
+    labelKey: 'nav.analytics',
     items: [
-      { key: '/charts', label: 'Charts', icon: BarChartOutlined },
-      { key: '/dashboards', label: 'Dashboards', icon: AppstoreOutlined },
+      { key: '/charts', labelKey: 'nav.charts', icon: BarChartOutlined },
+      { key: '/dashboards', labelKey: 'nav.dashboards', icon: AppstoreOutlined },
+      { key: '/surveys', labelKey: 'nav.surveys', icon: FileTextOutlined },
+      { key: '/relations', labelKey: 'nav.relations', icon: ApartmentOutlined },
     ],
   },
   {
-    label: 'Tools',
-    items: [
-      { key: '/surveys', label: 'Surveys', icon: FileTextOutlined },
-      { key: '/relations', label: 'Relations', icon: ApartmentOutlined },
-    ],
-  },
-  {
-    label: 'Clients',
+    labelKey: 'nav.admin',
     roles: ['super_admin', 'admin', 'teacher'],
     items: [
-      { key: '/clients', label: 'Clients', icon: UserOutlined, roles: ['super_admin', 'admin', 'teacher'] },
-      { key: '/reports', label: 'Reports', icon: FileSearchOutlined, roles: ['super_admin', 'admin', 'teacher'] },
+      { key: '/users', labelKey: 'nav.users', icon: TeamOutlined, roles: ['super_admin', 'admin'] },
+      { key: '/roles', labelKey: 'nav.roles', icon: SafetyOutlined, roles: ['super_admin', 'admin'] },
+      { key: '/clients', labelKey: 'nav.clients', icon: UserOutlined, roles: ['super_admin', 'admin', 'teacher'] },
+      { key: '/reports', labelKey: 'nav.reports', icon: FileSearchOutlined, roles: ['super_admin', 'admin', 'teacher'] },
     ],
   },
   {
-    label: 'Admin',
-    roles: ['super_admin', 'admin'],
-    items: [
-      { key: '/users', label: 'Users', icon: TeamOutlined, roles: ['super_admin', 'admin'] },
-      { key: '/roles', label: 'Roles', icon: SafetyOutlined, roles: ['super_admin', 'admin'] },
-    ],
-  },
-  {
-    label: 'My Portal',
+    labelKey: 'nav.portal',
     roles: ['student', 'alumni'],
     items: [
-      { key: '/portal', label: 'My Portal', icon: UserOutlined, roles: ['student', 'alumni'] },
+      { key: '/portal', labelKey: 'nav.portal', icon: UserOutlined, roles: ['student', 'alumni'] },
     ],
   },
 ];
-
-const settingsItem: NavItem = {
-  key: '/settings',
-  label: 'Settings',
-  icon: SettingOutlined,
-};
 
 function initials(name: string) {
   return name
@@ -117,21 +98,22 @@ export default function Sidebar({ collapsed, onCollapse, isMobile }: SidebarProp
   const navigate = useNavigate();
   const location = useLocation();
   const { token } = theme.useToken();
+  const { t } = useTranslation();
 
   const userRole = user?.role;
 
   const menuItems = useMemo(() => {
-    const groups = navGroups
+    const groups = navGroupDefs
       .filter((group) => isAllowed(group.roles, userRole))
       .map((group) => ({
         type: 'group' as const,
-        label: collapsed ? null : group.label,
+        label: collapsed ? null : t(group.labelKey),
         children: group.items
           .filter((item) => isAllowed(item.roles, userRole))
-          .map(({ key, label, icon: Icon }) => ({
+          .map(({ key, labelKey, icon: Icon }) => ({
             key,
             icon: <Icon />,
-            label,
+            label: t(labelKey),
           })),
       }))
       .filter((group) => group.children.length > 0);
@@ -141,15 +123,15 @@ export default function Sidebar({ collapsed, onCollapse, isMobile }: SidebarProp
       label: null,
       children: [
         {
-          key: settingsItem.key,
-          icon: <settingsItem.icon />,
-          label: settingsItem.label,
+          key: '/settings',
+          icon: <SettingOutlined />,
+          label: t('nav.settings'),
         },
       ],
     });
 
     return groups;
-  }, [collapsed, userRole]);
+  }, [collapsed, userRole, t]);
 
   const selectedKeys = [getSelectedKey(location.pathname)];
 
@@ -346,22 +328,22 @@ export default function Sidebar({ collapsed, onCollapse, isMobile }: SidebarProp
         )}
 
         {/* Sign out */}
-        <Tooltip title="Sign out" placement="right">
-          <Button
-            type="text"
-            block
-            danger
-            icon={<LogoutOutlined />}
-            onClick={logout}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: collapsed ? 'center' : 'flex-start',
-              gap: 10,
-              borderRadius: token.borderRadius,
-            }}
-          >
-            {!collapsed && 'Sign out'}
+      <Tooltip title={t('nav.logout')} placement="right">
+        <Button
+          type="text"
+          block
+          danger
+          icon={<LogoutOutlined />}
+          onClick={logout}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: collapsed ? 'center' : 'flex-start',
+            gap: 10,
+            borderRadius: token.borderRadius,
+          }}
+        >
+          {!collapsed && t('nav.logout')}
           </Button>
         </Tooltip>
       </div>

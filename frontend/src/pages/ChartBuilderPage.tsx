@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card, Row, Col, Button, Space, Typography, Input, Select, Tag, Spin,
   Empty, Popconfirm, message, theme, Switch, Slider, Collapse, Tooltip,
@@ -49,31 +50,31 @@ const COLOR_PALETTES: Record<string, { label: string; colors: string[] }> = {
 };
 
 const CHART_TYPES: { value: ChartType; label: string; icon: React.ReactNode }[] = [
-  { value: 'bar', label: 'Bar', icon: <BarChartOutlined /> },
-  { value: 'horizontalBar', label: 'H-Bar', icon: <BarChartOutlined style={{ transform: 'rotate(90deg)' }} /> },
-  { value: 'line', label: 'Line', icon: <LineChartOutlined /> },
-  { value: 'area', label: 'Area', icon: <AreaChartOutlined /> },
-  { value: 'pie', label: 'Pie', icon: <PieChartOutlined /> },
-  { value: 'doughnut', label: 'Doughnut', icon: <PieChartOutlined style={{ opacity: 0.6 }} /> },
-  { value: 'radar', label: 'Radar', icon: <RadarChartOutlined /> },
-{ value: 'polarArea', label: 'Polar Area', icon: <RadiusSettingOutlined /> },
-{ value: 'scatter', label: 'Scatter', icon: <FundProjectionScreenOutlined /> },
-{ value: 'bubble', label: 'Bubble', icon: <RadiusSettingOutlined style={{ fontSize: 18 }} /> },
+  { value: 'bar', label: 'charts.bar', icon: <BarChartOutlined /> },
+  { value: 'horizontalBar', label: 'charts.horizontalBar', icon: <BarChartOutlined style={{ transform: 'rotate(90deg)' }} /> },
+  { value: 'line', label: 'charts.line', icon: <LineChartOutlined /> },
+  { value: 'area', label: 'charts.area', icon: <AreaChartOutlined /> },
+  { value: 'pie', label: 'charts.pie', icon: <PieChartOutlined /> },
+  { value: 'doughnut', label: 'charts.doughnut', icon: <PieChartOutlined style={{ opacity: 0.6 }} /> },
+  { value: 'radar', label: 'charts.radar', icon: <RadarChartOutlined /> },
+  { value: 'polarArea', label: 'charts.polarArea', icon: <RadiusSettingOutlined /> },
+  { value: 'scatter', label: 'charts.scatter', icon: <FundProjectionScreenOutlined /> },
+  { value: 'bubble', label: 'charts.bubble', icon: <RadiusSettingOutlined style={{ fontSize: 18 }} /> },
 ];
 
 const AGGREGATIONS: { value: AggregationType; label: string }[] = [
-  { value: 'COUNT', label: 'Count' },
-  { value: 'SUM', label: 'Sum' },
-  { value: 'AVG', label: 'Average' },
-  { value: 'MIN', label: 'Minimum' },
-  { value: 'MAX', label: 'Maximum' },
+  { value: 'COUNT', label: 'charts.count' },
+  { value: 'SUM', label: 'charts.sum' },
+  { value: 'AVG', label: 'charts.average' },
+  { value: 'MIN', label: 'charts.min' },
+  { value: 'MAX', label: 'charts.max' },
 ];
 
 const LEGEND_POSITIONS = [
-  { value: 'top', label: 'Top' },
-  { value: 'bottom', label: 'Bottom' },
-  { value: 'left', label: 'Left' },
-  { value: 'right', label: 'Right' },
+  { value: 'top', label: 'charts.top' },
+  { value: 'bottom', label: 'charts.bottom' },
+  { value: 'left', label: 'charts.left' },
+  { value: 'right', label: 'charts.right' },
 ];
 
 function isNumericColumn(ct: string): boolean {
@@ -293,6 +294,7 @@ const defaultAdvanced: ChartAdvancedConfig = {
 };
 
 export default function ChartBuilderPage() {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const chartRef = useRef<HTMLDivElement>(null);
 
@@ -331,7 +333,7 @@ export default function ChartBuilderPage() {
       api.get('/charts').then((r) => setCharts(r.data.data)),
       api.get('/datasets').then((r) => setDatasets(r.data.data.filter((d: Dataset) => d.status === 'imported'))),
     ]).catch(() => {
-      message.error('Failed to load charts or datasets.');
+      message.error(t('charts.fetchFailed'));
     }).finally(() => setLoading(false));
   }, []);
 
@@ -381,7 +383,7 @@ export default function ChartBuilderPage() {
   const handlePreview = useCallback(async () => {
     if (!datasetId || !xColumn) return;
     if ((chartType === 'scatter' || chartType === 'bubble') && !yColumn) {
-      message.warning('Y Axis column is required for scatter/bubble charts.');
+      message.warning(t('charts.yAxisRequired'));
       return;
     }
     setPreviewLoading(true);
@@ -402,7 +404,7 @@ export default function ChartBuilderPage() {
       }
       setPreviewVisible(true);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to generate preview.';
+      const msg = err instanceof Error ? err.message : t('charts.previewFailed');
       message.error(msg);
     } finally {
       setPreviewLoading(false);
@@ -438,17 +440,17 @@ export default function ChartBuilderPage() {
         const res = await api.put(`/charts/${editingId}`, payload);
         const saved = res.data.data;
         setCharts((prev) => prev.map((c) => (c.id === editingId ? saved : c)));
-        message.success('Chart updated.');
+        message.success(t('charts.updateSuccess'));
       } else {
         const res = await api.post('/charts', payload);
         const saved = res.data.data;
         setCharts((prev) => [saved, ...prev]);
-        message.success('Chart saved.');
+        message.success(t('charts.saveSuccess'));
       }
       resetBuilder();
       api.get('/charts').then((r) => setCharts(r.data.data));
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to save chart.';
+      const msg = err instanceof Error ? err.message : t('charts.saveFailed');
       message.error(msg);
     } finally {
       setSaving(false);
@@ -459,9 +461,9 @@ export default function ChartBuilderPage() {
     try {
       await api.delete(`/charts/${id}`);
       setCharts((prev) => prev.filter((c) => c.id !== id));
-      message.success('Chart deleted.');
+      message.success(t('charts.deleteSuccess'));
     } catch {
-      message.error('Failed to delete chart.');
+      message.error(t('charts.deleteFailed'));
     }
   }, []);
 
@@ -474,9 +476,9 @@ export default function ChartBuilderPage() {
         config: chart.config,
       });
       setCharts((prev) => [res.data.data, ...prev]);
-      message.success('Chart duplicated.');
+      message.success(t('charts.duplicateSuccess'));
     } catch {
-      message.error('Failed to duplicate chart.');
+      message.error(t('charts.duplicateFailed'));
     }
   }, []);
 
@@ -487,7 +489,7 @@ export default function ChartBuilderPage() {
       const res = await api.get(`/charts/${chart.id}/data`);
       setViewData(res.data.data);
     } catch {
-      message.error('Failed to load chart data.');
+      message.error(t('charts.fetchFailed'));
       setViewingChart(null);
     } finally {
       setViewLoading(false);
@@ -637,7 +639,7 @@ export default function ChartBuilderPage() {
       title={
         <Space>
           <AppstoreOutlined style={{ color: token.colorPrimary }} />
-          {editingId ? 'Edit Chart' : 'Chart Builder'}
+          {editingId ? t('charts.editChart') : t('charts.newChart')}
         </Space>
       }
       extra={<Button type="text" icon={<CloseOutlined />} onClick={resetBuilder} size="small" />}
@@ -646,7 +648,7 @@ export default function ChartBuilderPage() {
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
-          <Text strong style={{ display: 'block', marginBottom: 6 }}>Chart Title</Text>
+          <Text strong style={{ display: 'block', marginBottom: 6 }}>{t('charts.chartTitle')}</Text>
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -655,7 +657,7 @@ export default function ChartBuilderPage() {
         </div>
 
         <div>
-          <Text strong style={{ display: 'block', marginBottom: 6 }}>Chart Type</Text>
+          <Text strong style={{ display: 'block', marginBottom: 6 }}>{t('charts.chartType')}</Text>
           <Row gutter={[8, 8]}>
             {CHART_TYPES.map(({ value, label, icon }) => (
               <Col xs={8} sm={6} key={value}>
@@ -677,7 +679,7 @@ export default function ChartBuilderPage() {
                   }}
                 >
                   <span style={{ fontSize: 18, color: chartType === value ? token.colorPrimary : token.colorTextSecondary }}>{icon}</span>
-                  <span style={{ color: chartType === value ? token.colorPrimary : token.colorText }}>{label}</span>
+                  <span style={{ color: chartType === value ? token.colorPrimary : token.colorText }}>{t(label)}</span>
                 </div>
               </Col>
             ))}
@@ -687,7 +689,7 @@ export default function ChartBuilderPage() {
         <Divider style={{ margin: '4px 0' }} />
 
         <div>
-          <Text strong style={{ display: 'block', marginBottom: 6 }}>Dataset</Text>
+          <Text strong style={{ display: 'block', marginBottom: 6 }}>{t('charts.dataset')}</Text>
           <Select
             value={datasetId ?? undefined}
             onChange={(v) => {
@@ -700,14 +702,14 @@ export default function ChartBuilderPage() {
               setPreviewVisible(false);
             }}
             style={{ width: '100%' }}
-            placeholder="Select a dataset..."
+            placeholder={t('charts.selectDataset')}
             options={datasets.map((d) => ({ value: d.id, label: `${d.name} (${d.row_count} rows)` }))}
           />
         </div>
 
         <Row gutter={12}>
           <Col span={12}>
-            <Text strong style={{ display: 'block', marginBottom: 6 }}>X Axis</Text>
+            <Text strong style={{ display: 'block', marginBottom: 6 }}>{t('charts.xAxis')}</Text>
             <Select
               value={xColumn || undefined}
               onChange={(v) => {
@@ -719,7 +721,7 @@ export default function ChartBuilderPage() {
               }}
               style={{ width: '100%' }}
               disabled={!datasetId}
-              placeholder="Select column..."
+              placeholder={t('charts.selectColumn')}
               options={columns.map((c) => ({
                 value: c.columnName,
                 label: `${c.originalHeader} (${c.columnType})`,
@@ -729,7 +731,7 @@ export default function ChartBuilderPage() {
           <Col span={12}>
             <Tooltip title={chartType === 'scatter' || chartType === 'bubble' ? 'Required for scatter/bubble' : 'Optional for COUNT'}>
               <Text strong style={{ display: 'block', marginBottom: 6 }}>
-                Y Axis {chartType === 'scatter' || chartType === 'bubble' ? '' : '(numeric)'}
+                {t('charts.yAxis')} {chartType === 'scatter' || chartType === 'bubble' ? '' : '(numeric)'}
               </Text>
             </Tooltip>
             <Select
@@ -755,7 +757,7 @@ export default function ChartBuilderPage() {
 
         {chartType !== 'scatter' && chartType !== 'bubble' && (
           <div>
-            <Text strong style={{ display: 'block', marginBottom: 6 }}>Aggregation</Text>
+            <Text strong style={{ display: 'block', marginBottom: 6 }}>{t('charts.aggregation')}</Text>
             <Select
               value={aggregation}
               onChange={(v) => {
@@ -764,7 +766,7 @@ export default function ChartBuilderPage() {
                 setPreviewVisible(false);
               }}
               style={{ width: '100%' }}
-              options={AGGREGATIONS.map((a) => ({ value: a.value, label: a.label }))}
+              options={AGGREGATIONS.map((a) => ({ value: a.value, label: t(a.label) }))}
             />
           </div>
         )}
@@ -774,20 +776,20 @@ export default function ChartBuilderPage() {
           size="small"
           items={[{
             key: 'advanced',
-            label: <Space><SettingOutlined /><Text strong>Advanced Configuration</Text></Space>,
+            label: <Space><SettingOutlined /><Text strong>{t('charts.advancedConfig')}</Text></Space>,
             children: (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <Row gutter={12}>
                   <Col span={8}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>Legend</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>{t('charts.showLegend')}</Text>
                     <div><Switch size="small" checked={advanced.showLegend ?? true} onChange={(v) => updateAdv('showLegend', v)} /></div>
                   </Col>
                   <Col span={8}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>Grid</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>{t('charts.showGrid')}</Text>
                     <div><Switch size="small" checked={advanced.showGrid ?? true} onChange={(v) => updateAdv('showGrid', v)} /></div>
                   </Col>
                   <Col span={8}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>Values</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>{t('charts.showValues')}</Text>
                     <div>
                       <Tooltip title="Data labels (experimental)">
                         <Switch size="small" checked={advanced.showValues ?? false} onChange={(v) => updateAdv('showValues', v)} />
@@ -797,13 +799,13 @@ export default function ChartBuilderPage() {
                 </Row>
 
                 <div>
-                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>Legend Position</Text>
+                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>{t('charts.legendPosition')}</Text>
                   <Select
                     value={advanced.legendPosition ?? 'top'}
                     onChange={(v) => updateAdv('legendPosition', v)}
                     style={{ width: '100%' }}
                     size="small"
-                    options={LEGEND_POSITIONS}
+                    options={LEGEND_POSITIONS.map((p) => ({ value: p.value, label: t(p.label) }))}
                   />
                 </div>
 
@@ -811,7 +813,7 @@ export default function ChartBuilderPage() {
                   <>
                     <div>
                       <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-                        Line Tension: {advanced.tension ?? 0.3}
+                        {t('charts.lineTension')}: {advanced.tension ?? 0.3}
                       </Text>
                       <Slider
                         min={0} max={1} step={0.05}
@@ -821,7 +823,7 @@ export default function ChartBuilderPage() {
                     </div>
                     {chartType === 'line' && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Text type="secondary" style={{ fontSize: 12 }}>Fill (Area)</Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>{t('charts.fill')}</Text>
                         <Switch size="small" checked={advanced.fill ?? false} onChange={(v) => updateAdv('fill', v)} />
                       </div>
                     )}
@@ -830,7 +832,7 @@ export default function ChartBuilderPage() {
 
                 <div>
                   <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-                    Border Width: {advanced.borderWidth ?? 1}
+                    {t('charts.borderWidth')}: {advanced.borderWidth ?? 1}
                   </Text>
                   <Slider
                     min={0} max={5} step={1}
@@ -841,7 +843,7 @@ export default function ChartBuilderPage() {
 
                 <div>
                   <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-                    Point Radius: {advanced.pointRadius ?? 3}
+                    {t('charts.pointRadius')}: {advanced.pointRadius ?? 3}
                   </Text>
                   <Slider
                     min={0} max={10} step={1}
@@ -851,7 +853,7 @@ export default function ChartBuilderPage() {
                 </div>
 
                 <div>
-                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>Color Palette</Text>
+                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>{t('charts.colorScheme')}</Text>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {Object.entries(COLOR_PALETTES).map(([key, pal]) => (
                       <Tooltip title={pal.label} key={key}>
@@ -878,7 +880,7 @@ export default function ChartBuilderPage() {
 
                 <div>
                   <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-                    Max Data Points: {advanced.maxDataPoints ?? 100}
+                    {t('charts.maxDataPoints')}: {advanced.maxDataPoints ?? 100}
                   </Text>
                   <Slider
                     min={10} max={1000} step={10}
@@ -897,9 +899,9 @@ export default function ChartBuilderPage() {
             onClick={handlePreview}
             disabled={!datasetId || !xColumn || previewLoading}
             loading={previewLoading}
-          >
-            Preview
-          </Button>
+>
+        {t('charts.preview')}
+      </Button>
           <Button
             type="primary"
             icon={<SaveOutlined />}
@@ -907,7 +909,7 @@ export default function ChartBuilderPage() {
             disabled={!title.trim() || !datasetId || !xColumn || saving}
             loading={saving}
           >
-            {editingId ? 'Update' : 'Save'}
+            {editingId ? t('charts.update') : t('charts.save')}
           </Button>
         </div>
       </div>
@@ -918,17 +920,17 @@ export default function ChartBuilderPage() {
     <Card
       title={
         <Space>
-          <BarChartOutlined style={{ color: token.colorPrimary }} />
-          Preview
+<BarChartOutlined style={{ color: token.colorPrimary }} />
+        {t('charts.preview')}
         </Space>
       }
       extra={
         previewVisible ? (
           <Space size={4}>
-            <Tooltip title="Export PNG">
+            <Tooltip title={t('charts.exportPNG')}>
               <Button size="small" icon={<PictureOutlined />} onClick={exportPreviewPng} />
             </Tooltip>
-            <Tooltip title="Export JSON">
+            <Tooltip title={t('charts.exportJSON')}>
               <Button size="small" icon={<FileTextOutlined />} onClick={exportPreviewJson} />
             </Tooltip>
           </Space>
@@ -964,17 +966,17 @@ export default function ChartBuilderPage() {
         <Space size="middle">
           <BarChartOutlined style={{ fontSize: 24, color: token.colorPrimary }} />
           <div>
-            <AntTitle level={3} style={{ margin: 0 }}>Visualizations</AntTitle>
-            <Text type="secondary">Create charts from your imported datasets</Text>
+            <AntTitle level={3} style={{ margin: 0 }}>{t('charts.title')}</AntTitle>
+            <Text type="secondary">{t('charts.subtitle')}</Text>
           </div>
         </Space>
         <Button
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => { resetBuilder(); setShowBuilder(true); }}
-        >
-          New Chart
-        </Button>
+>
+        {t('charts.newChart')}
+      </Button>
       </div>
 
       {viewingChart && (
@@ -1025,10 +1027,10 @@ export default function ChartBuilderPage() {
 
       {charts.length === 0 && !showBuilder ? (
         <Empty
-          description="No charts yet. Create your first visualization from an imported dataset."
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-        >
-          <Button type="primary" onClick={() => { resetBuilder(); setShowBuilder(true); }}>Create Chart</Button>
+description={t('charts.noChartsDesc')}
+        image={Empty.PRESENTED_IMAGE_SIMPLE}
+      >
+        <Button type="primary" onClick={() => { resetBuilder(); setShowBuilder(true); }}>{t('charts.newChart')}</Button>
         </Empty>
       ) : (
         <Row gutter={[16, 16]}>
@@ -1084,10 +1086,10 @@ export default function ChartBuilderPage() {
             <Button size="small" icon={<CopyOutlined />} onClick={() => handleDuplicate(chart)} aria-label="Duplicate chart" />
           </Tooltip>
           <Popconfirm
-            title="Delete this chart?"
-            description="This action cannot be undone."
-            onConfirm={() => handleDelete(chart.id)}
-            okText="Delete"
+title={t('charts.deleteConfirm')}
+          description="This action cannot be undone."
+          onConfirm={() => handleDelete(chart.id)}
+          okText="Delete"
             okButtonProps={{ danger: true }}
           >
             <Tooltip title="Delete">

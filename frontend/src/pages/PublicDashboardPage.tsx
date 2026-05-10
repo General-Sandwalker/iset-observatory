@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card, Row, Col, Space, Typography, Tag, Spin, Empty,
   Button, theme, Grid, Avatar, Divider, Modal, List, Alert, message,
@@ -15,6 +16,7 @@ const { Title, Text, Paragraph } = Typography;
 const { useBreakpoint } = Grid;
 
 export default function PublicDashboardPage() {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
@@ -40,7 +42,7 @@ export default function PublicDashboardPage() {
         setDashboards(dashRes.data.data || []);
         setReports(repRes.data.data || []);
       } catch {
-        setError('Failed to load public content. Please try again later.');
+        setError(t('public.fetchFailed'));
       } finally {
         setLoading(false);
       }
@@ -54,7 +56,7 @@ export default function PublicDashboardPage() {
       setViewReport(res.data.data);
       setReportModalOpen(true);
     } catch {
-      message.error('Failed to load report.');
+      message.error(t('public.reportViewFailed'));
     }
   }, []);
 
@@ -94,19 +96,19 @@ export default function PublicDashboardPage() {
           }}>
             <ThunderboltOutlined style={{ fontSize: 32, color: '#fff' }} />
           </div>
-          <Title level={2} style={{ color: '#fff', margin: 0, marginBottom: 8 }}>
-            ISET Observatory
-          </Title>
-          <Paragraph style={{ color: 'rgba(255,255,255,0.85)', fontSize: 16, marginBottom: 20 }}>
-            Public Dashboards & Reports
-          </Paragraph>
+        <Title level={2} style={{ color: '#fff', margin: 0, marginBottom: 8 }}>
+          {t('public.title')}
+        </Title>
+        <Paragraph style={{ color: 'rgba(255,255,255,0.85)', fontSize: 16, marginBottom: 20 }}>
+          {t('public.subtitle')}
+        </Paragraph>
           <Button
             ghost
             icon={<LoginOutlined />}
             onClick={() => navigate('/login')}
             style={{ borderColor: 'rgba(255,255,255,0.5)', color: '#fff' }}
           >
-            Sign in to access more
+            {t('public.signIn')}
           </Button>
         </div>
       </div>
@@ -127,13 +129,13 @@ export default function PublicDashboardPage() {
             <div>
               <Space style={{ marginBottom: 16 }}>
                 <AppstoreOutlined style={{ fontSize: 20, color: token.colorPrimary }} />
-                <Title level={4} style={{ margin: 0 }}>Published Dashboards</Title>
+                <Title level={4} style={{ margin: 0 }}>{t('public.dashboards')}</Title>
                 <Tag color="blue">{dashboards.length}</Tag>
               </Space>
               {dashboards.length === 0 ? (
                 <Card>
                   <Empty
-                    description="No dashboards have been published yet."
+                    description={t('public.noDashboards')}
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                   />
                 </Card>
@@ -191,13 +193,13 @@ export default function PublicDashboardPage() {
             <div>
               <Space style={{ marginBottom: 16 }}>
                 <FileTextOutlined style={{ fontSize: 20, color: token.colorSuccess }} />
-                <Title level={4} style={{ margin: 0 }}>Published Reports</Title>
+                <Title level={4} style={{ margin: 0 }}>{t('public.reports')}</Title>
                 <Tag color="green">{reports.length}</Tag>
               </Space>
               {reports.length === 0 ? (
                 <Card>
                   <Empty
-                    description="No reports have been published yet."
+                    description={t('public.noReports')}
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                   />
                 </Card>
@@ -218,9 +220,9 @@ export default function PublicDashboardPage() {
                           size="small"
                           icon={<EyeOutlined />}
                           onClick={() => handleViewReport(report.id)}
-                        >
-                          View
-                        </Button>,
+        >
+          {t('public.viewReport')}
+        </Button>,
                       ]}
                     >
                       <List.Item.Meta

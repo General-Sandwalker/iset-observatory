@@ -1,5 +1,6 @@
 import { useEffect, useState, CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   Row,
@@ -52,53 +53,53 @@ interface Stats {
 }
 
 const STAT_CARDS_CONFIG = [
-  { key: 'datasets', label: 'Datasets Imported', icon: DatabaseOutlined, color: '#1677ff' },
-  { key: 'totalRecords', label: 'Total Records', icon: TableOutlined, color: '#52c41a' },
-  { key: 'activeUsers', label: 'Active Users', icon: TeamOutlined, color: '#722ed1' },
-  { key: 'charts', label: 'Charts Created', icon: BarChartOutlined, color: '#fa8c16' },
-  { key: 'dashboards', label: 'Dashboards', icon: AppstoreOutlined, color: '#13c2c2' },
-  { key: 'aiQueriesThisMonth', label: 'AI Queries', icon: RobotOutlined, color: '#eb2f96' },
+  { key: 'datasets', label: 'dashboard.datasets', icon: DatabaseOutlined, color: '#1677ff' },
+  { key: 'totalRecords', label: 'dashboard.totalRecords', icon: TableOutlined, color: '#52c41a' },
+  { key: 'activeUsers', label: 'dashboard.activeUsers', icon: TeamOutlined, color: '#722ed1' },
+  { key: 'charts', label: 'dashboard.charts', icon: BarChartOutlined, color: '#fa8c16' },
+  { key: 'dashboards', label: 'dashboard.dashboards', icon: AppstoreOutlined, color: '#13c2c2' },
+  { key: 'aiQueriesThisMonth', label: 'dashboard.queries', icon: RobotOutlined, color: '#eb2f96' },
 ] as const;
 
 const QUICK_ACTIONS = [
   {
-    label: 'Import Data',
-    desc: 'Upload CSV or Excel files to start analysing your data',
+    label: 'dashboard.importData',
+    desc: 'dashboard.importDataDesc',
     icon: ImportOutlined,
     to: '/import',
     gradient: 'linear-gradient(135deg, #1677ff 0%, #4096ff 100%)',
   },
   {
-    label: 'AI Analysis',
-    desc: 'Ask natural-language questions and get AI-powered insights',
+    label: 'dashboard.aiAnalysis',
+    desc: 'dashboard.aiAnalysisDesc',
     icon: RobotOutlined,
     to: '/ai',
     gradient: 'linear-gradient(135deg, #722ed1 0%, #9254de 100%)',
   },
   {
-    label: 'Chart Builder',
-    desc: 'Create interactive charts and visualisations from datasets',
+    label: 'dashboard.newChart',
+    desc: 'dashboard.newChartDesc',
     icon: BarChartOutlined,
     to: '/charts',
     gradient: 'linear-gradient(135deg, #fa8c16 0%, #ffc53d 100%)',
   },
   {
-    label: 'Dashboards',
-    desc: 'Compose multiple charts into shareable dashboards',
+    label: 'dashboard.dashboards',
+    desc: 'dashboard.dashboardsDesc',
     icon: AppstoreOutlined,
     to: '/dashboards',
     gradient: 'linear-gradient(135deg, #13c2c2 0%, #36cfc9 100%)',
   },
   {
-    label: 'Survey Generator',
-    desc: 'Build AI-powered surveys and collect responses',
+    label: 'dashboard.surveyGenerator',
+    desc: 'dashboard.surveyGeneratorDesc',
     icon: FileTextOutlined,
     to: '/surveys',
     gradient: 'linear-gradient(135deg, #eb2f96 0%, #f759ab 100%)',
   },
   {
-    label: 'DB Explorer',
-    desc: 'Browse tables, inspect schemas and run SQL queries',
+    label: 'dashboard.dbExplorer',
+    desc: 'dashboard.dbExplorerDesc',
     icon: DatabaseOutlined,
     to: '/explore',
     gradient: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
@@ -132,6 +133,7 @@ function formatDate(): string {
 }
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { token } = theme.useToken();
@@ -153,7 +155,7 @@ export default function DashboardPage() {
       const { data } = await api.get<{ success: boolean; data: Stats }>('/stats');
       if (data.success) setStats(data.data);
     } catch {
-      setError('Could not load statistics.');
+      setError(t('dashboard.couldNotLoadStats'));
     } finally {
       setStatsLoading(false);
     }
@@ -166,7 +168,7 @@ export default function DashboardPage() {
       if (data.success) setCharts(data.data ?? []);
   } catch {
     setCharts([]);
-    message.warning('Could not load charts.');
+      message.warning(t('dashboard.couldNotLoadCharts'));
   } finally {
       setChartsLoading(false);
     }
@@ -179,10 +181,10 @@ export default function DashboardPage() {
       const { data } = await api.post<{ success: boolean; insights?: string; answer?: string }>('/ai/query', {
         question: 'Give me a brief summary of all data in the system',
       });
-      const text = data.insights ?? data.answer ?? 'No insights available.';
+      const text = data.insights ?? data.answer ?? t('dashboard.noInsightsAvailable');
       setAiInsight(text);
     } catch {
-      message.error('Failed to get AI insights. Please try again.');
+      message.error(t('dashboard.failedAiInsights'));
       setAiInsight(null);
     } finally {
       setAiLoading(false);
@@ -217,9 +219,9 @@ export default function DashboardPage() {
       >
         <Space size="middle">
           <DashboardOutlined style={{ fontSize: 22, color: token.colorPrimary }} />
-          <Title level={3} style={{ margin: 0 }}>
-            Dashboard
-          </Title>
+        <Title level={3} style={{ margin: 0 }}>
+          {t('dashboard.title')}
+        </Title>
         </Space>
         <Button
           icon={<ReloadOutlined spin={statsLoading} />}
@@ -227,11 +229,11 @@ export default function DashboardPage() {
             fetchStats();
             fetchCharts();
           }}
-          disabled={statsLoading}
-          size="small"
-        >
-          Refresh
-        </Button>
+        disabled={statsLoading}
+        size="small"
+      >
+        {t('dashboard.refresh')}
+      </Button>
       </div>
 
       {/* ── Welcome Section ─────────────────────────────────────────── */}
@@ -263,7 +265,7 @@ export default function DashboardPage() {
           </Avatar>
           <div>
             <Title level={4} style={{ margin: 0, marginBottom: 4 }}>
-              {getGreeting()}, {user?.fullName?.split(' ')[0] ?? 'User'}! 👋
+              {t('dashboard.welcome')}, {user?.fullName?.split(' ')[0] ?? 'User'}! 👋
             </Title>
             <Space size={8} align="center" wrap>
               <Text type="secondary" style={{ fontSize: 14 }}>
@@ -341,7 +343,7 @@ export default function DashboardPage() {
                         type="secondary"
                         style={{ fontSize: 13, display: 'block', marginBottom: 6 }}
                       >
-                        {cfg.label}
+                        {t(cfg.label)}
                       </Text>
                       <Tag
                         style={{
@@ -354,7 +356,7 @@ export default function DashboardPage() {
                           background: token.colorBgLayout,
                         }}
                       >
-                        <span style={{ marginRight: 2 }}>—</span> vs last month
+                        <span style={{ marginRight: 2 }}>—</span> {t('dashboard.vsLastMonth')}
                       </Tag>
                     </div>
                   )}
@@ -369,16 +371,16 @@ export default function DashboardPage() {
       <div style={{ marginBottom: 8 }}>
         <Space size={8}>
           <ThunderboltOutlined style={{ color: token.colorPrimary, fontSize: 16 }} />
-          <Title level={5} style={{ margin: 0 }}>
-            Quick Actions
-          </Title>
+        <Title level={5} style={{ margin: 0 }}>
+          {t('dashboard.quickActions')}
+        </Title>
         </Space>
       </div>
       <Row gutter={[16, 16]} style={{ marginBottom: 28 }}>
         {QUICK_ACTIONS.map((action) => {
           const IconComp = action.icon;
           return (
-            <Col xs={24} sm={12} md={8} key={action.label}>
+            <Col xs={24} sm={12} md={8} key={action.to}>
               <Card
                 hoverable
                 onClick={() => navigate(action.to)}
@@ -435,14 +437,14 @@ export default function DashboardPage() {
                           color: token.colorText,
                         }}
                       >
-                        {action.label}
-                      </Text>
-                      <Text
-                        type="secondary"
-                        style={{ fontSize: 12, lineHeight: 1.4, display: 'block' }}
-                        ellipsis
-                      >
-                        {action.desc}
+                  {t(action.label)}
+                </Text>
+                <Text
+                  type="secondary"
+                  style={{ fontSize: 12, lineHeight: 1.4, display: 'block' }}
+                  ellipsis
+                >
+                  {t(action.desc)}
                       </Text>
                     </div>
                     <ArrowRightOutlined
@@ -469,7 +471,7 @@ export default function DashboardPage() {
             title={
               <Space size={8}>
                 <ClockCircleOutlined style={{ color: token.colorPrimary }} />
-                <span>Recent Activity</span>
+                <span>{t('dashboard.recentActivity')}</span>
               </Space>
             }
             style={{ borderRadius: 12, height: '100%' }}
@@ -479,10 +481,10 @@ export default function DashboardPage() {
               image={<ClockCircleOutlined style={{ fontSize: 40, color: token.colorTextQuaternary }} />}
               description={
                 <Space direction="vertical" size={4} align="center">
-                  <Text type="secondary">Activity tracking coming soon</Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    Your recent actions will appear here
-                  </Text>
+                <Text type="secondary">{t('dashboard.activityComingSoon')}</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {t('dashboard.recentActionsHere')}
+                </Text>
                 </Space>
               }
             />
@@ -495,7 +497,7 @@ export default function DashboardPage() {
             title={
               <Space size={8}>
                 <BulbOutlined style={{ color: '#fa8c16' }} />
-                <span>AI Insights</span>
+                <span>{t('dashboard.aiInsights')}</span>
               </Space>
             }
             style={{ borderRadius: 12, height: '100%' }}
@@ -531,7 +533,7 @@ export default function DashboardPage() {
                   size="small"
                   type="link"
                 >
-                  Refresh insights
+                  Refresh
                 </Button>
               </div>
             ) : (
@@ -560,7 +562,7 @@ export default function DashboardPage() {
                   <SmileOutlined style={{ fontSize: 28, color: '#fff' }} />
                 </div>
                 <Text type="secondary" style={{ textAlign: 'center', maxWidth: 240 }}>
-                  Let AI analyse your data and provide a quick summary
+                  {t('dashboard.noInsights')}
                 </Text>
                 <Button
                   type="primary"
@@ -575,13 +577,13 @@ export default function DashboardPage() {
                     boxShadow: '0 4px 12px rgba(250, 140, 22, 0.35)',
                   }}
                 >
-                  Get AI Summary
+                  {t('dashboard.getAiSummary')}
                 </Button>
               </div>
             )}
             {aiLoading && (
               <div style={{ textAlign: 'center', padding: 24 }}>
-                <Spin tip="Analysing data..." />
+                <Spin tip={t('dashboard.analysingData')} />
               </div>
             )}
           </Card>
@@ -593,7 +595,7 @@ export default function DashboardPage() {
             title={
               <Space size={8}>
                 <BarChartOutlined style={{ color: '#722ed1' }} />
-                <span>Popular Charts</span>
+                <span>{t('dashboard.popularCharts')}</span>
               </Space>
             }
             extra={
@@ -604,8 +606,8 @@ export default function DashboardPage() {
                 icon={<ArrowRightOutlined />}
                 style={{ padding: 0 }}
               >
-                View all
-              </Button>
+                  {t('dashboard.viewAll')}
+                </Button>
             }
             style={{ borderRadius: 12, height: '100%' }}
             styles={{ body: { padding: '12px 24px 24px' } }}
@@ -621,15 +623,15 @@ export default function DashboardPage() {
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
                 description={
                   <Space direction="vertical" size={4} align="center">
-                    <Text type="secondary">No charts yet</Text>
+                    <Text type="secondary">{t('dashboard.noCharts')}</Text>
                     <Button
                       type="link"
                       size="small"
                       onClick={() => navigate('/charts')}
                       style={{ padding: 0 }}
                     >
-                      Create your first chart
-                    </Button>
+                  {t('dashboard.createFirstChart')}
+                </Button>
                   </Space>
                 }
               />
@@ -701,9 +703,9 @@ export default function DashboardPage() {
                       size="small"
                       icon={<EyeOutlined />}
                       style={{ flexShrink: 0, padding: '0 4px' }}
-                    >
-                      View
-                    </Button>
+                >
+                  {t('dashboard.view')}
+                </Button>
                   </div>
                 ))}
               </Space>

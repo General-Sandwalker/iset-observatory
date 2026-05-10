@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Table, Input, Button, Space, Typography, Spin,
@@ -20,6 +21,7 @@ const { Text, Title } = Typography;
 const { useBreakpoint } = Grid;
 
 function CellInput({ initial, onSave, onCancel }: { initial: string; onSave: (v: string) => void; onCancel: () => void }) {
+  const { t } = useTranslation();
   const [val, setVal] = useState(initial);
   const ref = useRef<Input>(null);
   useEffect(() => {
@@ -46,6 +48,7 @@ function CellInput({ initial, onSave, onCancel }: { initial: string; onSave: (v:
 function SchemaEditor({
   columns, datasetId, onClose, onChanged,
 }: { columns: TableColumn[]; datasetId: string; onClose: () => void; onChanged: () => void }) {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const [editing, setEditing] = useState<Record<string, { name: string; type: string }>>(
     () => Object.fromEntries(columns.map((c) => [c.column_name, { name: c.column_name, type: c.data_type.toUpperCase() }]))
@@ -65,7 +68,7 @@ function SchemaEditor({
       const resolvedName = nameChanged ? target.name : col.column_name;
       if (typeChanged) await api.patch(`/datasets/${datasetId}/columns/${resolvedName}/type`, { newType: target.type });
       if (!nameChanged && !typeChanged) { setSaving(null); return; }
-      message.success(`Column "${col.column_name}" updated.`);
+      message.success(t('tableEditor.columnUpdated', { name: col.column_name }));
       onChanged();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Error';
@@ -86,7 +89,7 @@ function SchemaEditor({
       ),
     },
     {
-      title: 'New Name',
+      title: t('common.name'),
       key: 'name',
       render: (_: unknown, col: TableColumn) => (
         <Input
@@ -98,7 +101,7 @@ function SchemaEditor({
       ),
     },
     {
-      title: 'New Type',
+      title: t('common.type'),
       key: 'type',
       render: (_: unknown, col: TableColumn) => (
         <Select
@@ -106,7 +109,7 @@ function SchemaEditor({
           style={{ width: 120 }}
           value={editing[col.column_name].type}
           onChange={(v) => setEditing((p) => ({ ...p, [col.column_name]: { ...p[col.column_name], type: v } }))}
-          options={TYPES.map((t) => ({ value: t, label: t }))}
+          options={TYPES.map((tp) => ({ value: tp, label: tp }))}
         />
       ),
     },
@@ -116,7 +119,7 @@ function SchemaEditor({
       width: 100,
       render: (_: unknown, col: TableColumn) => (
         <Space direction="vertical" size={4}>
-          <Button size="small" type="primary" icon={<SaveOutlined />} loading={saving === col.column_name} onClick={() => applyColumn(col)}>Apply</Button>
+          <Button size="small" type="primary" icon={<SaveOutlined />} loading={saving === col.column_name} onClick={() => applyColumn(col)}>{t('tableEditor.schemaApply')}</Button>
           {errors[col.column_name] && <Text type="danger" style={{ fontSize: 11 }}>{errors[col.column_name]}</Text>}
         </Space>
       ),
@@ -125,10 +128,10 @@ function SchemaEditor({
 
   return (
     <Modal
-      title={<Space><SettingOutlined style={{ color: token.colorPrimary }} /> Schema Editor</Space>}
+      title={<Space><SettingOutlined style={{ color: token.colorPrimary }} /> {t('tableEditor.schemaEditor')}</Space>}
       open={true}
       onCancel={onClose}
-      footer={<Button onClick={onClose}>Close</Button>}
+      footer={<Button onClick={onClose}>{t('common.close')}</Button>}
       width={640}
     >
       <Table
@@ -145,6 +148,7 @@ function SchemaEditor({
 function AddRowModal({
   columns, datasetId, onClose, onAdded,
 }: { columns: TableColumn[]; datasetId: string; onClose: () => void; onAdded: () => void }) {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
@@ -157,11 +161,11 @@ function AddRowModal({
     setError(null);
     try {
       await api.post(`/datasets/${datasetId}/rows`, values);
-      message.success('Row added successfully.');
+      message.success(t('tableEditor.rowAdded'));
       onAdded();
       onClose();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to add row.';
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t('tableEditor.addRowFailed');
       setError(msg);
       message.error(msg);
     } finally { setSaving(false); }
@@ -169,11 +173,11 @@ function AddRowModal({
 
   return (
     <Modal
-      title={<Space><PlusOutlined style={{ color: token.colorPrimary }} /> Add New Row</Space>}
+      title={<Space><PlusOutlined style={{ color: token.colorPrimary }} /> {t('tableEditor.addRowTitle')}</Space>}
       open={true}
       onCancel={onClose}
       onOk={submit}
-      okText="Add Row"
+      okText={t('tableEditor.addRowBtn')}
       okButtonProps={{ loading: saving }}
     >
       <Form form={form} layout="vertical" size="small">
@@ -189,6 +193,7 @@ function AddRowModal({
 }
 
 function ProfileTab({ datasetId }: { datasetId: string }) {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState<DataProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -201,7 +206,7 @@ function ProfileTab({ datasetId }: { datasetId: string }) {
         const res = await api.get<{ success: boolean; data: DataProfile[] }>(`/datasets/${datasetId}/profile`);
         if (!cancelled && res.data.success) setProfile(res.data.data);
       } catch {
-        if (!cancelled) setError('Failed to load profile data.');
+        if (!cancelled) setError(t('tableEditor.profileFailed'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -212,11 +217,11 @@ function ProfileTab({ datasetId }: { datasetId: string }) {
 
   if (loading) return <div style={{ padding: 40, textAlign: 'center' }}><Spin size="large" /></div>;
   if (error) return <Alert type="error" message={error} showIcon />;
-  if (profile.length === 0) return <Empty description="No profile data available." />;
+  if (profile.length === 0) return <Empty description={t('tableEditor.profileEmpty')} />;
 
   const columns: ColumnsType<DataProfile> = [
     { title: 'Column', dataIndex: 'column_name', key: 'column_name', sorter: (a, b) => a.column_name.localeCompare(b.column_name) },
-    { title: 'Type', dataIndex: 'data_type', key: 'data_type', render: (v: string) => <Tag>{v}</Tag> },
+    { title: t('common.type'), dataIndex: 'data_type', key: 'data_type', render: (v: string) => <Tag>{v}</Tag> },
     { title: 'Nulls', dataIndex: 'null_count', key: 'null_count', sorter: (a, b) => a.null_count - b.null_count, render: (v: number) => v > 0 ? <Tag color="warning">{v}</Tag> : <Tag color="success">0</Tag> },
     { title: 'Unique', dataIndex: 'unique_count', key: 'unique_count', sorter: (a, b) => a.unique_count - b.unique_count },
     { title: 'Min', dataIndex: 'min_value', key: 'min_value', render: (v: string | number | undefined) => v !== undefined ? String(v) : '—' },
@@ -229,6 +234,7 @@ function ProfileTab({ datasetId }: { datasetId: string }) {
 }
 
 function RelationsTab({ tableName }: { tableName: string; datasetId: string }) {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const [foreignKeys, setForeignKeys] = useState<ForeignLink[]>([]);
   const [loading, setLoading] = useState(true);
@@ -247,7 +253,7 @@ function RelationsTab({ tableName }: { tableName: string; datasetId: string }) {
         setForeignKeys(filtered);
       }
     } catch {
-      message.error('Failed to load foreign keys.');
+      message.error(t('tableEditor.fkFailed'));
     } finally {
       setLoading(false);
     }
@@ -265,7 +271,7 @@ function RelationsTab({ tableName }: { tableName: string; datasetId: string }) {
         targetTable: values.targetTable,
         targetColumn: values.targetColumn,
       });
-      message.success('Foreign key created.');
+      message.success(t('tableEditor.fkCreated'));
       setShowCreate(false);
       form.resetFields();
       loadFKs();
@@ -276,7 +282,7 @@ function RelationsTab({ tableName }: { tableName: string; datasetId: string }) {
   }
 
   const fkColumns: ColumnsType<ForeignLink> = [
-    { title: 'Direction', key: 'direction', render: (_: unknown, fk: ForeignLink) => fk.source_table === tableName ? <Tag color="blue">Outgoing</Tag> : <Tag color="green">Incoming</Tag> },
+    { title: 'Direction', key: 'direction', render: (_: unknown, fk: ForeignLink) => fk.source_table === tableName ? <Tag color="blue">{t('tableEditor.outgoing')}</Tag> : <Tag color="green">{t('tableEditor.incoming')}</Tag> },
     { title: 'Source', key: 'source', render: (_: unknown, fk: ForeignLink) => <Text code>{fk.source_table}.{fk.source_column}</Text> },
     { title: 'Target', key: 'target', render: (_: unknown, fk: ForeignLink) => <Text code>{fk.target_table}.{fk.target_column}</Text> },
     { title: 'Created', dataIndex: 'created_at', key: 'created_at', render: (v: string) => new Date(v).toLocaleDateString() },
@@ -285,37 +291,37 @@ function RelationsTab({ tableName }: { tableName: string; datasetId: string }) {
   return (
     <div>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text type="secondary">Foreign key relationships for <Text code>{tableName}</Text></Text>
-        <Button type="primary" size="small" icon={<LinkOutlined />} onClick={() => setShowCreate(true)}>New Relation</Button>
+      <Text type="secondary">{t('tableEditor.fkFor')} <Text code>{tableName}</Text></Text>
+      <Button type="primary" size="small" icon={<LinkOutlined />} onClick={() => setShowCreate(true)}>{t('tableEditor.newRelation')}</Button>
       </div>
 
       {loading ? <Spin /> : foreignKeys.length === 0 ? (
-        <Empty description="No foreign key relations defined." image={Empty.PRESENTED_IMAGE_SIMPLE}>
-          <Button type="primary" onClick={() => setShowCreate(true)}>Create Relation</Button>
+      <Empty description={t('tableEditor.noFk')} image={Empty.PRESENTED_IMAGE_SIMPLE}>
+      <Button type="primary" onClick={() => setShowCreate(true)}>{t('tableEditor.createRelation')}</Button>
         </Empty>
       ) : (
         <Table dataSource={foreignKeys} columns={fkColumns} rowKey="id" pagination={false} size="small" />
       )}
 
       <Modal
-        title={<Space><LinkOutlined style={{ color: token.colorPrimary }} /> Create Foreign Key</Space>}
+        title={<Space><LinkOutlined style={{ color: token.colorPrimary }} /> {t('tableEditor.createRelation')}</Space>}
         open={showCreate}
         onCancel={() => { setShowCreate(false); form.resetFields(); }}
         onOk={createFK}
-        okText="Create"
+        okText={t('common.create')}
         okButtonProps={{ loading: creating }}
       >
         <Form form={form} layout="vertical" size="small" initialValues={{ sourceTable: tableName }}>
-          <Form.Item label="Source Table" name="sourceTable" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="Source Column" name="sourceColumn" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="Target Table" name="targetTable" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="Target Column" name="targetColumn" rules={[{ required: true }]}>
+      <Form.Item label={t('tableEditor.sourceTable')} name="sourceTable" rules={[{ required: true }]}>
+        <Input />
+      </Form.Item>
+      <Form.Item label={t('tableEditor.sourceColumn')} name="sourceColumn" rules={[{ required: true }]}>
+        <Input />
+      </Form.Item>
+      <Form.Item label={t('tableEditor.targetTable')} name="targetTable" rules={[{ required: true }]}>
+        <Input />
+      </Form.Item>
+      <Form.Item label={t('tableEditor.targetColumn')} name="targetColumn" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
         </Form>
@@ -325,6 +331,7 @@ function RelationsTab({ tableName }: { tableName: string; datasetId: string }) {
 }
 
 export default function TableEditorPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { token } = theme.useToken();
@@ -365,8 +372,8 @@ export default function TableEditorPage() {
       if (dsRes.data.success) setDataset(dsRes.data.data);
       if (schRes.data.success) setColumns(schRes.data.data);
     } catch {
-      setError('Failed to load dataset info.');
-      message.error('Failed to load dataset info.');
+      setError(t('tableEditor.metaFailed'));
+      message.error(t('tableEditor.metaFailed'));
     }
   }, [id]);
 
@@ -393,13 +400,13 @@ export default function TableEditorPage() {
         setSelectedRowKeys([]);
       }
     } catch {
-      setError('Failed to load table data.');
-      message.error('Failed to load table data.');
+      setError(t('tableEditor.dataFailed'));
+      message.error(t('tableEditor.dataFailed'));
     } finally { setLoading(false); }
   }, [id, search, sortCol, sortOrder, pagination.limit]);
 
   useEffect(() => { fetchMeta(); }, [fetchMeta]);
-  useEffect(() => { fetchRows(1); }, [search, sortCol, sortOrder]); // eslint-disable-line
+  useEffect(() => { fetchRows(1); }, [fetchRows]);
 
   async function saveCell(rowId: number, col: string, value: string) {
     setSavingCell({ rowId, col });
@@ -411,10 +418,10 @@ export default function TableEditorPage() {
       );
       if (res.data.success) {
         setRows((prev) => prev.map((r) => (r.id === rowId ? res.data.data : r)));
-        message.success('Cell updated.');
+        message.success(t('tableEditor.cellUpdated'));
       }
     } catch {
-      message.error('Failed to update cell.');
+      message.error(t('tableEditor.cellUpdateFailed'));
     } finally { setSavingCell(null); }
   }
 
@@ -422,13 +429,13 @@ export default function TableEditorPage() {
     setDeletingRows(true);
     try {
       await api.delete(`/datasets/${id}/rows`, { data: { ids: selectedRowKeys.map(Number) } });
-      message.success(`${selectedRowKeys.length} row(s) deleted.`);
+      message.success(`${selectedRowKeys.length} ${t('tableEditor.rowsDeleted')}`);
       setShowDeleteRows(false);
       setSelectedRowKeys([]);
       fetchRows(pagination.page);
       fetchMeta();
     } catch {
-      message.error('Failed to delete rows.');
+      message.error(t('tableEditor.deleteRowsFailed'));
     } finally { setDeletingRows(false); }
   }
 
@@ -436,10 +443,10 @@ export default function TableEditorPage() {
     setDroppingTable(true);
     try {
       await api.delete(`/datasets/${id}`);
-      message.success('Table dropped successfully.');
+      message.success(t('tableEditor.dropSuccess'));
       navigate('/explore');
     } catch {
-      message.error('Failed to drop table.');
+      message.error(t('tableEditor.dropFailed'));
       setDroppingTable(false);
     }
   }
@@ -473,7 +480,7 @@ export default function TableEditorPage() {
       a.click();
       URL.revokeObjectURL(a.href);
     }
-    message.success(`Exported as ${format.toUpperCase()}.`);
+    message.success(t('tableEditor.exportSuccess', { format: format.toUpperCase() }));
   }
 
   const tableColumns: ColumnsType<Record<string, unknown>> = [
@@ -498,7 +505,7 @@ export default function TableEditorPage() {
           return <Spin size="small" />;
         }
         return (
-          <Tooltip title={isId ? undefined : 'Double-click to edit'}>
+          <Tooltip title={isId ? undefined : t('tableEditor.doubleClickEdit')}>
             <span
               style={{ cursor: isId ? 'default' : 'pointer', display: 'block' }}
               onDoubleClick={() => { if (!isId) setEditingCell({ rowId: rid, col: col.column_name }); }}
@@ -526,13 +533,13 @@ export default function TableEditorPage() {
   const tabItems = [
     {
       key: 'data',
-      label: <span><UnorderedListOutlined /> Data</span>,
+      label: <span><UnorderedListOutlined /> {t('tableEditor.data')}</span>,
       children: (
         <div>
           <Row gutter={[8, 8]} style={{ marginBottom: 12 }} align="middle">
             <Col xs={24} sm={12} md={8}>
               <Input
-                placeholder="Search all columns…"
+                placeholder={t('tableEditor.searchPlaceholder')}
                 prefix={<SearchOutlined />}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
@@ -543,12 +550,12 @@ export default function TableEditorPage() {
             </Col>
             <Col xs={24} sm={12} md={16}>
               <Space wrap style={{ width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'flex-start' : 'flex-end' }}>
-                {search && <Button size="small" type="link" onClick={() => { setSearch(''); setSearchInput(''); }}>Clear search</Button>}
-                <Tooltip title="Refresh data">
+                {search && <Button size="small" type="link" onClick={() => { setSearch(''); setSearchInput(''); }}>{t('tableEditor.clearSearch')}</Button>}
+                <Tooltip title={t('tableEditor.refreshData')}>
                   <Button icon={<ReloadOutlined spin={loading} />} size="small" onClick={() => fetchRows(pagination.page)} />
                 </Tooltip>
-                <Button icon={<DownloadOutlined />} size="small" onClick={() => handleExport('csv')}>CSV</Button>
-                <Button icon={<FileTextOutlined />} size="small" onClick={() => handleExport('json')}>JSON</Button>
+      <Button icon={<DownloadOutlined />} size="small" onClick={() => handleExport('csv')}>{t('tableEditor.exportCSV')}</Button>
+      <Button icon={<FileTextOutlined />} size="small" onClick={() => handleExport('json')}>{t('tableEditor.exportJSON')}</Button>
               </Space>
             </Col>
           </Row>
@@ -571,7 +578,7 @@ export default function TableEditorPage() {
                 total: pagination.total,
                 showSizeChanger: true,
                 showQuickJumper: true,
-                showTotal: (total, range) => `${range[0]}–${range[1]} of ${total.toLocaleString()}`,
+                showTotal: (total, range) => `${range[0]}–${range[1]} ${t('tableEditor.of')} ${total.toLocaleString()}`,
                 pageSizeOptions: ['10', '25', '50', '100'],
               }}
               onChange={(pag, filters, sorter, extra) => {
@@ -588,12 +595,12 @@ export default function TableEditorPage() {
     },
     {
       key: 'profile',
-      label: <span><ProfileOutlined /> Profile</span>,
+      label: <span><ProfileOutlined /> {t('tableEditor.profile')}</span>,
       children: id ? <ProfileTab datasetId={id} /> : null,
     },
     {
       key: 'relations',
-      label: <span><LinkOutlined /> Relations</span>,
+      label: <span><LinkOutlined /> {t('tableEditor.relations')}</span>,
       children: dataset?.table_name && id ? <RelationsTab tableName={dataset.table_name} datasetId={id} /> : null,
     },
   ];
@@ -634,8 +641,8 @@ export default function TableEditorPage() {
             <Title level={5} style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {dataset?.name ?? '…'}
             </Title>
-            <Text type="secondary" code style={{ fontSize: 12 }}>
-              {dataset?.table_name ?? ''}{pagination.total > 0 ? ` · ${pagination.total.toLocaleString()} rows` : ''}
+        <Text type="secondary" code style={{ fontSize: 12 }}>
+          {dataset?.table_name ?? ''}{pagination.total > 0 ? ` · ${pagination.total.toLocaleString()} ${t('common.rows')}` : ''}
             </Text>
           </div>
         </Space>
@@ -646,10 +653,10 @@ export default function TableEditorPage() {
               Delete {selectedRowKeys.length}
             </Button>
           )}
-          <Button type="primary" icon={<PlusOutlined />} size="small" onClick={() => setShowAddRow(true)}>Add Row</Button>
-          <Button icon={<SettingOutlined />} size="small" onClick={() => setShowSchema(true)}>Schema</Button>
-          <Popconfirm title="Drop this table permanently?" onConfirm={confirmDropTable} okText="Drop" okButtonProps={{ danger: true }}>
-            <Button danger icon={<DeleteOutlined />} size="small" loading={droppingTable}>Drop Table</Button>
+      <Button type="primary" icon={<PlusOutlined />} size="small" onClick={() => setShowAddRow(true)}>{t('tableEditor.addRow')}</Button>
+      <Button icon={<SettingOutlined />} size="small" onClick={() => setShowSchema(true)}>{t('tableEditor.schema')}</Button>
+      <Popconfirm title={t('tableEditor.dropConfirm')} onConfirm={confirmDropTable} okText="Drop" okButtonProps={{ danger: true }}>
+        <Button danger icon={<DeleteOutlined />} size="small" loading={droppingTable}>{t('tableEditor.dropTable')}</Button>
           </Popconfirm>
         </Space>
       </div>
@@ -675,17 +682,17 @@ export default function TableEditorPage() {
         />
       )}
       <Modal
-        title={<Space><AlertOutlined style={{ color: token.colorError }} /> Delete {selectedRowKeys.length} row{selectedRowKeys.length !== 1 ? 's' : ''}?</Space>}
+        title={<Space><AlertOutlined style={{ color: token.colorError }} /> {t('tableEditor.deleteRowsTitle', { count: selectedRowKeys.length })}</Space>}
         open={showDeleteRows}
         onCancel={() => setShowDeleteRows(false)}
         footer={
           <Space>
-            <Button onClick={() => setShowDeleteRows(false)} disabled={deletingRows}>Cancel</Button>
-            <Button type="primary" danger onClick={confirmDeleteRows} loading={deletingRows}>Delete</Button>
+        <Button onClick={() => setShowDeleteRows(false)} disabled={deletingRows}>{t('common.cancel')}</Button>
+        <Button type="primary" danger onClick={confirmDeleteRows} loading={deletingRows}>{t('common.delete')}</Button>
           </Space>
         }
       >
-        <Text>This action cannot be undone.</Text>
+        <Text>{t('tableEditor.deleteRowsDesc')}</Text>
       </Modal>
     </div>
   );

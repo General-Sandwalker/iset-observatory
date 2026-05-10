@@ -2,6 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { Result, Button } from 'antd';
 import { useAuth } from '../../contexts/AuthContext';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   children: ReactNode;
@@ -10,6 +11,7 @@ interface Props {
 
 export default function RoleRoute({ children, roles }: Props) {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   if (!roles || roles.length === 0) {
     return <>{children}</>;
@@ -23,11 +25,11 @@ export default function RoleRoute({ children, roles }: Props) {
     <Result
       status="403"
       title="403"
-      subTitle="You don't have permission to access this page."
-      extra={
-        <Button type="primary" href="/dashboard">
-          Back to Dashboard
-        </Button>
+    subTitle={t('auth.unauthorized')}
+    extra={
+      <Button type="primary" href="/dashboard">
+        {t('auth.goBack')}
+      </Button>
       }
     />
   );

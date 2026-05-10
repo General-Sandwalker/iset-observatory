@@ -12,6 +12,7 @@ import {
 } from '@ant-design/icons';
 import api from '../lib/api';
 import type { Role, Permission } from '../lib/types';
+import { useTranslation } from 'react-i18next';
 
 const { useBreakpoint } = Grid;
 const { Title, Text } = Typography;
@@ -91,6 +92,7 @@ function buildMatrix(permissions: Permission[]): { categories: string[]; actions
 
 export default function RolesPage() {
   const { token } = theme.useToken();
+  const { t } = useTranslation();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
   const [roles, setRoles] = useState<Role[]>([]);
@@ -113,28 +115,28 @@ export default function RolesPage() {
       setRoles(rolesRes.data.roles);
       setAllPermissions(permsRes.data.permissions);
     } catch {
-      setError('Failed to load data.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      setError(t('users.fetchFailed'));
+  } finally {
+    setLoading(false);
+  }
+}, [t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   useEffect(() => {
     if (error || success) {
-      const t = setTimeout(() => { setError(''); setSuccess(''); }, 3000);
-      return () => clearTimeout(t);
+    const timer = setTimeout(() => { setError(''); setSuccess(''); }, 3000);
+    return () => clearTimeout(timer);
     }
   }, [error, success]);
 
   const handleDelete = async (role: Role) => {
     try {
       await api.delete(`/roles/${role.id}`);
-      setSuccess('Role deleted.');
+      setSuccess(t('roles.deleteSuccess'));
       fetchData();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Delete failed.');
+      setError(err.response?.data?.message || t('roles.deleteFailed'));
     }
   };
 
@@ -183,7 +185,7 @@ export default function RolesPage() {
                     <Text strong style={{ fontSize: 15 }}>{role.name}</Text>
                   </Space>
                   {role.is_system && (
-                    <Tag icon={<LockOutlined />} color="warning" style={{ margin: 0 }}>System</Tag>
+                    <Tag icon={<LockOutlined />} color="warning" style={{ margin: 0 }}>{t('roles.system')}</Tag>
                   )}
                 </div>
                 {role.description && (
@@ -192,7 +194,7 @@ export default function RolesPage() {
                   </Text>
                 )}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Tag color="blue" style={{ margin: 0 }}>{permCount} permission{permCount !== 1 ? 's' : ''}</Tag>
+                  <Tag color="blue" style={{ margin: 0 }}>{t('roles.permissionCount', { count: permCount })}</Tag>
                   <Space size={4}>
                     <Button
                       size="small"
@@ -202,10 +204,10 @@ export default function RolesPage() {
                     />
                     {!role.is_system && (
                       <Popconfirm
-                        title={`Delete role "${role.name}"?`}
-                        onConfirm={() => handleDelete(role)}
-                        okText="Delete"
-                        cancelText="Cancel"
+          title={t('roles.deleteConfirm', { name: role.name })}
+          onConfirm={() => handleDelete(role)}
+          okText={t('common.delete')}
+          cancelText={t('common.cancel')}
                         okButtonProps={{ danger: true }}
                       >
                         <Button size="small" type="text" danger icon={<DeleteOutlined />} />
@@ -229,24 +231,24 @@ export default function RolesPage() {
         const rolePermIds = new Set(rolePerms.map((p) => p.id));
         const { categories: rcCats, actions: rcActs, matrix: rcMatrix } = buildMatrix(allPermissions.length > 0 ? allPermissions : rolePerms);
 
-        const matrixColumns = [
-          {
-            title: 'Category',
-            dataIndex: 'category',
-            key: 'category',
-            width: 120,
-            render: (cat: string) => {
-              const CatIcon = CATEGORY_ICONS[cat] || SafetyOutlined;
-              const color = CATEGORY_COLORS[cat] || token.colorPrimary;
-              return (
-                <Space size={6}>
-                  <CatIcon style={{ color, fontSize: 14 }} />
-                  <Text style={{ textTransform: 'capitalize', fontWeight: 600, fontSize: 12 }}>{cat}</Text>
-                </Space>
-              );
-            },
-          },
-          ...rcActs.map((action) => ({
+const matrixColumns = [
+    {
+      title: t('roles.category'),
+      dataIndex: 'category',
+      key: 'category',
+      width: 120,
+      render: (cat: string) => {
+        const CatIcon = CATEGORY_ICONS[cat] || SafetyOutlined;
+        const color = CATEGORY_COLORS[cat] || token.colorPrimary;
+        return (
+          <Space size={6}>
+            <CatIcon style={{ color, fontSize: 14 }} />
+            <Text style={{ textTransform: 'capitalize', fontWeight: 600, fontSize: 12 }}>{cat}</Text>
+          </Space>
+        );
+      },
+    },
+    ...rcActs.map((action) => ({
             title: action,
             key: action,
             width: 70,
@@ -271,14 +273,14 @@ export default function RolesPage() {
               <SafetyOutlined style={{ color: role.is_system ? token.colorWarning : token.colorPrimary }} />
               <Space size={4} align="center">
                 <Text strong>{role.name}</Text>
-                {role.is_system && (
-                  <Tag icon={<LockOutlined />} color="warning">System</Tag>
-                )}
+{role.is_system && (
+    <Tag icon={<LockOutlined />} color="warning">{t('roles.system')}</Tag>
+    )}
               </Space>
               {role.description && <Text type="secondary" style={{ fontSize: 12 }}>{role.description}</Text>}
             </Space>
           ),
-          extra: <Text type="secondary">{permCount} permission{permCount !== 1 ? 's' : ''}</Text>,
+          extra: <Text type="secondary">{t('roles.permissionCount', { count: permCount })}</Text>,
           children: (
             <div>
               <div style={{ marginBottom: 12, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
@@ -288,13 +290,13 @@ export default function RolesPage() {
                     <Tag key={p.id} color={color} style={{ marginBottom: 4 }}>{p.name}</Tag>
                   );
                 })}
-                {rolePerms.length === 0 && <Text type="secondary">No permissions assigned</Text>}
+                {rolePerms.length === 0 && <Text type="secondary">{t('common.noData')}</Text>}
               </div>
 
               {allPermissions.length > 0 && (
                 <div style={{ marginBottom: 16 }}>
                   <Text style={{ fontSize: 12, fontWeight: 600, color: token.colorTextTertiary, textTransform: 'uppercase', letterSpacing: 1, display: 'block', marginBottom: 8 }}>
-                    Permission Matrix
+                    {t('roles.permissionMatrix')}
                   </Text>
                   <Table
                     dataSource={matrixData}
@@ -312,19 +314,19 @@ export default function RolesPage() {
                   size="small"
                   icon={<EditOutlined />}
                   onClick={(e) => { e.stopPropagation(); setEditingRole(role); setModalOpen(true); }}
-                >
-                  Edit
-                </Button>
-                {!role.is_system && (
-                  <Popconfirm
-                    title={`Delete role "${role.name}"?`}
-                    onConfirm={() => handleDelete(role)}
-                    okText="Delete"
-                    cancelText="Cancel"
+        >
+          {t('common.edit')}
+        </Button>
+        {!role.is_system && (
+          <Popconfirm
+            title={t('roles.deleteConfirm', { name: role.name })}
+            onConfirm={() => handleDelete(role)}
+            okText={t('common.delete')}
+            cancelText={t('common.cancel')}
                     okButtonProps={{ danger: true }}
                   >
                     <Button size="small" danger icon={<DeleteOutlined />} onClick={(e) => e.stopPropagation()}>
-                      Delete
+                      {t('common.delete')}
                     </Button>
                   </Popconfirm>
                 )}
@@ -337,24 +339,24 @@ export default function RolesPage() {
   );
 
   const renderPermissionMatrix = () => {
-    const matrixColumns = [
-      {
-        title: 'Category',
-        dataIndex: 'category',
-        key: 'category',
-        width: 120,
-        render: (cat: string) => {
-          const CatIcon = CATEGORY_ICONS[cat] || SafetyOutlined;
-          const color = CATEGORY_COLORS[cat] || token.colorPrimary;
-          return (
-            <Space size={6}>
-              <CatIcon style={{ color, fontSize: 14 }} />
-              <Text style={{ textTransform: 'capitalize', fontWeight: 600, fontSize: 12 }}>{cat}</Text>
-            </Space>
-          );
-        },
+const matrixColumns = [
+    {
+      title: t('roles.category'),
+      dataIndex: 'category',
+      key: 'category',
+      width: 120,
+      render: (cat: string) => {
+        const CatIcon = CATEGORY_ICONS[cat] || SafetyOutlined;
+        const color = CATEGORY_COLORS[cat] || token.colorPrimary;
+        return (
+          <Space size={6}>
+            <CatIcon style={{ color, fontSize: 14 }} />
+            <Text style={{ textTransform: 'capitalize', fontWeight: 600, fontSize: 12 }}>{cat}</Text>
+          </Space>
+        );
       },
-      ...matrixActs.map((action) => ({
+    },
+    ...matrixActs.map((action) => ({
         title: action,
         key: action,
         width: 70,
@@ -378,12 +380,12 @@ export default function RolesPage() {
 
     return (
       <Card
-        title={
-          <Space>
-            <SafetyOutlined />
-            <span>Permission Matrix</span>
-          </Space>
-        }
+      title={
+        <Space>
+          <SafetyOutlined />
+          <span>{t('roles.permissionMatrix')}</span>
+        </Space>
+      }
         style={{ borderRadius: token.borderRadiusLG, marginBottom: 24 }}
       >
         <div style={{ overflowX: 'auto' }}>
@@ -411,15 +413,15 @@ export default function RolesPage() {
 
     return (
       <Modal
-        title={
-          <Space>
-            <SwapOutlined />
-            <span>Compare Roles</span>
-          </Space>
-        }
-        open={compareOpen}
-        onCancel={() => setCompareOpen(false)}
-        footer={<Button onClick={() => setCompareOpen(false)}>Close</Button>}
+    title={
+      <Space>
+        <SwapOutlined />
+        <span>{t('roles.compareTitle')}</span>
+      </Space>
+    }
+    open={compareOpen}
+    onCancel={() => setCompareOpen(false)}
+    footer={<Button onClick={() => setCompareOpen(false)}>{t('common.close')}</Button>}
         width={isMobile ? undefined : 900}
       >
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
@@ -428,7 +430,7 @@ export default function RolesPage() {
               <SafetyOutlined style={{ color: token.colorPrimary, fontSize: 24, marginBottom: 4 }} />
               <div><Text strong>{leftRole.name}</Text></div>
               <Text style={{ fontSize: 12, color: token.colorTextSecondary }}>
-                {leftRole.permissions?.length || 0} permissions
+                {t('roles.permissionCount', { count: leftRole.permissions?.length || 0 })}
               </Text>
             </Card>
           </Col>
@@ -437,7 +439,7 @@ export default function RolesPage() {
               <SafetyOutlined style={{ color: '#7c3aed', fontSize: 24, marginBottom: 4 }} />
               <div><Text strong>{rightRole.name}</Text></div>
               <Text style={{ fontSize: 12, color: token.colorTextSecondary }}>
-                {rightRole.permissions?.length || 0} permissions
+                {t('roles.permissionCount', { count: rightRole.permissions?.length || 0 })}
               </Text>
             </Card>
           </Col>
@@ -497,7 +499,7 @@ export default function RolesPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <Space size="middle">
           <SafetyOutlined style={{ fontSize: 24, color: token.colorPrimary }} />
-          <Title level={3} style={{ margin: 0 }}>Roles & Permissions</Title>
+          <Title level={3} style={{ margin: 0 }}>{t('roles.title')}</Title>
         </Space>
         <Space size={8}>
           {!isMobile && (
@@ -506,7 +508,7 @@ export default function RolesPage() {
               onClick={() => setCompareOpen(true)}
               disabled={roles.length < 2}
             >
-              Compare
+              {t('roles.compare')}
             </Button>
           )}
           {isMobile && (
@@ -522,7 +524,7 @@ export default function RolesPage() {
             icon={<PlusOutlined />}
             onClick={() => { setEditingRole(null); setModalOpen(true); }}
           >
-            {isMobile ? 'Create' : 'Create Role'}
+            {isMobile ? t('common.create') : t('roles.addRole')}
           </Button>
         </Space>
       </div>
@@ -542,10 +544,10 @@ export default function RolesPage() {
             try {
               if (editingRole) {
                 await api.put(`/roles/${editingRole.id}`, data);
-                setSuccess('Role updated.');
-              } else {
-                await api.post('/roles', data);
-                setSuccess('Role created.');
+            setSuccess(t('roles.updateSuccess'));
+            } else {
+              await api.post('/roles', data);
+              setSuccess(t('roles.createSuccess'));
               }
               setModalOpen(false);
               setEditingRole(null);
@@ -583,6 +585,7 @@ interface RoleModalProps {
 
 function RoleModal({ role, permsByCategory, onSave, onClose }: RoleModalProps) {
   const { token } = theme.useToken();
+  const { t } = useTranslation();
   const isEdit = !!role;
   const [name, setName] = useState(role?.name || '');
   const [description, setDescription] = useState(role?.description || '');
@@ -612,7 +615,7 @@ function RoleModal({ role, permsByCategory, onSave, onClose }: RoleModalProps) {
     try {
       await onSave({ name, description, permissionIds: selectedPerms });
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Operation failed.');
+      setError(err.response?.data?.message || t('users.bulkFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -620,18 +623,18 @@ function RoleModal({ role, permsByCategory, onSave, onClose }: RoleModalProps) {
 
   return (
     <Modal
-      title={isEdit ? 'Edit Role' : 'Create Role'}
-      open
-      onCancel={onClose}
-      onOk={handleSubmit}
-      confirmLoading={submitting}
-      okText={isEdit ? 'Update Role' : 'Create Role'}
+    title={isEdit ? t('roles.editRole') : t('roles.addRole')}
+    open
+    onCancel={onClose}
+    onOk={handleSubmit}
+    confirmLoading={submitting}
+    okText={isEdit ? t('common.save') : t('common.create')}
       width={640}
     >
       {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />}
 
       <div style={{ marginBottom: 16 }}>
-        <Text strong style={{ display: 'block', marginBottom: 4 }}>Role Name</Text>
+        <Text strong style={{ display: 'block', marginBottom: 4 }}>{t('common.name')}</Text>
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -640,7 +643,7 @@ function RoleModal({ role, permsByCategory, onSave, onClose }: RoleModalProps) {
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <Text strong style={{ display: 'block', marginBottom: 4 }}>Description</Text>
+        <Text strong style={{ display: 'block', marginBottom: 4 }}>{t('common.description')}</Text>
         <Input
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -648,7 +651,7 @@ function RoleModal({ role, permsByCategory, onSave, onClose }: RoleModalProps) {
       </div>
 
       <div>
-        <Text strong style={{ display: 'block', marginBottom: 8 }}>Permissions</Text>
+        <Text strong style={{ display: 'block', marginBottom: 8 }}>{t('roles.permissions')}</Text>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {Object.entries(permsByCategory).map(([category, perms]) => {
             const allChecked = perms.every((p) => selectedPerms.includes(p.id));
@@ -708,6 +711,7 @@ interface CompareSelectorModalProps {
 
 function CompareSelectorModal({ roles, onCompare, onClose }: CompareSelectorModalProps) {
   const { token } = theme.useToken();
+  const { t } = useTranslation();
   const [leftId, setLeftId] = useState<number | null>(null);
   const [rightId, setRightId] = useState<number | null>(null);
 
@@ -720,34 +724,34 @@ function CompareSelectorModal({ roles, onCompare, onClose }: CompareSelectorModa
 
   return (
     <Modal
-      title={
-        <Space>
-          <SwapOutlined />
-          <span>Compare Roles</span>
-        </Space>
-      }
-      open
-      onCancel={onClose}
-      onOk={handleCompare}
-      okText="Compare"
+    title={
+      <Space>
+        <SwapOutlined />
+        <span>{t('roles.compareTitle')}</span>
+      </Space>
+    }
+    open
+    onCancel={onClose}
+    onOk={handleCompare}
+    okText={t('roles.compare')}
       okButtonProps={{ disabled: leftId == null || rightId == null || leftId === rightId }}
     >
       <Row gutter={16}>
         <Col span={12}>
-          <Text strong style={{ display: 'block', marginBottom: 8, color: token.colorPrimary }}>Role A</Text>
-          <Select
-            style={{ width: '100%' }}
-            placeholder="Select role…"
+        <Text strong style={{ display: 'block', marginBottom: 8, color: token.colorPrimary }}>{t('roles.selectLeft')}</Text>
+        <Select
+          style={{ width: '100%' }}
+          placeholder={t('roles.selectLeft')}
             value={leftId ?? undefined}
             onChange={(val) => setLeftId(val)}
             options={roles.map((r) => ({ value: r.id, label: r.name }))}
           />
         </Col>
         <Col span={12}>
-          <Text strong style={{ display: 'block', marginBottom: 8, color: '#7c3aed' }}>Role B</Text>
-          <Select
-            style={{ width: '100%' }}
-            placeholder="Select role…"
+        <Text strong style={{ display: 'block', marginBottom: 8, color: '#7c3aed' }}>{t('roles.selectRight')}</Text>
+        <Select
+          style={{ width: '100%' }}
+          placeholder={t('roles.selectRight')}
             value={rightId ?? undefined}
             onChange={(val) => setRightId(val)}
             options={roles.map((r) => ({ value: r.id, label: r.name }))}
@@ -755,7 +759,7 @@ function CompareSelectorModal({ roles, onCompare, onClose }: CompareSelectorModa
         </Col>
       </Row>
       {leftId != null && rightId != null && leftId === rightId && (
-        <Alert type="warning" message="Please select two different roles to compare." showIcon style={{ marginTop: 16 }} />
+        <Alert type="warning" message={t('roles.compareDifferent')} showIcon style={{ marginTop: 16 }} />
       )}
     </Modal>
   );

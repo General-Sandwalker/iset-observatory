@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Upload, Table, Select, Input, Button, Card, Space, Typography, Tag, Spin,
   Empty, Popconfirm, theme, message, Row, Col, Modal, Steps, Divider,
-  Tooltip, Badge,
+  Tooltip, Badge, Grid, Form,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -18,18 +19,30 @@ import type { Dataset, ColumnMapping, ParsedPreview } from '../lib/types';
 
 const { Title, Text, Paragraph } = Typography;
 const { Dragger } = Upload;
+const { useBreakpoint } = Grid;
+
+function useModalWidth(maxWidth: number): number {
+  const screens = useBreakpoint();
+  if (!screens.md) return Math.min(maxWidth, window.innerWidth - 32);
+  if (!screens.lg) return Math.min(maxWidth, window.innerWidth - 48);
+  return Math.min(maxWidth, window.innerWidth - 64);
+}
+
 const COLUMN_TYPES = ['TEXT', 'INTEGER', 'NUMERIC', 'DATE', 'BOOLEAN'] as const;
 
-const STATUS_MAP: Record<string, { color: string; label: string; icon?: React.ReactNode }> = {
-  uploaded: { color: 'orange', label: 'Uploaded', icon: <CloudUploadOutlined /> },
-  processing: { color: 'blue', label: 'Processing', icon: <LoadingOutlined spin /> },
-  imported: { color: 'green', label: 'Imported', icon: <CheckCircleOutlined /> },
-  error: { color: 'red', label: 'Error', icon: <InfoCircleOutlined /> },
+const STATUS_MAP: Record<string, { color: string; labelKey: string; icon?: React.ReactNode }> = {
+  uploaded: { color: 'orange', labelKey: 'common.uploaded', icon: <CloudUploadOutlined /> },
+  processing: { color: 'blue', labelKey: 'common.processing', icon: <LoadingOutlined spin /> },
+  imported: { color: 'green', labelKey: 'common.imported', icon: <CheckCircleOutlined /> },
+  error: { color: 'red', labelKey: 'common.error', icon: <InfoCircleOutlined /> },
 };
 
 export default function DataImportPage() {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const navigate = useNavigate();
+  const mappingModalWidth = useModalWidth(900);
+  const viewModalWidth = useModalWidth(1100);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -44,8 +57,8 @@ export default function DataImportPage() {
   const [viewLoading, setViewLoading] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [urlModalOpen, setUrlModalOpen] = useState(false);
-  const [importUrl, setImportUrl] = useState('');
   const [importingUrl, setImportingUrl] = useState(false);
+  const [urlForm] = Form.useForm();
   const [recentlyImported, setRecentlyImported] = useState<number | null>(null);
 
   const fetchDatasets = useCallback(async () => {
@@ -53,7 +66,7 @@ export default function DataImportPage() {
       const res = await api.get('/datasets');
       setDatasets(res.data.data);
     } catch {
-      message.error('Failed to fetch datasets.');
+      message.error(t('import.fetchFailed'));
     } finally {
       setLoading(false);
     }
@@ -70,9 +83,9 @@ export default function DataImportPage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       await fetchDatasets();
-      message.success('File uploaded successfully.');
+      message.success(t('import.uploadSuccess'));
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Upload failed.';
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('import.uploadFailed');
       message.error(msg);
     } finally {
       setUploading(false);
@@ -98,7 +111,7 @@ export default function DataImportPage() {
         ds.name.replace(/\.[^/.]+$/, '').toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_{2,}/g, '_').replace(/^_+|_+$/g, ''),
       );
     } catch {
-      message.error('Failed to preview file.');
+      message.error(t('import.previewFailed'));
       setMappingModalOpen(false);
     } finally {
       setPreviewLoading(false);
@@ -121,9 +134,9 @@ export default function DataImportPage() {
       setRecentlyImported(activePreview.dataset.id);
       closeMappingWorkspace();
       await fetchDatasets();
-      message.success('Data imported successfully.');
+      message.success(t('import.importSuccess'));
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Import failed.';
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('import.importFailed');
       message.error(msg);
     } finally {
       setImporting(false);
@@ -148,26 +161,26 @@ export default function DataImportPage() {
     try {
       await api.delete(`/datasets/${ds.id}`);
       await fetchDatasets();
-      message.success('Dataset deleted.');
+      message.success(t('import.deleteSuccess'));
     } catch {
-      message.error('Delete failed.');
+      message.error(t('import.deleteFailed'));
     }
   }
 
   async function handleUrlImport() {
-    if (!importUrl.trim()) {
-      message.error('Please enter a URL.');
-      return;
-    }
+    try {
+      await urlForm.validateFields();
+    } catch { return; }
+    const url = urlForm.getFieldValue('url').trim();
     setImportingUrl(true);
     try {
-      await api.post('/datasets/upload', { url: importUrl.trim() });
+      await api.post('/datasets/upload', { url });
       await fetchDatasets();
-      message.success('File imported from URL successfully.');
+      message.success(t('import.urlImportSuccess'));
       setUrlModalOpen(false);
-      setImportUrl('');
+      urlForm.resetFields();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'URL import failed.';
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('import.urlImportFailed');
       message.error(msg);
     } finally {
       setImportingUrl(false);
@@ -218,8 +231,8 @@ export default function DataImportPage() {
       key: 'status',
       width: 140,
       render: (status: Dataset['status']) => {
-        const s = STATUS_MAP[status] ?? STATUS_MAP.uploaded;
-        return <Tag color={s.color} icon={s.icon}>{s.label}</Tag>;
+      const s = STATUS_MAP[status] ?? STATUS_MAP.uploaded;
+      return <Tag color={s.color} icon={s.icon}>{t(s.labelKey)}</Tag>;
       },
     },
     {
@@ -270,15 +283,15 @@ export default function DataImportPage() {
             </Tooltip>
           )}
           {record.status === 'imported' && (
-            <Tooltip title="Profile Data">
-              <Button
-                type="text"
-                size="small"
-                icon={<ProfileOutlined />}
-                onClick={() => navigate(`/explore/${record.id}`)}
-                style={{ color: token.colorInfo }}
-              />
-            </Tooltip>
+      <Tooltip title={t('import.profileData')}>
+        <Button
+          type="text"
+          size="small"
+          icon={<ProfileOutlined />}
+          onClick={() => navigate(`/explore/${record.id}`)}
+          style={{ color: token.colorInfo }}
+        />
+      </Tooltip>
           )}
           <Popconfirm
             title={`Delete "${record.name}" and its data?`}
@@ -298,10 +311,10 @@ export default function DataImportPage() {
   ];
 
   const mappingStepItems = [
-    { title: 'Review Headers', icon: <FileTextOutlined /> },
-    { title: 'Column Types', icon: <DatabaseOutlined /> },
-    { title: 'Preview Data', icon: <EyeOutlined /> },
-    { title: 'Import', icon: <ImportOutlined /> },
+    { title: t('import.mapping.stepReview'), icon: <FileTextOutlined /> },
+    { title: t('import.mapping.stepTypes'), icon: <DatabaseOutlined /> },
+    { title: t('import.mapping.stepPreview'), icon: <EyeOutlined /> },
+    { title: t('import.mapping.stepImport'), icon: <ImportOutlined /> },
   ];
 
   return (
@@ -309,8 +322,8 @@ export default function DataImportPage() {
       <Row gutter={[24, 24]}>
         <Col xs={24} lg={14}>
           <div style={{ marginBottom: 8 }}>
-            <Title level={3} style={{ margin: 0 }}>Data Import</Title>
-            <Text type="secondary">Upload CSV or Excel files, map columns, and import into the database.</Text>
+      <Title level={3} style={{ margin: 0 }}>{t('import.title')}</Title>
+      <Text type="secondary">{t('import.subtitle')}</Text>
           </div>
 
           <Dragger
@@ -347,10 +360,10 @@ export default function DataImportPage() {
                   <InboxOutlined />
                 </div>
                 <Paragraph strong style={{ fontSize: 16, marginBottom: 4 }}>
-                  Drag & drop your file here
-                </Paragraph>
-                <Paragraph type="secondary" style={{ marginBottom: 8 }}>
-                  or click to browse your computer
+          {t('import.dragDrop')}
+        </Paragraph>
+        <Paragraph type="secondary" style={{ marginBottom: 8 }}>
+          {t('import.orBrowse')}
                 </Paragraph>
                 <Space size={16} style={{ marginTop: 8 }}>
                   <Tag icon={<FileTextOutlined />} color="blue">CSV</Tag>
@@ -358,7 +371,7 @@ export default function DataImportPage() {
                   <Tag icon={<FileExcelOutlined />} color="green">XLSX</Tag>
                 </Space>
                 <Paragraph type="secondary" style={{ fontSize: 12, marginTop: 12, marginBottom: 0 }}>
-                  Maximum file size: 50 MB
+                  {t('import.maxSize')}
                 </Paragraph>
               </div>
             )}
@@ -370,7 +383,7 @@ export default function DataImportPage() {
               icon={<LinkOutlined />}
               onClick={() => setUrlModalOpen(true)}
             >
-              Import from URL instead
+              {t('import.importUrl')}
             </Button>
           </div>
         </Col>
@@ -393,7 +406,7 @@ export default function DataImportPage() {
               }}>
                 <DatabaseOutlined style={{ fontSize: 28, color: token.colorPrimary }} />
               </div>
-              <Title level={5} style={{ marginBottom: 4 }}>How it works</Title>
+              <Title level={5} style={{ marginBottom: 4 }}>{t('import.howItWorks')}</Title>
               <Paragraph type="secondary" style={{ marginBottom: 20 }}>
                 Three simple steps to get your data into the database
               </Paragraph>
@@ -402,25 +415,25 @@ export default function DataImportPage() {
               <Space align="start">
                 <Badge count={1} style={{ backgroundColor: token.colorPrimary }} />
                 <div>
-                  <Text strong>Upload your file</Text>
-                  <br />
-                  <Text type="secondary" style={{ fontSize: 12 }}>Drag & drop or browse for CSV/Excel files</Text>
+        <Text strong>{t('import.step1')}</Text>
+        <br />
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('import.step1Desc')}</Text>
                 </div>
               </Space>
               <Space align="start">
                 <Badge count={2} style={{ backgroundColor: token.colorPrimary }} />
                 <div>
-                  <Text strong>Map columns</Text>
-                  <br />
-                  <Text type="secondary" style={{ fontSize: 12 }}>Review auto-mapped headers and set column types</Text>
+        <Text strong>{t('import.step2')}</Text>
+        <br />
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('import.step2Desc')}</Text>
                 </div>
               </Space>
               <Space align="start">
                 <Badge count={3} style={{ backgroundColor: token.colorPrimary }} />
                 <div>
-                  <Text strong>Import to database</Text>
-                  <br />
-                  <Text type="secondary" style={{ fontSize: 12 }}>Choose a table name and import your data</Text>
+        <Text strong>{t('import.step3')}</Text>
+        <br />
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('import.step3Desc')}</Text>
                 </div>
               </Space>
             </div>
@@ -435,7 +448,7 @@ export default function DataImportPage() {
         >
           <Space>
             <CheckCircleOutlined style={{ color: token.colorSuccess, fontSize: 18 }} />
-            <Text>Dataset imported successfully!</Text>
+            <Text>{t('import.imported')}</Text>
             <Button
               type="primary"
               size="small"
@@ -445,9 +458,9 @@ export default function DataImportPage() {
                 setRecentlyImported(null);
               }}
             >
-              Profile Data
-            </Button>
-            <Button size="small" onClick={() => setRecentlyImported(null)}>Dismiss</Button>
+        {t('import.profileData')}
+      </Button>
+      <Button size="small" onClick={() => setRecentlyImported(null)}>{t('import.dismiss')}</Button>
           </Space>
         </Card>
       )}
@@ -458,18 +471,18 @@ export default function DataImportPage() {
         </div>
       ) : datasets.length === 0 ? (
         <Empty
-          description="No datasets yet. Upload a file to get started."
+          description={t('import.noDatasets')}
           image={Empty.PRESENTED_IMAGE_SIMPLE}
         >
           <Button type="primary" icon={<CloudUploadOutlined />} onClick={() => {}}>
-            Upload a File
+            {t('import.uploadFile')}
           </Button>
         </Empty>
       ) : (
         <Card>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
             <Text strong style={{ fontSize: 16 }}>
-              Datasets
+              {t('import.datasets')}
               <Tag style={{ marginLeft: 8 }}>{datasets.length}</Tag>
             </Text>
           </div>
@@ -488,7 +501,7 @@ export default function DataImportPage() {
         title={null}
         open={mappingModalOpen}
         onCancel={closeMappingWorkspace}
-        width={Math.min(900, window.innerWidth - 48)}
+        width={mappingModalWidth}
         footer={null}
         destroyOnClose
         style={{ top: 20 }}
@@ -496,7 +509,7 @@ export default function DataImportPage() {
         {previewLoading ? (
           <div style={{ textAlign: 'center', padding: 64 }}>
             <Spin size="large" indicator={<LoadingOutlined style={{ fontSize: 36 }} spin />} />
-            <Paragraph type="secondary" style={{ marginTop: 16 }}>Parsing your file…</Paragraph>
+            <Paragraph type="secondary" style={{ marginTop: 16 }}>{t('import.mapping.parsing')}</Paragraph>
           </div>
         ) : activePreview ? (
           <MappingModalContent
@@ -519,7 +532,7 @@ export default function DataImportPage() {
         title={null}
         open={viewModalOpen}
         onCancel={() => { setViewModalOpen(false); setViewData(null); }}
-        width={Math.min(1100, window.innerWidth - 48)}
+        width={viewModalWidth}
         footer={null}
         destroyOnClose
         style={{ top: 20 }}
@@ -527,33 +540,35 @@ export default function DataImportPage() {
         {viewLoading ? (
           <div style={{ textAlign: 'center', padding: 64 }}>
             <Spin size="large" indicator={<LoadingOutlined style={{ fontSize: 36 }} spin />} />
-            <Paragraph type="secondary" style={{ marginTop: 16 }}>Loading table data…</Paragraph>
+            <Paragraph type="secondary" style={{ marginTop: 16 }}>{t('import.mapping.loadingData')}</Paragraph>
           </div>
         ) : viewData ? (
           <DataViewerContent data={viewData} />
         ) : null}
       </Modal>
 
-      <Modal
-        title="Import from URL"
-        open={urlModalOpen}
-        onCancel={() => { setUrlModalOpen(false); setImportUrl(''); }}
-        onOk={handleUrlImport}
-        okText="Import"
-        okButtonProps={{ loading: importingUrl, icon: <LinkOutlined /> }}
-        confirmLoading={importingUrl}
-      >
-        <Paragraph type="secondary" style={{ marginBottom: 16 }}>
-          Enter the URL of a CSV or Excel file to import directly.
-        </Paragraph>
-        <Input
-          placeholder="https://example.com/data.csv"
-          prefix={<LinkOutlined />}
-          value={importUrl}
-          onChange={(e) => setImportUrl(e.target.value)}
-          onPressEnter={handleUrlImport}
-        />
-      </Modal>
+    <Modal
+      title={t('import.urlTitle')}
+      open={urlModalOpen}
+      onCancel={() => { setUrlModalOpen(false); urlForm.resetFields(); }}
+      onOk={handleUrlImport}
+      okText="Import"
+      okButtonProps={{ loading: importingUrl, icon: <LinkOutlined /> }}
+      confirmLoading={importingUrl}
+    >
+      <Paragraph type="secondary" style={{ marginBottom: 16 }}>
+        {t('import.urlDesc')}
+      </Paragraph>
+      <Form form={urlForm} layout="vertical">
+        <Form.Item name="url" rules={[{ required: true, message: t('import.urlRequired') }, { type: 'url', message: t('import.urlInvalid') }]}>
+          <Input
+            placeholder={t('import.urlPlaceholder')}
+            prefix={<LinkOutlined />}
+            onPressEnter={handleUrlImport}
+          />
+        </Form.Item>
+      </Form>
+    </Modal>
 
       <style>{`
         @keyframes float {
@@ -583,20 +598,20 @@ function MappingModalContent({
   preview, mappings, tableName, importing, step, onStepChange,
   onTableNameChange, onUpdateMapping, onImport, onClose, stepItems,
 }: MappingModalContentProps) {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
 
   const mappingColumns: ColumnsType<ColumnMapping & { key: number }> = [
     { title: '#', key: 'idx', width: 48, render: (_v: unknown, _r: unknown, idx: number) => idx + 1 },
-    {
-      title: 'Original Header',
-      key: 'original',
-      ellipsis: true,
-      render: (_v: unknown, _r: unknown, idx: number) => (
-        <Text code>{mappings[idx].originalHeader}</Text>
-      ),
-    },
-    {
-      title: 'Column Name (SQL)',
+    { title: t('import.mapping.originalHeader'),
+    key: 'original',
+    ellipsis: true,
+    render: (_v: unknown, _r: unknown, idx: number) => (
+      <Text code>{mappings[idx].originalHeader}</Text>
+    ),
+  },
+  {
+    title: t('import.mapping.columnName'),
       key: 'columnName',
       ellipsis: true,
       render: (_v: unknown, _r: unknown, idx: number) => (
@@ -618,12 +633,12 @@ function MappingModalContent({
           onChange={(v) => onUpdateMapping(idx, 'columnType', v)}
           size="small"
           style={{ width: 120 }}
-          options={COLUMN_TYPES.map((t) => ({ value: t, label: t }))}
+          options={COLUMN_TYPES.map((tp) => ({ value: tp, label: tp }))}
         />
       ),
     },
     {
-      title: 'Sample Values',
+      title: t('import.mapping.sampleValues'),
       key: 'sample',
       responsive: ['lg' as const],
       ellipsis: true,
@@ -648,11 +663,11 @@ function MappingModalContent({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
           <Title level={4} style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-            <DatabaseOutlined style={{ color: token.colorPrimary }} /> Mapping Workspace
+            <DatabaseOutlined style={{ color: token.colorPrimary }} /> {t('import.mapping.title')}
           </Title>
           <Text type="secondary" style={{ marginTop: 4, display: 'block' }}>
             File: <Text strong>{preview.dataset.name}</Text>
-            {' · '}{preview.totalRows.toLocaleString()} rows · {preview.headers.length} columns
+            {' · '}{preview.totalRows.toLocaleString()} {t('common.rows')} · {preview.headers.length} {t('common.columns')}
           </Text>
         </div>
         <Button icon={<CloseOutlined />} onClick={onClose} type="text" />
@@ -669,20 +684,20 @@ function MappingModalContent({
       {step === 0 && (
         <div>
           <Paragraph type="secondary" style={{ marginBottom: 16 }}>
-            Review the headers detected in your file. Column names have been auto-generated from the original headers.
+            {t('import.mapping.reviewDesc')}
           </Paragraph>
           <Table
             dataSource={mappings.map((m, i) => ({ key: i, ...m }))}
             columns={[
               { title: '#', key: 'idx', width: 48, render: (_v: unknown, _r: unknown, idx: number) => idx + 1 },
               {
-                title: 'Original Header',
+                title: t('import.mapping.originalHeader'),
                 key: 'original',
                 ellipsis: true,
                 render: (_v: unknown, _r: unknown, idx: number) => <Text code>{mappings[idx].originalHeader}</Text>,
               },
               {
-                title: 'Auto-mapped Column Name',
+                title: t('import.mapping.autoMappedName'),
                 key: 'columnName',
                 ellipsis: true,
                 render: (_v: unknown, _r: unknown, idx: number) => <Text keyboard>{mappings[idx].columnName}</Text>,
@@ -693,7 +708,7 @@ function MappingModalContent({
           />
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
             <Button type="primary" onClick={() => onStepChange(1)}>
-              Next: Edit Types <ImportOutlined />
+              {t('import.mapping.nextTypes')} <ImportOutlined />
             </Button>
           </div>
         </div>
@@ -702,7 +717,7 @@ function MappingModalContent({
       {step === 1 && (
         <div>
           <Paragraph type="secondary" style={{ marginBottom: 16 }}>
-            Edit column names and select the appropriate data type for each column.
+            {t('import.mapping.typesDesc')}
           </Paragraph>
           <Table
             dataSource={mappings.map((m, i) => ({ key: i, ...m }))}
@@ -714,7 +729,7 @@ function MappingModalContent({
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 16 }}>
             <Button onClick={() => onStepChange(0)}>Back</Button>
             <Button type="primary" onClick={() => onStepChange(2)}>
-              Next: Preview Data <EyeOutlined />
+              {t('import.mapping.nextPreview')} <EyeOutlined />
             </Button>
           </div>
         </div>
@@ -723,7 +738,7 @@ function MappingModalContent({
       {step === 2 && (
         <div>
           <Paragraph type="secondary" style={{ marginBottom: 16 }}>
-            Preview a sample of your data before importing. Showing {Math.min(20, preview.totalRows)} of {preview.totalRows.toLocaleString()} rows.
+            {t('import.mapping.previewDesc')} Showing {Math.min(20, preview.totalRows)} of {preview.totalRows.toLocaleString()} rows.
           </Paragraph>
           <Table
             dataSource={preview.preview.map((row, i) => ({ key: i, ...row }))}
@@ -735,7 +750,7 @@ function MappingModalContent({
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 16 }}>
             <Button onClick={() => onStepChange(1)}>Back</Button>
             <Button type="primary" onClick={() => onStepChange(3)}>
-              Next: Set Table Name & Import <ImportOutlined />
+              {t('import.mapping.nextImport')} <ImportOutlined />
             </Button>
           </div>
         </div>
@@ -745,7 +760,7 @@ function MappingModalContent({
         <div>
           <Card style={{ marginBottom: 16 }}>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>
-              Target table name <Text type="secondary">(automatically prefixed with dyn_)</Text>
+              {t('import.mapping.targetTable')} <Text type="secondary">{t('import.mapping.autoPrefix')}</Text>
             </Text>
             <Space>
               <Text code>dyn_</Text>
@@ -759,10 +774,10 @@ function MappingModalContent({
           </Card>
 
           <Card>
-            <Text strong style={{ display: 'block', marginBottom: 12 }}>Import Summary</Text>
+            <Text strong style={{ display: 'block', marginBottom: 12 }}>{t('import.mapping.importSummary')}</Text>
             <Row gutter={16}>
               <Col span={8}>
-                <StatisticItem label="Table" value={tableName ? `dyn_${tableName}` : '—'} />
+                <StatisticItem label={t('import.mapping.table')} value={tableName ? `dyn_${tableName}` : '—'} />
               </Col>
               <Col span={8}>
                 <StatisticItem label="Columns" value={mappings.length} />
@@ -791,7 +806,7 @@ function MappingModalContent({
               loading={importing}
               disabled={!tableName}
             >
-              Create Table & Import
+              {t('import.mapping.createImport')}
             </Button>
           </div>
         </div>
@@ -815,6 +830,7 @@ interface DataViewerContentProps {
 }
 
 function DataViewerContent({ data }: DataViewerContentProps) {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const columns = data.rows.length > 0
     ? Object.keys(data.rows[0]).filter((k) => k !== 'id' && k !== '_imported_at')
@@ -850,8 +866,8 @@ function DataViewerContent({ data }: DataViewerContentProps) {
           </Title>
           <Text type="secondary" style={{ marginTop: 4, display: 'block' }}>
             Table: <Text code>{data.dataset.table_name}</Text>
-            {' · '}{data.dataset.row_count.toLocaleString()} rows
-            {' · '}{columns.length} columns
+        {' · '}{data.dataset.row_count.toLocaleString()} {t('common.rows')}
+        {' · '}{columns.length} {t('common.columns')}
           </Text>
         </div>
       </div>

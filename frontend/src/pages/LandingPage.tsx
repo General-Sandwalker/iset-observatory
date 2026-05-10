@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   Button, Card, Typography, Space, Tag, Row, Col, Switch,
@@ -18,90 +19,91 @@ import { useTheme } from '../contexts/ThemeContext';
 const { useBreakpoint } = Grid;
 const { Title, Text, Paragraph } = Typography;
 
-const FEATURES = [
-  {
-    icon: DatabaseOutlined,
-    title: 'CSV Data Import',
-    desc: 'Upload and parse any CSV dataset instantly. The system auto-detects column types and prepares your data for analysis.',
-    color: '#2563eb',
-  },
-  {
-    icon: RobotOutlined,
-    title: 'AI Analysis',
-    desc: 'Ask questions about your data in plain language. Powered by Groq LLMs, the AI returns structured insights and summaries.',
-    color: '#7c3aed',
-  },
-  {
-    icon: BarChartOutlined,
-    title: 'Chart Builder',
-    desc: 'Create bar, line, pie, radar, polar-area, and doughnut charts from any imported dataset with a few clicks.',
-    color: '#0891b2',
-  },
-  {
-    icon: AppstoreOutlined,
-    title: 'Dashboard Canvas',
-    desc: 'Drag, resize, and arrange charts on a free-form canvas. Export the whole dashboard to a PDF report in one click.',
-    color: '#059669',
-  },
-  {
-    icon: FileTextOutlined,
-    title: 'Survey Generator',
-    desc: 'AI drafts targeted surveys based on your dataset. Copy, share, or embed questions to collect follow-up field data.',
-    color: '#d97706',
-  },
-  {
-    icon: SafetyOutlined,
-    title: 'Role-Based Access',
-    desc: 'Assign granular permissions to users via custom roles. Keep sensitive data restricted to the right people.',
-    color: '#dc2626',
-  },
-];
-
 const TECH = ['React 19', 'TypeScript', 'Vite', 'Express.js', 'PostgreSQL', 'Groq LLM', 'Chart.js', 'jsPDF'];
 
-const STATS = [
-  { value: '500+', label: 'Datasets Analyzed', icon: DatabaseOutlined },
-  { value: '50+', label: 'Organizations', icon: GlobalOutlined },
-  { value: '99.9%', label: 'Uptime', icon: CheckCircleOutlined },
-];
-
-const TESTIMONIALS = [
-  {
-    name: 'Dr. Amira Bensalah',
-    role: 'Research Director, University of Tunis',
-    text: 'ISET Observatory transformed how our team analyzes institutional data. The AI-powered queries saved us weeks of manual work.',
-    initials: 'AB',
-    color: '#2563eb',
-  },
-  {
-    name: 'Prof. Karim Mehdi',
-    role: 'Dean of Sciences, ENIT',
-    text: 'The dashboard builder is remarkably intuitive. We went from raw CSVs to presentation-ready PDFs in under an hour.',
-    initials: 'KM',
-    color: '#7c3aed',
-  },
-  {
-    name: 'Sana Trabelsi',
-    role: 'Data Analyst, Ministry of Education',
-    text: 'Role-based access gives us confidence that sensitive student data stays protected while still enabling collaboration.',
-    initials: 'ST',
-    color: '#059669',
-  },
-];
-
-const NAV_LINKS = [
-  { label: 'Features', href: '#features' },
-  { label: 'Docs', href: '/docs' },
-  { label: 'Sign In', href: '/login' },
-];
-
 export default function LandingPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { theme: mode, toggleTheme } = useTheme();
   const { token } = theme.useToken();
   const screens = useBreakpoint();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const isMobile = !screens.md;
+
+  const FEATURES = [
+    {
+      icon: DatabaseOutlined,
+      title: t('landing.feature1Title'),
+      desc: t('landing.feature1Desc'),
+      color: '#2563eb',
+    },
+    {
+      icon: RobotOutlined,
+      title: t('landing.feature2Title'),
+      desc: t('landing.feature2Desc'),
+      color: '#7c3aed',
+    },
+    {
+      icon: BarChartOutlined,
+      title: t('landing.feature3Title'),
+      desc: t('landing.feature3Desc'),
+      color: '#0891b2',
+    },
+    {
+      icon: AppstoreOutlined,
+      title: t('landing.feature4Title'),
+      desc: t('landing.feature4Desc'),
+      color: '#059669',
+    },
+    {
+      icon: FileTextOutlined,
+      title: t('landing.feature5Title'),
+      desc: t('landing.feature5Desc'),
+      color: '#d97706',
+    },
+    {
+      icon: SafetyOutlined,
+      title: t('landing.feature6Title'),
+      desc: t('landing.feature6Desc'),
+      color: '#dc2626',
+    },
+  ];
+
+  const STATS = [
+    { value: '500+', label: t('landing.statDatasets'), icon: DatabaseOutlined },
+    { value: '50+', label: t('landing.statOrganizations'), icon: GlobalOutlined },
+    { value: '99.9%', label: t('landing.statUptime'), icon: CheckCircleOutlined },
+  ];
+
+  const TESTIMONIALS = [
+    {
+      name: 'Dr. Amira Bensalah',
+      role: t('landing.testimonial1Role'),
+      text: t('landing.testimonial1Text'),
+      initials: 'AB',
+      color: '#2563eb',
+    },
+    {
+      name: 'Prof. Karim Mehdi',
+      role: t('landing.testimonial2Role'),
+      text: t('landing.testimonial2Text'),
+      initials: 'KM',
+      color: '#7c3aed',
+    },
+    {
+      name: 'Sana Trabelsi',
+      role: t('landing.testimonial3Role'),
+      text: t('landing.testimonial3Text'),
+      initials: 'ST',
+      color: '#059669',
+    },
+  ];
+
+  const NAV_LINKS = [
+    { label: t('landing.navFeatures'), href: '#features' },
+    { label: t('landing.navDocs'), href: '/docs' },
+    { label: t('landing.navSignIn'), href: '/login' },
+  ];
 
   const scrollToDocs = () => {
     if (window.location.pathname !== '/docs') {
@@ -141,11 +143,11 @@ export default function LandingPage() {
         <Space size={8} align="center">
           <ThunderboltOutlined style={{ color: token.colorPrimary, fontSize: 20 }} />
           <Text strong style={{ letterSpacing: '0.04em', color: token.colorText }}>
-            ISET Observatory
-          </Text>
-        </Space>
+{t('landing.title')}
+        </Text>
+      </Space>
 
-        {isMobile ? (
+      {isMobile ? (
           <Space size={8} align="center">
             <Switch
               checked={mode === 'dark'}
@@ -163,23 +165,23 @@ export default function LandingPage() {
         ) : (
           <Space size={12} align="center">
             <Button type="text" onClick={() => navTo('#features')} style={{ color: token.colorTextSecondary }}>
-              Features
+{t('landing.features')}
+        </Button>
+        <Button type="text" onClick={() => navigate('/public')} style={{ color: token.colorTextSecondary }}>
+          {t('landing.publicDashboards')}
             </Button>
-            <Button type="text" onClick={() => navigate('/public')} style={{ color: token.colorTextSecondary }}>
-              Public Dashboards
-            </Button>
-            <Button onClick={() => navigate('/docs')} style={{ borderColor: token.colorBorder }}>
-              Docs
-            </Button>
+        <Button onClick={() => navigate('/docs')} style={{ borderColor: token.colorBorder }}>
+          {t('landing.navDocs')}
+        </Button>
             <Switch
               checked={mode === 'dark'}
               onChange={toggleTheme}
               checkedChildren="🌙"
               unCheckedChildren="☀️"
             />
-            <Button type="primary" onClick={() => navigate('/login')}>
-              Sign In
-            </Button>
+        <Button type="primary" onClick={() => navigate('/login')}>
+          {t('landing.navSignIn')}
+        </Button>
           </Space>
         )}
       </header>
@@ -271,25 +273,24 @@ export default function LandingPage() {
                 }}
               >
                 <ThunderboltOutlined style={{ color: token.colorPrimary, fontSize: 12 }} />
-                <Text style={{ fontSize: 12, color: token.colorPrimary, fontWeight: 500 }}>
-                  Institutional Data Observatory
-                </Text>
+          <Text style={{ fontSize: 12, color: token.colorPrimary, fontWeight: 500 }}>
+            {t('landing.institutionalObservatory')}
+          </Text>
               </Space>
 
-              <Title
-                level={1}
-                style={{
-                  fontSize: isMobile ? '2.2rem' : '3.5rem',
-                  fontWeight: 900,
-                  lineHeight: 1.15,
-                  marginBottom: 24,
-                  color: token.colorText,
-                }}
-              >
-                Understand your data
-                <br />
-                <span style={{ color: token.colorPrimary }}>intelligently.</span>
-              </Title>
+        <Title
+          level={1}
+          style={{
+            fontSize: isMobile ? '2.2rem' : '3.5rem',
+            fontWeight: 900,
+            lineHeight: 1.15,
+            marginBottom: 24,
+            color: token.colorText,
+          }}
+        >
+          {t('landing.title')} <br />
+          <span style={{ color: token.colorPrimary }}>{t('landing.subtitle')}</span>
+        </Title>
 
               <Paragraph
                 style={{
@@ -299,10 +300,9 @@ export default function LandingPage() {
                   margin: '0 auto 40px',
                   color: token.colorTextSecondary,
                 }}
-              >
-                Import CSVs, query with AI, build beautiful charts, and generate shareable dashboards
-                — all in one open-source academic analytics platform.
-              </Paragraph>
+        >
+          {t('landing.heroDescription')}
+        </Paragraph>
 
               <Space size={12} wrap style={{ justifyContent: 'center' }}>
                 <Button
@@ -313,16 +313,16 @@ export default function LandingPage() {
                   iconPosition="end"
                   style={{ height: 48, paddingInline: 28, borderRadius: 12, fontWeight: 600 }}
                 >
-                  Get Started
-                </Button>
-                <Button
+{t('landing.getStarted')}
+        </Button>
+        <Button
                   size="large"
                   onClick={scrollToDocs}
                   icon={<BookOutlined />}
                   style={{ height: 48, paddingInline: 28, borderRadius: 12, fontWeight: 600 }}
-                >
-                  View Docs
-                </Button>
+        >
+          {t('landing.viewDocs')}
+        </Button>
               </Space>
             </Col>
           </Row>
@@ -367,13 +367,13 @@ export default function LandingPage() {
             level={2}
             style={{ textAlign: 'center', marginBottom: 8, color: token.colorText, fontSize: isMobile ? 24 : undefined }}
           >
-            Everything you need
-          </Title>
-          <Paragraph
-            style={{ textAlign: 'center', marginBottom: 40, color: token.colorTextSecondary }}
-          >
-            A complete analytics toolkit built for academic institutions.
-          </Paragraph>
+{t('landing.features')}
+        </Title>
+        <Paragraph
+          style={{ textAlign: 'center', marginBottom: 40, color: token.colorTextSecondary }}
+        >
+          {t('landing.toolkitSubtitle')}
+        </Paragraph>
 
           <Row gutter={[20, 20]}>
             {FEATURES.map((f) => {
@@ -455,59 +455,59 @@ export default function LandingPage() {
             level={2}
             style={{ textAlign: 'center', marginBottom: 8, color: token.colorText, fontSize: isMobile ? 24 : undefined }}
           >
-            Trusted by researchers
-          </Title>
-          <Paragraph
-            style={{ textAlign: 'center', marginBottom: 40, color: token.colorTextSecondary }}
-          >
-            Hear from institutions already using ISET Observatory.
-          </Paragraph>
+{t('landing.testimonials')}
+        </Title>
+        <Paragraph
+          style={{ textAlign: 'center', marginBottom: 40, color: token.colorTextSecondary }}
+        >
+          {t('landing.testimonialsSubtitle')}
+        </Paragraph>
 
           <Row gutter={[20, 20]}>
-            {TESTIMONIALS.map((t) => (
-              <Col xs={24} md={8} key={t.name}>
-                <Card
-                  style={{
-                    borderRadius: token.borderRadiusLG,
-                    background: token.colorBgLayout,
-                    borderColor: token.colorBorder,
-                    height: '100%',
-                  }}
-                  styles={{ body: { display: 'flex', flexDirection: 'column', gap: 16, padding: 24 } }}
-                >
-                  <Space align="center" size={12}>
-                    <div
-                      style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: `linear-gradient(135deg, ${t.color}, ${t.color}88)`,
-                        color: '#fff',
-                        fontWeight: 700,
-                        fontSize: 14,
-                      }}
-                    >
-                      {t.initials}
-                    </div>
-                    <div>
-                      <Text strong style={{ display: 'block', fontSize: 13 }}>{t.name}</Text>
-                      <Text style={{ fontSize: 11, color: token.colorTextTertiary }}>{t.role}</Text>
-                    </div>
-                  </Space>
-                  <Paragraph
-                    style={{
-                      margin: 0,
-                      fontSize: 13,
-                      lineHeight: 1.7,
-                      color: token.colorTextSecondary,
-                      fontStyle: 'italic',
-                    }}
-                  >
-                    "{t.text}"
-                  </Paragraph>
+      {TESTIMONIALS.map((tm) => (
+        <Col xs={24} md={8} key={tm.name}>
+          <Card
+            style={{
+              borderRadius: token.borderRadiusLG,
+              background: token.colorBgLayout,
+              borderColor: token.colorBorder,
+              height: '100%',
+            }}
+            styles={{ body: { display: 'flex', flexDirection: 'column', gap: 16, padding: 24 } }}
+          >
+            <Space align="center" size={12}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: `linear-gradient(135deg, ${tm.color}, ${tm.color}88)`,
+                  color: '#fff',
+                  fontWeight: 700,
+                  fontSize: 14,
+                }}
+              >
+                {tm.initials}
+              </div>
+              <div>
+                <Text strong style={{ display: 'block', fontSize: 13 }}>{tm.name}</Text>
+                <Text style={{ fontSize: 11, color: token.colorTextTertiary }}>{tm.role}</Text>
+              </div>
+            </Space>
+            <Paragraph
+              style={{
+                margin: 0,
+                fontSize: 13,
+                lineHeight: 1.7,
+                color: token.colorTextSecondary,
+                fontStyle: 'italic',
+              }}
+            >
+              "{tm.text}"
+            </Paragraph>
                   <Space size={4} style={{ marginTop: 'auto' }}>
                     {[1, 2, 3, 4, 5].map((s) => (
                       <StarOutlined key={s} style={{ color: '#f59e0b', fontSize: 12 }} />
@@ -563,9 +563,9 @@ export default function LandingPage() {
           </div>
 
           <div style={{ position: 'relative' }}>
-            <Title level={2} style={{ color: '#fff', fontWeight: 900, marginBottom: 12, fontSize: isMobile ? 22 : undefined }}>
-              Ready to unlock the power of your institutional data?
-            </Title>
+        <Title level={2} style={{ color: '#fff', fontWeight: 900, marginBottom: 12, fontSize: isMobile ? 22 : undefined }}>
+          {t('landing.ctaTitle')}
+        </Title>
             <Paragraph
               style={{
                 color: 'rgba(255,255,255,0.85)',
@@ -574,10 +574,9 @@ export default function LandingPage() {
                 maxWidth: 520,
                 margin: '0 auto 24px',
               }}
-            >
-              Join dozens of research teams already using AI-driven analytics to make smarter, faster decisions.
-              Sign in with your institutional account or request access today.
-            </Paragraph>
+        >
+          {t('landing.ctaDescription')}
+        </Paragraph>
             <Space size={12} wrap>
               <Button
                 size="large"
@@ -591,9 +590,9 @@ export default function LandingPage() {
                   color: token.colorPrimary,
                   border: 'none',
                 }}
-              >
-                Sign In Now
-              </Button>
+        >
+          {t('landing.signInNow')}
+        </Button>
               <Button
                 size="large"
                 ghost
@@ -607,9 +606,9 @@ export default function LandingPage() {
                   color: '#fff',
                   borderColor: 'rgba(255,255,255,0.4)',
                 }}
-              >
-                Read the Docs
-              </Button>
+        >
+          {t('landing.readTheDocs')}
+        </Button>
             </Space>
           </div>
         </div>
@@ -627,46 +626,46 @@ export default function LandingPage() {
             <Space size={8} align="center">
               <ThunderboltOutlined style={{ color: token.colorPrimary, fontSize: 18 }} />
               <Text strong style={{ color: token.colorText, letterSpacing: '0.04em' }}>
-                ISET Observatory
-              </Text>
-            </Space>
-            <div style={{ marginTop: 12 }}>
+{t('landing.title')}
+        </Text>
+      </Space>
+      <div style={{ marginTop: 12 }}>
               <Space size={12}>
-                <Button type="text" size="small" icon={<GithubOutlined />} style={{ color: token.colorTextSecondary }}>
-                  GitHub
-                </Button>
-                <Button type="text" size="small" icon={<BookOutlined />} onClick={() => navigate('/docs')} style={{ color: token.colorTextSecondary }}>
-                  Docs
-                </Button>
-                <Button type="text" size="small" icon={<TeamOutlined />} style={{ color: token.colorTextSecondary }}>
-                  Team
-                </Button>
+          <Button type="text" size="small" icon={<GithubOutlined />} style={{ color: token.colorTextSecondary }}>
+            {t('landing.github')}
+          </Button>
+          <Button type="text" size="small" icon={<BookOutlined />} onClick={() => navigate('/docs')} style={{ color: token.colorTextSecondary }}>
+            {t('landing.navDocs')}
+          </Button>
+          <Button type="text" size="small" icon={<TeamOutlined />} style={{ color: token.colorTextSecondary }}>
+            {t('landing.team')}
+          </Button>
               </Space>
             </div>
           </Col>
 
           <Col xs={24} sm={8} style={{ textAlign: 'center' }}>
             <Space size={[6, 6]} wrap style={{ justifyContent: 'center' }}>
-              {TECH.map((t) => (
-                <Tag
-                  key={t}
-                  style={{
-                    margin: 0,
-                    borderColor: token.colorBorder,
-                    color: token.colorTextSecondary,
-                    background: token.colorBgContainer,
-                  }}
-                >
-                  <CodeOutlined style={{ marginRight: 4 }} />
-                  {t}
-                </Tag>
-              ))}
+        {TECH.map((tech) => (
+          <Tag
+            key={tech}
+            style={{
+              margin: 0,
+              borderColor: token.colorBorder,
+              color: token.colorTextSecondary,
+              background: token.colorBgContainer,
+            }}
+          >
+            <CodeOutlined style={{ marginRight: 4 }} />
+            {tech}
+          </Tag>
+        ))}
             </Space>
           </Col>
 
           <Col xs={24} sm={8} style={{ textAlign: isMobile ? 'center' : 'right' }}>
             <Text style={{ fontSize: 12, color: token.colorTextTertiary }}>
-              <CopyrightOutlined /> {new Date().getFullYear()} ISET Observatory. All rights reserved.
+              <CopyrightOutlined /> {new Date().getFullYear()} {t('landing.title')}. All rights reserved.
             </Text>
           </Col>
         </Row>

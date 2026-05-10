@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card, Row, Col, Button, Space, Typography, Input, Spin, Tag,
-  Empty, Modal, Popconfirm, message, theme, Grid, Tooltip, Switch,
+  Empty, Modal, Popconfirm, message, theme, Grid, Tooltip, Switch, Form,
 } from 'antd';
 import {
   AppstoreOutlined, PlusOutlined, SaveOutlined, DeleteOutlined,
@@ -49,6 +50,7 @@ function SortableChartCard({
 }: {
   chartId: number; chart?: Chart; chartData?: ChartApiData; onRemove: (id: number) => void;
 }) {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: chartId });
   const style: React.CSSProperties = {
@@ -106,7 +108,7 @@ function SortableChartCard({
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, height: 220 }}>
           <BarChartOutlined style={{ fontSize: 32, opacity: 0.3, color: token.colorTextQuaternary }} />
-          <Text type="secondary" style={{ fontSize: 12 }}>Chart no longer exists</Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>{t('dashboards.chartNotExist')}</Text>
         </div>
       </div>
     );
@@ -140,6 +142,7 @@ function SortableChartCard({
 }
 
 export default function DashboardCanvasPage() {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const screens = useBreakpoint();
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
@@ -150,8 +153,6 @@ export default function DashboardCanvasPage() {
   const [layoutItems, setLayoutItems] = useState<DashboardLayoutItem[]>([]);
   const [chartDataMap, setChartDataMap] = useState<Record<number, ChartApiData>>({});
   const [showCreate, setShowCreate] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newDescription, setNewDescription] = useState('');
   const [showPicker, setShowPicker] = useState(false);
   const [pickerSearch, setPickerSearch] = useState('');
   const [editingTitle, setEditingTitle] = useState(false);
@@ -159,6 +160,7 @@ export default function DashboardCanvasPage() {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState<ReturnType<typeof setInterval> | null>(null);
   const [isPublic, setIsPublic] = useState(false);
+  const [createForm] = Form.useForm();
 
   const isMobile = !screens.md;
 
@@ -172,7 +174,7 @@ export default function DashboardCanvasPage() {
       api.get('/dashboards').then((r) => setDashboards(r.data.data)),
       api.get('/charts').then((r) => setCharts(r.data.data)),
     ]).catch(() => {
-      message.error('Failed to load dashboards or charts.');
+      message.error(t('dashboards.fetchFailed'));
     }).finally(() => setLoading(false));
   }, []);
 
@@ -184,7 +186,7 @@ export default function DashboardCanvasPage() {
         results[it.chartId] = res.data.data;
       } catch {
         results[it.chartId] = { labels: [], values: [] };
-        message.warning(`Failed to load data for chart #${it.chartId}.`);
+        message.warning(t('dashboards.chartDataFailed', { id: it.chartId }));
       }
     }));
     setChartDataMap((prev) => ({ ...prev, ...results }));
@@ -204,16 +206,19 @@ export default function DashboardCanvasPage() {
     setChartDataMap(results);
   }, [layoutItems]);
 
+  const refreshAllChartsRef = useRef(refreshAllCharts);
+  refreshAllChartsRef.current = refreshAllCharts;
+
   useEffect(() => {
     if (autoRefresh && activeDashboard) {
-      const interval = setInterval(() => { refreshAllCharts(); }, 30000);
+      const interval = setInterval(() => { refreshAllChartsRef.current(); }, 30000);
       setRefreshInterval(interval);
       return () => clearInterval(interval);
     } else {
       if (refreshInterval) clearInterval(refreshInterval);
       setRefreshInterval(null);
     }
-  }, [autoRefresh, activeDashboard]); // eslint-disable-line
+  }, [autoRefresh, activeDashboard]);
 
   async function openDashboard(dashboard: Dashboard) {
     setActiveDashboard(dashboard);
@@ -227,18 +232,22 @@ export default function DashboardCanvasPage() {
   }
 
   async function handleCreate() {
-    if (!newTitle.trim()) return;
+    try {
+      await createForm.validateFields();
+    } catch { return; }
+    const values = createForm.getFieldsValue();
+    const title = values.title?.trim();
+    const description = values.description?.trim();
     setSaving(true);
     try {
-      const res = await api.post('/dashboards', { title: newTitle.trim(), description: newDescription.trim() });
+      const res = await api.post('/dashboards', { title, description });
       const created = res.data.data;
       setDashboards((prev) => [created, ...prev]);
       setShowCreate(false);
-      setNewTitle('');
-      setNewDescription('');
+      createForm.resetFields();
       openDashboard(created);
-      message.success('Dashboard created.');
-    } catch { message.error('Failed to create dashboard.'); } finally { setSaving(false); }
+      message.success(t('dashboards.createdSuccess'));
+    } catch { message.error(t('dashboards.createFailed')); } finally { setSaving(false); }
   }
 
   async function saveLayout() {
@@ -251,8 +260,8 @@ export default function DashboardCanvasPage() {
         layout: layoutItems,
       });
       setDashboards((prev) => prev.map((d) => d.id === activeDashboard.id ? { ...d, layout: layoutItems } : d));
-      message.success('Layout saved.');
-    } catch { message.error('Failed to save layout.'); } finally { setSaving(false); }
+      message.success(t('dashboards.layoutSaved'));
+    } catch { message.error(t('dashboards.layoutSaveFailed')); } finally { setSaving(false); }
   }
 
   async function saveTitle(newTitleValue: string) {
@@ -266,8 +275,8 @@ export default function DashboardCanvasPage() {
       });
       setActiveDashboard(updated);
       setDashboards((prev) => prev.map((d) => d.id === activeDashboard.id ? updated : d));
-      message.success('Title updated.');
-    } catch { message.error('Failed to update title.'); }
+      message.success(t('dashboards.titleUpdated'));
+    } catch { message.error(t('dashboards.titleUpdateFailed')); }
     setEditingTitle(false);
   }
 
@@ -284,8 +293,8 @@ export default function DashboardCanvasPage() {
       setIsPublic(newValue);
       setActiveDashboard((prev) => prev ? { ...prev, is_public: newValue } as any : prev);
       setDashboards((prev) => prev.map((d) => d.id === activeDashboard.id ? { ...d, is_public: newValue } as any : d));
-      message.success(newValue ? 'Dashboard published.' : 'Dashboard unpublished.');
-    } catch { message.error('Failed to update visibility.'); }
+message.success(newValue ? t('dashboards.published') : t('dashboards.unpublished'));
+  } catch { message.error(t('dashboards.visibilityFailed')); }
   }
 
   function addChart(chartId: number) {
@@ -325,8 +334,8 @@ export default function DashboardCanvasPage() {
         setLayoutItems([]);
         setChartDataMap({});
       }
-      message.success('Dashboard deleted.');
-    } catch { message.error('Failed to delete dashboard.'); }
+message.success(t('dashboards.deleteSuccess'));
+  } catch { message.error(t('dashboards.deleteFailed')); }
   }
 
   async function exportPDF() {
@@ -427,9 +436,9 @@ export default function DashboardCanvasPage() {
 
       addFooter();
       doc.save(`${dashTitle.replace(/\s+/g, '_')}_report.pdf`);
-      message.success('PDF exported.');
+      message.success(t('dashboards.pdfExported'));
   } catch (err) {
-    message.error('Failed to export PDF.');
+    message.error(t('dashboards.pdfFailed'));
   }
   }
 
@@ -492,13 +501,13 @@ export default function DashboardCanvasPage() {
             </div>
           </Space>
         <Space wrap>
-        <Tooltip title={isPublic ? 'Published — click to unpublish' : 'Private — click to publish'}>
+        <Tooltip title={isPublic ? t('dashboards.publishedTooltip') : t('dashboards.privateTooltip')}>
           <Popconfirm
-            title={isPublic ? 'Unpublish this dashboard?' : 'Publish this dashboard?'}
-            description={isPublic ? 'It will no longer be visible to the public.' : 'It will be visible to anyone, including unauthenticated users.'}
+title={isPublic ? t('dashboards.unpublishConfirm') : t('dashboards.publishConfirm')}
+          description={isPublic ? t('dashboards.unpublishDesc') : t('dashboards.publishDesc')}
             onConfirm={togglePublic}
-            okText={isPublic ? 'Unpublish' : 'Publish'}
-            cancelText="Cancel"
+okText={isPublic ? t('dashboards.unpublish') : t('dashboards.publish')}
+          cancelText={t('common.cancel')}
           >
             <Switch
               checked={isPublic}
@@ -507,29 +516,29 @@ export default function DashboardCanvasPage() {
             />
           </Popconfirm>
         </Tooltip>
-          <Tooltip title={autoRefresh ? 'Auto-refresh ON (30s)' : 'Auto-refresh OFF'}>
+          <Tooltip title={autoRefresh ? t('dashboards.autoRefreshOn') : t('dashboards.autoRefreshOff')}>
               <Button
                 icon={<ReloadOutlined spin={autoRefresh} />}
                 type={autoRefresh ? 'primary' : 'default'}
                 onClick={() => setAutoRefresh((v) => !v)}
               />
             </Tooltip>
-            <Button icon={<ReloadOutlined />} onClick={refreshAllCharts} disabled={layoutItems.length === 0}>Refresh</Button>
-            <Button icon={<DownloadOutlined />} onClick={exportPDF} disabled={layoutItems.length === 0}>PDF</Button>
-            <Button icon={<PlusOutlined />} onClick={() => { setShowPicker(true); setPickerSearch(''); }}>Add Chart</Button>
-            <Button type="primary" icon={<SaveOutlined />} onClick={saveLayout} loading={saving}>Save</Button>
+<Button icon={<ReloadOutlined />} onClick={refreshAllCharts} disabled={layoutItems.length === 0}>{t('common.refresh')}</Button>
+      <Button icon={<DownloadOutlined />} onClick={exportPDF} disabled={layoutItems.length === 0}>{t('dashboards.pdf')}</Button>
+<Button icon={<PlusOutlined />} onClick={() => { setShowPicker(true); setPickerSearch(''); }}>{t('dashboards.addChart')}</Button>
+        <Button type="primary" icon={<SaveOutlined />} onClick={saveLayout} loading={saving}>{t('common.save')}</Button>
           </Space>
         </div>
 
         <Modal
-          title="Add Chart to Dashboard"
+          title={t('dashboards.addChartTitle')}
           open={showPicker}
           onCancel={() => setShowPicker(false)}
-          footer={<Button onClick={() => setShowPicker(false)}>Close</Button>}
+          footer={<Button onClick={() => setShowPicker(false)}>{t('common.close')}</Button>}
           width={560}
         >
           <Input
-            placeholder="Search charts by title, type, or dataset…"
+            placeholder={t('dashboards.searchCharts')}
             prefix={<span style={{ color: token.colorTextQuaternary }}>🔍</span>}
             value={pickerSearch}
             onChange={(e) => setPickerSearch(e.target.value)}
@@ -537,9 +546,9 @@ export default function DashboardCanvasPage() {
             style={{ marginBottom: 12 }}
           />
           {charts.length === 0 ? (
-            <Empty description="No charts available. Create charts first in the Visualizations page." image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            <Empty description={t('dashboards.noCharts')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
           ) : filteredCharts.length === 0 ? (
-            <Empty description="No charts match your search." image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            <Empty description={t('dashboards.noMatching')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
           ) : (
             <div style={{ maxHeight: 400, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
               {filteredCharts.map((chart) => {
@@ -565,7 +574,7 @@ export default function DashboardCanvasPage() {
                           {chart.dataset_name || `Dataset #${chart.dataset_id}`}
                         </Text>
                       </div>
-                      {alreadyAdded && <Tag color="success">Added</Tag>}
+                      {alreadyAdded && <Tag color="success">{t('dashboards.added')}</Tag>}
                     </Space>
                   </Card>
                 );
@@ -591,14 +600,14 @@ export default function DashboardCanvasPage() {
             }}>
               <AppstoreOutlined style={{ fontSize: 36, color: token.colorPrimary }} />
             </div>
-            <Title level={4} style={{ color: token.colorTextSecondary, marginBottom: 8 }}>
-              Empty Dashboard
-            </Title>
-            <Text type="secondary" style={{ fontSize: 14, maxWidth: 400, marginBottom: 24 }}>
-              Add charts from your saved visualizations to build a comprehensive dashboard view.
-            </Text>
-            <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => { setShowPicker(true); setPickerSearch(''); }}>
-              Add Your First Chart
+<Title level={4} style={{ color: token.colorTextSecondary, marginBottom: 8 }}>
+          {t('dashboards.empty')}
+        </Title>
+        <Text type="secondary" style={{ fontSize: 14, maxWidth: 400, marginBottom: 24 }}>
+          {t('dashboards.emptyDesc')}
+        </Text>
+        <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => { setShowPicker(true); setPickerSearch(''); }}>
+          {t('dashboards.addFirstChart')}
             </Button>
           </div>
         ) : (
@@ -635,37 +644,33 @@ export default function DashboardCanvasPage() {
         <Space size="middle">
           <AppstoreOutlined style={{ fontSize: 24, color: token.colorPrimary }} />
           <div>
-            <Title level={3} style={{ margin: 0 }}>Dashboards</Title>
-            <Text type="secondary">Compose multi-chart dashboards with drag-and-drop</Text>
+<Title level={3} style={{ margin: 0 }}>{t('dashboards.title')}</Title>
+        <Text type="secondary">{t('dashboards.subtitle')}</Text>
           </div>
         </Space>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setShowCreate(true)}>New Dashboard</Button>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setShowCreate(true)}>{t('dashboards.newDashboard')}</Button>
       </div>
 
-      <Modal
-        title={<Space><FormOutlined style={{ color: token.colorPrimary }} /> Create Dashboard</Space>}
-        open={showCreate}
-        onCancel={() => { setShowCreate(false); setNewTitle(''); setNewDescription(''); }}
-        onOk={handleCreate}
-        okText="Create"
-        okButtonProps={{ loading: saving, disabled: !newTitle.trim() }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div>
-            <Text strong style={{ display: 'block', marginBottom: 8 }}>Title</Text>
-            <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="e.g. Student Performance Overview" />
-          </div>
-          <div>
-            <Text strong style={{ display: 'block', marginBottom: 8 }}>Description (optional)</Text>
-            <Input.TextArea
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              placeholder="Briefly describe this dashboard"
-              rows={3}
-            />
-          </div>
-        </div>
-      </Modal>
+    <Modal
+      title={<Space><FormOutlined style={{ color: token.colorPrimary }} /> {t('dashboards.createTitle')}</Space>}
+      open={showCreate}
+      onCancel={() => { setShowCreate(false); createForm.resetFields(); }}
+      onOk={handleCreate}
+      okText={t('common.create')}
+      okButtonProps={{ loading: saving }}
+    >
+      <Form form={createForm} layout="vertical">
+        <Form.Item label={t('dashboards.dashboardTitle')} name="title" rules={[{ required: true, message: t('dashboards.titleRequired') }]}>
+          <Input placeholder="e.g. Student Performance Overview" />
+        </Form.Item>
+<Form.Item label={t('dashboards.descriptionOptional')} name="description">
+        <Input.TextArea
+          placeholder={t('dashboards.descriptionPlaceholder')}
+            rows={3}
+          />
+        </Form.Item>
+      </Form>
+    </Modal>
 
       {dashboards.length === 0 && !showCreate ? (
         <div style={{
@@ -684,14 +689,14 @@ export default function DashboardCanvasPage() {
           }}>
             <AppstoreOutlined style={{ fontSize: 36, color: token.colorPrimary }} />
           </div>
-          <Title level={4} style={{ color: token.colorTextSecondary, marginBottom: 8 }}>
-            No Dashboards Yet
-          </Title>
-          <Text type="secondary" style={{ fontSize: 14, maxWidth: 400, marginBottom: 24 }}>
-            Create a dashboard to combine multiple charts into a single, organized view for presentations and analysis.
-          </Text>
-          <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => setShowCreate(true)}>
-            Create Your First Dashboard
+<Title level={4} style={{ color: token.colorTextSecondary, marginBottom: 8 }}>
+          {t('dashboards.noDashboards')}
+        </Title>
+        <Text type="secondary" style={{ fontSize: 14, maxWidth: 400, marginBottom: 24 }}>
+          {t('dashboards.noDashboardsDesc')}
+        </Text>
+        <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => setShowCreate(true)}>
+          {t('dashboards.createFirst')}
           </Button>
         </div>
       ) : (
@@ -708,7 +713,7 @@ export default function DashboardCanvasPage() {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                     <Text strong style={{ fontSize: 16 }}>{db.title}</Text>
-                    <Tag color={chartCount > 0 ? 'blue' : 'default'}>{chartCount} chart{chartCount !== 1 ? 's' : ''}</Tag>
+                    <Tag color={chartCount > 0 ? 'blue' : 'default'}>{t('dashboards.chartCount', { count: chartCount })}</Tag>
                   </div>
                   {db.description && <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 12 }}>{db.description}</Text>}
                   {chartCount > 0 && (
@@ -721,12 +726,12 @@ export default function DashboardCanvasPage() {
                           </Tag>
                         ) : null;
                       })}
-                      {chartCount > 4 && <Tag>+{chartCount - 4} more</Tag>}
+                      {chartCount > 4 && <Tag>{t('dashboards.moreCount', { count: chartCount - 4 })}</Tag>}
                     </div>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: 8, borderTop: `1px solid ${token.colorBorderSecondary}` }}>
                     <Text type="secondary" style={{ fontSize: 12 }}>{new Date(db.updated_at).toLocaleDateString()}</Text>
-                    <Popconfirm title="Delete this dashboard?" onConfirm={() => deleteDashboard(db.id)} okText="Delete" okButtonProps={{ danger: true }}>
+                    <Popconfirm title={t('dashboards.deleteConfirm')} onConfirm={() => deleteDashboard(db.id)} okText={t('common.delete')} okButtonProps={{ danger: true }}>
                       <Button type="text" danger size="small" icon={<DeleteOutlined />} onClick={(e) => e.stopPropagation()} />
                     </Popconfirm>
                   </div>

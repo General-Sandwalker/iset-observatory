@@ -13,6 +13,7 @@ import {
   ApiOutlined, CodeOutlined, RocketOutlined,
 } from '@ant-design/icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const { useBreakpoint } = Grid;
 const { Title, Paragraph, Text } = Typography;
@@ -115,13 +116,13 @@ function VisualCard({ label, children }: { label: string; children: React.ReactN
 }
 
 const SECTIONS: SectionDef[] = [
-  { id: 'login', step: 1, icon: LoginOutlined, color: '#2563eb', title: 'Sign In', subtitle: 'Access the platform' },
-  { id: 'import', step: 2, icon: DatabaseOutlined, color: '#0891b2', title: 'Import Data', subtitle: 'Upload your CSV' },
-  { id: 'ai', step: 3, icon: RobotOutlined, color: '#7c3aed', title: 'AI Analysis', subtitle: 'Chat with your data' },
-  { id: 'charts', step: 4, icon: BarChartOutlined, color: '#059669', title: 'Chart Builder', subtitle: 'Visualise your data' },
-  { id: 'dashboards', step: 5, icon: AppstoreOutlined, color: '#d97706', title: 'Dashboards', subtitle: 'Build & export reports' },
-  { id: 'surveys', step: 6, icon: FileTextOutlined, color: '#db2777', title: 'Survey Generator', subtitle: 'Create field studies' },
-  { id: 'settings', step: 7, icon: SettingOutlined, color: '#64748b', title: 'Settings', subtitle: 'Customise your account' },
+  { id: 'login', step: 1, icon: LoginOutlined, color: '#2563eb', title: 'docs.signIn', subtitle: 'docs.signIn.subtitle' },
+  { id: 'import', step: 2, icon: DatabaseOutlined, color: '#0891b2', title: 'docs.importData', subtitle: 'docs.importData.subtitle' },
+  { id: 'ai', step: 3, icon: RobotOutlined, color: '#7c3aed', title: 'docs.aiAnalysis', subtitle: 'docs.aiAnalysis.subtitle' },
+  { id: 'charts', step: 4, icon: BarChartOutlined, color: '#059669', title: 'docs.chartBuilder', subtitle: 'docs.chartBuilder.subtitle' },
+  { id: 'dashboards', step: 5, icon: AppstoreOutlined, color: '#d97706', title: 'docs.dashboards', subtitle: 'docs.dashboards.subtitle' },
+  { id: 'surveys', step: 6, icon: FileTextOutlined, color: '#db2777', title: 'docs.surveyGenerator', subtitle: 'docs.surveyGenerator.subtitle' },
+  { id: 'settings', step: 7, icon: SettingOutlined, color: '#64748b', title: 'docs.settings', subtitle: 'docs.settings.subtitle' },
 ];
 
 const API_ENDPOINTS = [
@@ -159,106 +160,102 @@ const METHOD_COLORS: Record<string, string> = {
 
 function SectionContent({ id, color }: { id: string; color: string }): React.ReactNode {
   const { token } = theme.useToken();
+  const { t } = useTranslation();
 
   switch (id) {
-    case 'login':
-      return (
-        <>
-          <Paragraph style={{ color: token.colorTextSecondary }}>
-            Open the Observatory in your browser and enter your institutional email and password. Your system
-            administrator will have created your account and assigned you a role.
-          </Paragraph>
-          <VisualCard label="Login form fields">
-            <Space direction="vertical" style={{ width: '100%' }} size={8}>
-              {['Email address', 'Password'].map((f) => (
-                <div
-                  key={f}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '8px 12px',
-                    borderRadius: token.borderRadius,
-                    fontSize: 12,
-                    background: token.colorBgLayout,
-                    border: `1px solid ${token.colorBorder}`,
-                    color: token.colorTextTertiary,
-                  }}
-                >
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
-                  {f}
-                </div>
-              ))}
-              <Button type="primary" block style={{ marginTop: 8, fontWeight: 600 }}>
-                Sign In
-              </Button>
-            </Space>
-          </VisualCard>
-          <Tip>If you see a 401 error, your token has expired. Logging out and back in will refresh it.</Tip>
-        </>
-      );
-    case 'import':
-      return (
-        <>
-          <Paragraph style={{ color: token.colorTextSecondary }}>
-            Navigate to <Text strong>Data Import</Text> in the sidebar. Drop a
-            CSV file onto the upload zone or click to browse. The backend will parse the file, detect column
-            types, and store the data in a dynamic table.
-          </Paragraph>
-          <Step n={1} color={color}>
-            Drag your <Text code>.csv</Text> file onto the upload area.
-          </Step>
-          <Step n={2} color={color}>The parser validates headers and infers data types (number, text, date).</Step>
-          <Step n={3} color={color}>Once imported, the dataset appears in the datasets list with row/column counts.</Step>
-          <VisualCard label="Supported formats">
-            <Space wrap>
-              {['UTF-8 CSV', 'Comma-separated', 'Header row required', 'Max 50 MB'].map((t) => (
-                <Tag key={t} color={color}>{t}</Tag>
-              ))}
-            </Space>
-          </VisualCard>
-          <Tip>Keep the first row as a clean header — no spaces in column names works best with the AI queries.</Tip>
-        </>
-      );
-    case 'ai':
-      return (
-        <>
-          <Paragraph style={{ color: token.colorTextSecondary }}>
-            Go to <Text strong>AI Analysis</Text>. Select a dataset, then
-            type a natural-language question. The Groq LLM interprets your question, generates a structured
-            JSON response with a summary, key insights, and chart suggestions.
-          </Paragraph>
-          <Step n={1} color={color}>Choose the dataset from the dropdown.</Step>
-          <Step n={2} color={color}>Type your question in plain language.</Step>
-          <Step n={3} color={color}>The AI returns a summary, bullet insights, and chart recommendations.</Step>
-          <VisualCard label="Example AI queries">
-            <Space direction="vertical" style={{ width: '100%' }} size={8}>
-              {[
-                'What is the average employment rate by major?',
-                'Which course has the highest failure rate?',
-                'Show me trends in student enrollment over time.',
-                'Summarise the key findings from this dataset.',
-              ].map((q) => (
-                <div
-                  key={q}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'start',
-                    gap: 8,
-                    fontSize: 12,
-                    padding: 8,
-                    borderRadius: token.borderRadius,
-                    background: token.colorBgLayout,
-                    border: `1px solid ${token.colorBorder}`,
-                  }}
-                >
-                  <RightOutlined style={{ fontSize: 10, color, marginTop: 3, flexShrink: 0 }} />
-                  <Text style={{ color: token.colorTextSecondary, fontSize: 12 }}>{q}</Text>
-                </div>
-              ))}
-            </Space>
-          </VisualCard>
-          <Code>{`// The AI responds with structured JSON
+  case 'login':
+    return (
+      <>
+        <Paragraph style={{ color: token.colorTextSecondary }}>
+          {t('docs.login.description')}
+        </Paragraph>
+        <VisualCard label={t('docs.login.formFields')}>
+          <Space direction="vertical" style={{ width: '100%' }} size={8}>
+            {[t('docs.login.emailAddress'), t('docs.login.password')].map((f) => (
+              <div
+                key={f}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '8px 12px',
+                  borderRadius: token.borderRadius,
+                  fontSize: 12,
+                  background: token.colorBgLayout,
+                  border: `1px solid ${token.colorBorder}`,
+                  color: token.colorTextTertiary,
+                }}
+              >
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
+                {f}
+              </div>
+            ))}
+            <Button type="primary" block style={{ marginTop: 8, fontWeight: 600 }}>
+              {t('docs.signIn')}
+            </Button>
+          </Space>
+        </VisualCard>
+        <Tip>{t('docs.login.tip')}</Tip>
+      </>
+    );
+  case 'import':
+    return (
+      <>
+        <Paragraph style={{ color: token.colorTextSecondary }}>
+          {t('docs.import.description')}
+        </Paragraph>
+        <Step n={1} color={color}>
+          {t('docs.import.step1')}
+        </Step>
+        <Step n={2} color={color}>{t('docs.import.step2')}</Step>
+        <Step n={3} color={color}>{t('docs.import.step3')}</Step>
+        <VisualCard label={t('docs.import.supportedFormats')}>
+          <Space wrap>
+            {[t('docs.import.utf8Csv'), t('docs.import.commaSeparated'), t('docs.import.headerRowRequired'), t('docs.import.max50Mb')].map((fmt) => (
+              <Tag key={fmt} color={color}>{fmt}</Tag>
+            ))}
+          </Space>
+        </VisualCard>
+        <Tip>{t('docs.import.tip')}</Tip>
+      </>
+    );
+  case 'ai':
+    return (
+      <>
+        <Paragraph style={{ color: token.colorTextSecondary }}>
+          {t('docs.ai.description')}
+        </Paragraph>
+        <Step n={1} color={color}>{t('docs.ai.step1')}</Step>
+        <Step n={2} color={color}>{t('docs.ai.step2')}</Step>
+        <Step n={3} color={color}>{t('docs.ai.step3')}</Step>
+        <VisualCard label={t('docs.ai.exampleQueries')}>
+          <Space direction="vertical" style={{ width: '100%' }} size={8}>
+            {[
+              t('docs.ai.query1'),
+              t('docs.ai.query2'),
+              t('docs.ai.query3'),
+              t('docs.ai.query4'),
+            ].map((q) => (
+              <div
+                key={q}
+                style={{
+                  display: 'flex',
+                  alignItems: 'start',
+                  gap: 8,
+                  fontSize: 12,
+                  padding: 8,
+                  borderRadius: token.borderRadius,
+                  background: token.colorBgLayout,
+                  border: `1px solid ${token.colorBorder}`,
+                }}
+              >
+                <RightOutlined style={{ fontSize: 10, color, marginTop: 3, flexShrink: 0 }} />
+                <Text style={{ color: token.colorTextSecondary, fontSize: 12 }}>{q}</Text>
+              </div>
+            ))}
+          </Space>
+        </VisualCard>
+        <Code>{`// The AI responds with structured JSON
 {
   "summary": "The average employment rate across all majors is 72%…",
   "insights": [
@@ -271,138 +268,130 @@ function SectionContent({ id, color }: { id: string; color: string }): React.Rea
     "yAxis": "employment_rate"
   }
 }`}</Code>
-          <Tip>The AI reads the first 100 rows as a sample. If your dataset has patterns in later rows, mention that in your query.</Tip>
-        </>
-      );
-    case 'charts':
-      return (
-        <>
-          <Paragraph style={{ color: token.colorTextSecondary }}>
-            Open <Text strong>Chart Builder</Text>. Choose a dataset, pick
-            chart type, then select which columns to use as the label and value axes. Save the chart — it will
-            be available for placement on a Dashboard.
-          </Paragraph>
-          <VisualCard label="Available chart types">
-            <Row gutter={[8, 8]}>
-              {[
-                { type: 'Bar', icon: '▬' },
-                { type: 'Line', icon: '╱' },
-                { type: 'Pie', icon: '◕' },
-                { type: 'Doughnut', icon: '◎' },
-                { type: 'Radar', icon: '✦' },
-                { type: 'Polar Area', icon: '◑' },
-              ].map(({ type: chartType, icon }) => (
-                <Col xs={8} sm={8} md={4} key={chartType}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: 8,
-                      borderRadius: token.borderRadius,
-                      background: token.colorBgLayout,
-                      border: `1px solid ${token.colorBorder}`,
-                      fontSize: 12,
-                    }}
-                  >
-                    <span style={{ fontSize: 18 }}>{icon}</span>
-                    <Text style={{ color: token.colorTextSecondary, fontSize: 12 }}>{chartType}</Text>
-                  </div>
-                </Col>
-              ))}
-            </Row>
-          </VisualCard>
-          <Step n={1} color={color}>Select your dataset and give the chart a descriptive title.</Step>
-          <Step n={2} color={color}>Choose the chart type that best represents your data relationship.</Step>
-          <Step n={3} color={color}>Map columns to Label (X-axis) and Value (Y-axis).</Step>
-          <Step n={4} color={color}>Click <Text italic>Save Chart</Text>. The chart is stored and ready for dashboards.</Step>
-          <Tip>For categorical comparisons (e.g. grades by department), Bar charts work best. For proportions, use Pie or Doughnut.</Tip>
-        </>
-      );
-    case 'dashboards':
-      return (
-        <>
-          <Paragraph style={{ color: token.colorTextSecondary }}>
-            Go to <Text strong>Dashboards</Text>. Create a new dashboard,
-            then add saved charts from the <Text italic>Add Chart</Text> panel. Drag them to rearrange and resize
-            freely. When ready, export to PDF.
-          </Paragraph>
-          <Step n={1} color={color}>Click <Text italic>New Dashboard</Text> and give it a name.</Step>
-          <Step n={2} color={color}>Use the panel on the right to add charts to the canvas.</Step>
-          <Step n={3} color={color}>Drag cards to rearrange and use the resize handle at the bottom-right.</Step>
-          <Step n={4} color={color}>Click <Text italic>Export PDF</Text> to download a formatted A4 landscape report.</Step>
-          <VisualCard label="PDF export includes">
-            <Space direction="vertical" style={{ width: '100%' }} size={4}>
-              {['Dashboard title & export timestamp', 'Data table for each chart (up to 30 rows)', 'Striped formatting & column headers'].map((i) => (
+        <Tip>{t('docs.ai.tip')}</Tip>
+      </>
+    );
+  case 'charts':
+    return (
+      <>
+        <Paragraph style={{ color: token.colorTextSecondary }}>
+          {t('docs.charts.description')}
+        </Paragraph>
+        <VisualCard label={t('docs.charts.availableTypes')}>
+          <Row gutter={[8, 8]}>
+            {[
+              { type: t('docs.charts.bar'), icon: '▬' },
+              { type: t('docs.charts.line'), icon: '╱' },
+              { type: t('docs.charts.pie'), icon: '◕' },
+              { type: t('docs.charts.doughnut'), icon: '◎' },
+              { type: t('docs.charts.radar'), icon: '✦' },
+              { type: t('docs.charts.polarArea'), icon: '◑' },
+            ].map(({ type: chartType, icon }) => (
+              <Col xs={8} sm={8} md={4} key={chartType}>
                 <div
-                  key={i}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}
-                >
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                  <Text style={{ color: token.colorTextSecondary, fontSize: 12 }}>{i}</Text>
-                </div>
-              ))}
-            </Space>
-          </VisualCard>
-          <Tip>Give charts short, descriptive titles — they appear as headings in the exported PDF.</Tip>
-        </>
-      );
-    case 'surveys':
-      return (
-        <>
-          <Paragraph style={{ color: token.colorTextSecondary }}>
-            The <Text strong>Survey Generator</Text> uses your imported data
-            to draft targeted survey questions via AI. Use these to collect follow-up data from students,
-            alumni, or staff.
-          </Paragraph>
-          <Step n={1} color={color}>Open Survey Generator and select a dataset as the context.</Step>
-          <Step n={2} color={color}>Describe what you want to learn (e.g. "alumni career satisfaction").</Step>
-          <Step n={3} color={color}>The AI generates 5–10 structured survey questions.</Step>
-          <Step n={4} color={color}>Copy the generated questions into your preferred survey tool.</Step>
-          <Tip>The AI tailors questions to the columns in your dataset. A dataset with employment data will generate job-related questions automatically.</Tip>
-        </>
-      );
-    case 'settings':
-      return (
-        <>
-          <Paragraph style={{ color: token.colorTextSecondary }}>
-            In <Text strong>Settings</Text>, you can update your display
-            name, email, change your password, and toggle between the dark and light themes. Your
-            preferences are saved to your account.
-          </Paragraph>
-          <VisualCard label="Settings sections">
-            <Space direction="vertical" style={{ width: '100%' }} size={8}>
-              {[
-                { label: 'Profile', desc: 'Update your name and email' },
-                { label: 'Password', desc: 'Change your login password' },
-                { label: 'Theme', desc: 'Switch between Dark and Light modes' },
-                { label: 'App Info', desc: 'Version and support details' },
-              ].map(({ label, desc }) => (
-                <div
-                  key={label}
                   style={{
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
-                    gap: 12,
-                    padding: '8px 12px',
+                    gap: 4,
+                    padding: 8,
                     borderRadius: token.borderRadius,
                     background: token.colorBgLayout,
                     border: `1px solid ${token.colorBorder}`,
+                    fontSize: 12,
                   }}
                 >
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                  <div>
-                    <Text strong style={{ fontSize: 12, display: 'block' }}>{label}</Text>
-                    <Text style={{ fontSize: 12, color: token.colorTextTertiary }}>{desc}</Text>
-                  </div>
+                  <span style={{ fontSize: 18 }}>{icon}</span>
+                  <Text style={{ color: token.colorTextSecondary, fontSize: 12 }}>{chartType}</Text>
                 </div>
-              ))}
-            </Space>
-          </VisualCard>
-          <Tip>Theme preference is stored in your account, so it follows you across devices when you log in.</Tip>
-        </>
-      );
+              </Col>
+            ))}
+          </Row>
+        </VisualCard>
+        <Step n={1} color={color}>{t('docs.charts.step1')}</Step>
+        <Step n={2} color={color}>{t('docs.charts.step2')}</Step>
+        <Step n={3} color={color}>{t('docs.charts.step3')}</Step>
+        <Step n={4} color={color}>{t('docs.charts.step4')}</Step>
+        <Tip>{t('docs.charts.tip')}</Tip>
+      </>
+    );
+  case 'dashboards':
+    return (
+      <>
+        <Paragraph style={{ color: token.colorTextSecondary }}>
+          {t('docs.dashboards.description')}
+        </Paragraph>
+        <Step n={1} color={color}>{t('docs.dashboards.step1')}</Step>
+        <Step n={2} color={color}>{t('docs.dashboards.step2')}</Step>
+        <Step n={3} color={color}>{t('docs.dashboards.step3')}</Step>
+        <Step n={4} color={color}>{t('docs.dashboards.step4')}</Step>
+        <VisualCard label={t('docs.dashboards.pdfExportIncludes')}>
+          <Space direction="vertical" style={{ width: '100%' }} size={4}>
+            {[t('docs.dashboards.pdfItem1'), t('docs.dashboards.pdfItem2'), t('docs.dashboards.pdfItem3')].map((i) => (
+              <div
+                key={i}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}
+              >
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                <Text style={{ color: token.colorTextSecondary, fontSize: 12 }}>{i}</Text>
+              </div>
+            ))}
+          </Space>
+        </VisualCard>
+        <Tip>{t('docs.dashboards.tip')}</Tip>
+      </>
+    );
+  case 'surveys':
+    return (
+      <>
+        <Paragraph style={{ color: token.colorTextSecondary }}>
+          {t('docs.surveys.description')}
+        </Paragraph>
+        <Step n={1} color={color}>{t('docs.surveys.step1')}</Step>
+        <Step n={2} color={color}>{t('docs.surveys.step2')}</Step>
+        <Step n={3} color={color}>{t('docs.surveys.step3')}</Step>
+        <Step n={4} color={color}>{t('docs.surveys.step4')}</Step>
+        <Tip>{t('docs.surveys.tip')}</Tip>
+      </>
+    );
+  case 'settings':
+    return (
+      <>
+        <Paragraph style={{ color: token.colorTextSecondary }}>
+          {t('docs.settings.description')}
+        </Paragraph>
+        <VisualCard label={t('docs.settings.sections')}>
+          <Space direction="vertical" style={{ width: '100%' }} size={8}>
+            {[
+              { label: t('docs.settings.profile'), desc: t('docs.settings.profileDesc') },
+              { label: t('docs.settings.password'), desc: t('docs.settings.passwordDesc') },
+              { label: t('docs.settings.theme'), desc: t('docs.settings.themeDesc') },
+              { label: t('docs.settings.appInfo'), desc: t('docs.settings.appInfoDesc') },
+            ].map(({ label, desc }) => (
+              <div
+                key={label}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '8px 12px',
+                  borderRadius: token.borderRadius,
+                  background: token.colorBgLayout,
+                  border: `1px solid ${token.colorBorder}`,
+                }}
+              >
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                <div>
+                  <Text strong style={{ fontSize: 12, display: 'block' }}>{label}</Text>
+                  <Text style={{ fontSize: 12, color: token.colorTextTertiary }}>{desc}</Text>
+                </div>
+              </div>
+            ))}
+          </Space>
+        </VisualCard>
+        <Tip>{t('docs.settings.tip')}</Tip>
+      </>
+    );
     default:
       return null;
   }
@@ -412,6 +401,7 @@ export default function DocsPage() {
   const navigate = useNavigate();
   const { theme: appTheme, toggleTheme } = useTheme();
   const { token } = theme.useToken();
+  const { t } = useTranslation();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
   const [active, setActive] = useState('login');
@@ -435,7 +425,7 @@ export default function DocsPage() {
   const anchorItems = SECTIONS.map(({ id, title }) => ({
     key: id,
     href: `#${id}`,
-    title: <Text style={{ fontWeight: active === id ? 600 : 400 }}>{title}</Text>,
+    title: <Text style={{ fontWeight: active === id ? 600 : 400 }}>{t(title)}</Text>,
   }));
 
   const mobileTabItems = SECTIONS.map(({ id, step, icon: Icon, title }) => ({
@@ -443,14 +433,14 @@ export default function DocsPage() {
     label: (
       <Space size={4} align="center">
         <Icon style={{ fontSize: 14 }} />
-        <span style={{ fontSize: 12 }}>{title}</span>
+        <span style={{ fontSize: 12 }}>{t(title)}</span>
       </Space>
     ),
   }));
 
   const apiColumns = [
     {
-      title: 'Method',
+      title: t('docs.apiColMethod'),
       dataIndex: 'method',
       key: 'method',
       width: 80,
@@ -464,7 +454,7 @@ export default function DocsPage() {
       ),
     },
     {
-      title: 'Endpoint',
+      title: t('docs.apiColEndpoint'),
       dataIndex: 'path',
       key: 'path',
       render: (path: string) => (
@@ -472,14 +462,14 @@ export default function DocsPage() {
       ),
     },
     {
-      title: 'Description',
+      title: t('docs.apiColDescription'),
       dataIndex: 'description',
       key: 'description',
       responsive: ['md' as const],
       render: (desc: string) => <Text style={{ fontSize: 12, color: token.colorTextSecondary }}>{desc}</Text>,
     },
     {
-      title: 'Auth',
+      title: t('docs.apiColAuth'),
       dataIndex: 'auth',
       key: 'auth',
       width: 60,
@@ -529,11 +519,11 @@ export default function DocsPage() {
                   borderRadius: 20,
                 }}
               >
-                Step {step}
-              </Tag>
-              <Text style={{ fontSize: 12, color: token.colorTextTertiary }}>{subtitle}</Text>
-            </Space>
-            <Title level={3} style={{ margin: 0 }}>{title}</Title>
+          Step {step}
+        </Tag>
+        <Text style={{ fontSize: 12, color: token.colorTextTertiary }}>{t(subtitle)}</Text>
+      </Space>
+      <Title level={3} style={{ margin: 0 }}>{t(title)}</Title>
           </div>
         </div>
         <SectionContent id={id} color={color} />
@@ -576,9 +566,9 @@ export default function DocsPage() {
             onClick={() => navigate('/login')}
             icon={<ArrowRightOutlined />}
             iconPosition="end"
-          >
-            Sign In
-          </Button>
+        >
+          {t('docs.signIn')}
+        </Button>
         </Space>
       </header>
 
@@ -588,13 +578,13 @@ export default function DocsPage() {
             <Tag
               color={token.colorPrimary}
               style={{ marginBottom: 12, fontSize: 12, padding: '4px 12px', borderRadius: 20 }}
-            >
-              Documentation
-            </Tag>
-            <Title level={2} style={{ marginTop: 0, marginBottom: 8 }}>Getting Started</Title>
-            <Paragraph style={{ color: token.colorTextSecondary, fontSize: 14 }}>
-              Follow the step-by-step guide to master ISET Observatory.
-            </Paragraph>
+        >
+          {t('docs.documentation')}
+        </Tag>
+        <Title level={2} style={{ marginTop: 0, marginBottom: 8 }}>{t('docs.gettingStarted')}</Title>
+        <Paragraph style={{ color: token.colorTextSecondary, fontSize: 14 }}>
+          {t('docs.followGuide')}
+        </Paragraph>
           </div>
 
           <Tabs
@@ -620,29 +610,29 @@ export default function DocsPage() {
           >
             <div style={{ padding: 24 }}>
               <Title level={2} style={{ color: '#fff', margin: 0, marginBottom: 8 }}>
-                You're all set!
-              </Title>
-              <Paragraph style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, marginBottom: 20 }}>
-                Sign in to start importing data and running AI-powered analyses.
-              </Paragraph>
-              <Button
-                size="large"
-                onClick={() => navigate('/login')}
-                style={{ fontWeight: 600 }}
-              >
-                Go to Sign In
-              </Button>
-            </div>
-          </Card>
+          {t('docs.youreAllSet')}
+        </Title>
+        <Paragraph style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, marginBottom: 20 }}>
+          {t('docs.signInToStart')}
+        </Paragraph>
+        <Button
+          size="large"
+          onClick={() => navigate('/login')}
+          style={{ fontWeight: 600 }}
+        >
+          {t('docs.goToSignIn')}
+        </Button>
+      </div>
+    </Card>
 
-          <div style={{ marginTop: 32 }}>
-            <Space align="center" size={8} style={{ marginBottom: 16 }}>
-              <ApiOutlined style={{ fontSize: 20, color: token.colorPrimary }} />
-              <Title level={3} style={{ margin: 0 }}>API Reference</Title>
-            </Space>
-            <Paragraph style={{ color: token.colorTextSecondary, marginBottom: 16 }}>
-              All REST endpoints available in the ISET Observatory backend.
-            </Paragraph>
+    <div style={{ marginTop: 32 }}>
+      <Space align="center" size={8} style={{ marginBottom: 16 }}>
+        <ApiOutlined style={{ fontSize: 20, color: token.colorPrimary }} />
+        <Title level={3} style={{ margin: 0 }}>{t('docs.apiReference')}</Title>
+      </Space>
+      <Paragraph style={{ color: token.colorTextSecondary, marginBottom: 16 }}>
+        {t('docs.apiEndpointsDescription')}
+      </Paragraph>
             <div style={{ overflowX: 'auto' }}>
               <Table
                 dataSource={API_ENDPOINTS}
@@ -669,9 +659,9 @@ export default function DocsPage() {
                   display: 'block',
                   marginBottom: 16,
                 }}
-              >
-                Tutorial
-              </Text>
+        >
+          {t('docs.tutorial')}
+        </Text>
               <Anchor
                 offsetTop={96}
                 items={anchorItems}
@@ -690,14 +680,13 @@ export default function DocsPage() {
               <Tag
                 color={token.colorPrimary}
                 style={{ marginBottom: 16, fontSize: 12, padding: '4px 12px', borderRadius: 20 }}
-              >
-                Documentation
-              </Tag>
-              <Title level={1} style={{ marginTop: 0, marginBottom: 12 }}>Getting Started</Title>
-              <Paragraph style={{ color: token.colorTextSecondary, maxWidth: 640, fontSize: 16 }}>
-                This guide walks you through every feature of ISET Observatory — from logging in to exporting
-                polished PDF reports. Follow the steps in order for the best experience.
-              </Paragraph>
+        >
+          {t('docs.documentation')}
+        </Tag>
+        <Title level={1} style={{ marginTop: 0, marginBottom: 12 }}>{t('docs.gettingStarted')}</Title>
+        <Paragraph style={{ color: token.colorTextSecondary, maxWidth: 640, fontSize: 16 }}>
+          {t('docs.guideDescription')}
+        </Paragraph>
             </div>
 
             <Space direction="vertical" size={64} style={{ width: '100%' }}>
@@ -741,17 +730,16 @@ export default function DocsPage() {
                         border: 'none',
                         borderRadius: 20,
                       }}
-                    >
-                      Reference
-                    </Tag>
-                    <Title level={3} style={{ margin: 0 }}>API Endpoints</Title>
+        >
+          {t('docs.reference')}
+        </Tag>
+        <Title level={3} style={{ margin: 0 }}>{t('docs.apiEndpoints')}</Title>
                   </div>
                 </Space>
                 <Card style={{ borderRadius: 16, padding: 8 }}>
-                  <Paragraph style={{ color: token.colorTextSecondary, marginBottom: 16 }}>
-                    All REST endpoints available in the ISET Observatory backend. Endpoints marked with 🔒 require
-                    a valid JWT token in the <Text code>Authorization</Text> header.
-                  </Paragraph>
+          <Paragraph style={{ color: token.colorTextSecondary, marginBottom: 16 }}>
+          {t('docs.apiEndpointsDescription')}
+          </Paragraph>
                   <Table
                     dataSource={API_ENDPOINTS}
                     columns={apiColumns}
@@ -789,20 +777,20 @@ export default function DocsPage() {
                         border: 'none',
                         borderRadius: 20,
                       }}
-                    >
-                    Quick Start
-                    </Tag>
-                    <Title level={3} style={{ margin: 0 }}>Getting Started in 5 Minutes</Title>
+        >
+          {t('docs.quickStart')}
+        </Tag>
+        <Title level={3} style={{ margin: 0 }}>{t('docs.gettingStarted5Min')}</Title>
                   </div>
                 </Space>
                 <Card style={{ borderRadius: 16, padding: 8 }}>
                   <Row gutter={[16, 16]}>
                     {[
-                      { step: 1, title: 'Sign In', desc: 'Log in with your institutional credentials provided by your admin.', icon: LoginOutlined, color: '#2563eb' },
-                      { step: 2, title: 'Upload Data', desc: 'Drag & drop a CSV file. The system auto-detects column types.', icon: DatabaseOutlined, color: '#0891b2' },
-                      { step: 3, title: 'Ask AI', desc: 'Query your data in plain language. Get instant insights and chart suggestions.', icon: RobotOutlined, color: '#7c3aed' },
-                      { step: 4, title: 'Build Charts', desc: 'Create visualizations and arrange them on a dashboard canvas.', icon: BarChartOutlined, color: '#059669' },
-                      { step: 5, title: 'Export & Share', desc: 'Download your dashboard as a formatted PDF report.', icon: AppstoreOutlined, color: '#d97706' },
+        { step: 1, title: t('docs.qs.signIn'), desc: t('docs.qs.signInDesc'), icon: LoginOutlined, color: '#2563eb' },
+        { step: 2, title: t('docs.qs.uploadData'), desc: t('docs.qs.uploadDataDesc'), icon: DatabaseOutlined, color: '#0891b2' },
+        { step: 3, title: t('docs.qs.askAI'), desc: t('docs.qs.askAIDesc'), icon: RobotOutlined, color: '#7c3aed' },
+        { step: 4, title: t('docs.qs.buildCharts'), desc: t('docs.qs.buildChartsDesc'), icon: BarChartOutlined, color: '#059669' },
+        { step: 5, title: t('docs.qs.exportShare'), desc: t('docs.qs.exportShareDesc'), icon: AppstoreOutlined, color: '#d97706' },
                     ].map((item) => {
                       const SIcon = item.icon;
                       return (
@@ -848,17 +836,17 @@ export default function DocsPage() {
               >
                 <div style={{ padding: 24 }}>
                   <Title level={2} style={{ color: '#fff', margin: 0, marginBottom: 8 }}>
-                    You're all set!
-                  </Title>
-                  <Paragraph style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, marginBottom: 20 }}>
-                    Sign in to start importing data and running AI-powered analyses.
-                  </Paragraph>
-                  <Button
-                    size="large"
-                    onClick={() => navigate('/login')}
-                    style={{ fontWeight: 600 }}
-                  >
-                    Go to Sign In
+          {t('docs.youreAllSet')}
+        </Title>
+        <Paragraph style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, marginBottom: 20 }}>
+          {t('docs.signInToStart')}
+        </Paragraph>
+        <Button
+          size="large"
+          onClick={() => navigate('/login')}
+          style={{ fontWeight: 600 }}
+        >
+          {t('docs.goToSignIn')}
                   </Button>
                 </div>
               </Card>

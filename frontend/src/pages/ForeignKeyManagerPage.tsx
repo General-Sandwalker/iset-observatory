@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card, Row, Col, Button, Space, Typography, Table, Select,
   Tag, Spin, Empty, Popconfirm, message, theme, Tooltip, Badge,
@@ -57,6 +58,7 @@ function colNameSimilarity(a: string, b: string): number {
 }
 
 export default function ForeignKeyManagerPage() {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const { user } = useAuth();
 
@@ -117,7 +119,7 @@ export default function ForeignKeyManagerPage() {
       const schemaResults = await Promise.all(schemaPromises);
       setSchemas(schemaResults.filter((s): s is TableSchema => s !== null));
     } catch {
-      message.error('Failed to load foreign key data.');
+      message.error(t('relations.fetchFailed'));
     } finally {
       setLoading(false);
     }
@@ -151,7 +153,7 @@ export default function ForeignKeyManagerPage() {
         targetTable: selectedTarget,
         targetColumn,
       });
-      message.success('Foreign key link created.');
+      message.success(t('relations.createSuccess'));
       setColumnModalOpen(false);
       setSourceColumn(undefined);
       setTargetColumn(undefined);
@@ -170,10 +172,10 @@ export default function ForeignKeyManagerPage() {
   const handleDelete = useCallback(async (id: number) => {
     try {
       await api.delete(`/foreign-keys/${id}`);
-      message.success('Link deleted.');
+      message.success(t('relations.deleteSuccess'));
       setLinks((prev) => prev.filter((l) => l.id !== id));
     } catch {
-      message.error('Failed to delete link.');
+      message.error(t('relations.deleteFailed'));
     }
   }, []);
 
@@ -274,7 +276,7 @@ export default function ForeignKeyManagerPage() {
         message.info('AI did not find any relationships. Try the auto-detect feature instead.');
       }
     } catch {
-      message.error('AI suggestion failed. Try the auto-detect feature instead.');
+      message.error(t('relations.aiSuggestFailed'));
     } finally {
       setAiLoading(false);
     }
@@ -390,7 +392,7 @@ export default function ForeignKeyManagerPage() {
       align: 'right' as const,
       render: (_: unknown, record: ForeignLink) => (
         <Popconfirm
-          title="Delete this foreign key link?"
+          title={t('relations.deleteConfirm')}
           onConfirm={() => handleDelete(record.id)}
           okText="Delete"
           cancelText="Cancel"
@@ -704,8 +706,8 @@ export default function ForeignKeyManagerPage() {
               <ApartmentOutlined style={{ color: '#fff', fontSize: 22 }} />
             </div>
             <div>
-              <Title level={4} style={{ margin: 0 }}>Foreign Key Manager</Title>
-              <Text type="secondary">Define and visualize relationships between imported tables</Text>
+              <Title level={4} style={{ margin: 0 }}>{t('relations.title')}</Title>
+              <Text type="secondary">{t('relations.subtitle')}</Text>
             </div>
           </Space>
         </Col>
@@ -720,23 +722,23 @@ export default function ForeignKeyManagerPage() {
                 setSelectedTarget(null);
               }}
             >
-              {connectMode ? 'Cancel Connect' : 'Connect Tables'}
+              {connectMode ? 'Cancel' : t('relations.connectMode')}
             </Button>
             <Button
               icon={<SwapOutlined />}
               onClick={autoDetectSuggestions}
               disabled={schemas.length < 2}
-            >
-              Auto-Detect
-            </Button>
+>
+        {t('relations.autoDetect')}
+      </Button>
             <Button
               icon={<RobotOutlined />}
               onClick={handleAiSuggest}
               loading={aiLoading}
               disabled={schemas.length < 2}
-            >
-              AI Suggest
-            </Button>
+>
+        {t('relations.aiSuggest')}
+      </Button>
             <Tooltip title="Refresh">
               <Button icon={<ReloadOutlined spin={loading} />} onClick={fetchData} />
             </Tooltip>
@@ -809,7 +811,7 @@ export default function ForeignKeyManagerPage() {
             <ApartmentOutlined style={{ color: token.colorPrimary }} />
             <Text strong>ER Diagram</Text>
             <Tag>{schemas.length} tables</Tag>
-            {connectMode && <Tag color="processing">Connect Mode</Tag>}
+            {connectMode && <Tag color="processing">{t('relations.connectMode')}</Tag>}
           </Space>
         }
         extra={
@@ -839,14 +841,14 @@ export default function ForeignKeyManagerPage() {
               setSelectedTarget(null);
             }}
             size="small"
-          >
-            New Link
-          </Button>
+>
+          {t('relations.newLink')}
+        </Button>
         }
       >
         {links.length === 0 ? (
           <Empty
-            description="No foreign key links yet. Use Connect Tables, Auto-Detect, or AI Suggest to create relationships."
+            description={t('relations.noRelationsDesc')}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           />
         ) : (
@@ -864,8 +866,8 @@ export default function ForeignKeyManagerPage() {
       <Modal
         title={
           <Space>
-            <LinkOutlined style={{ color: token.colorPrimary }} />
-            <span>Link Columns</span>
+<LinkOutlined style={{ color: token.colorPrimary }} />
+        <span>{t('relations.linkModalTitle')}</span>
           </Space>
         }
         open={columnModalOpen}
@@ -877,7 +879,7 @@ export default function ForeignKeyManagerPage() {
         }}
         onOk={handleCreate}
         confirmLoading={creating}
-        okText="Create Link"
+        okText="Create"
         okButtonProps={{ disabled: !sourceColumn || !targetColumn }}
         width={640}
       >
@@ -916,7 +918,7 @@ export default function ForeignKeyManagerPage() {
         <Row gutter={16}>
           <Col span={12}>
             <Text strong style={{ display: 'block', marginBottom: 6 }}>
-              Source Column <Tag color="blue" style={{ margin: 0, fontSize: 10 }}>{selectedSource}</Tag>
+              {t('relations.sourceColumn')} <Tag color="blue" style={{ margin: 0, fontSize: 10 }}>{selectedSource}</Tag>
             </Text>
             <Select
               value={sourceColumn}
@@ -933,7 +935,7 @@ export default function ForeignKeyManagerPage() {
           </Col>
           <Col span={12}>
             <Text strong style={{ display: 'block', marginBottom: 6 }}>
-              Target Column <Tag color="purple" style={{ margin: 0, fontSize: 10 }}>{selectedTarget}</Tag>
+              {t('relations.targetColumn')} <Tag color="purple" style={{ margin: 0, fontSize: 10 }}>{selectedTarget}</Tag>
             </Text>
             <Select
               value={targetColumn}
@@ -964,7 +966,7 @@ export default function ForeignKeyManagerPage() {
                 type="warning"
                 showIcon
                 icon={<WarningOutlined />}
-                message="Type mismatch"
+                message={t('relations.typeMismatch')}
                 description={`Source column "${sourceColumn}" is ${srcCol.columnType} but target "${targetColumn}" is ${tgtCol.columnType}. This link may be rejected by the server.`}
                 style={{ marginTop: 16, borderRadius: token.borderRadius }}
               />
@@ -976,7 +978,7 @@ export default function ForeignKeyManagerPage() {
                 type="warning"
                 showIcon
                 icon={<WarningOutlined />}
-                message="Type mismatch"
+                message={t('relations.typeMismatch')}
                 description={`Source column "${sourceColumn}" is ${srcCol.columnType} but target "${targetColumn}" is ${tgtCol.columnType}. This link may be rejected by the server.`}
                 style={{ marginTop: 16, borderRadius: token.borderRadius }}
               />
@@ -987,7 +989,7 @@ export default function ForeignKeyManagerPage() {
               <Alert
                 type="info"
                 showIcon
-                message="Different types"
+                message={t('relations.differentTypes')}
                 description={`Source is ${srcCol.columnType}, target is ${tgtCol.columnType}. The link will still be created but may not work as expected.`}
                 style={{ marginTop: 16, borderRadius: token.borderRadius }}
               />
@@ -1023,8 +1025,8 @@ export default function ForeignKeyManagerPage() {
       <Modal
         title={
           <Space>
-            <BulbOutlined style={{ color: token.colorWarning }} />
-            <span>Suggested Relationships</span>
+<BulbOutlined style={{ color: token.colorWarning }} />
+        <span>{t('relations.suggestionsTitle')}</span>
             <Tag>{suggestions.length}</Tag>
           </Space>
         }
@@ -1037,14 +1039,14 @@ export default function ForeignKeyManagerPage() {
         suggestions.length > 0 && (
           <Popconfirm
             key="all"
-            title={`Apply all ${suggestions.length} suggestions?`}
-            description="This will create foreign key links for all suggested relationships."
+title={t('relations.applyAllConfirm')}
+          description={t('relations.applyAllDesc')}
             onConfirm={applyAllSuggestions}
-            okText="Apply All"
+            okText={t('relations.applyAll')}
             cancelText="Cancel"
           >
-            <Button type="primary" icon={<CheckCircleOutlined />}>
-              Apply All ({suggestions.length})
+<Button type="primary" icon={<CheckCircleOutlined />}>
+          {t('relations.applyAll')} ({suggestions.length})
             </Button>
           </Popconfirm>
         ),
@@ -1054,10 +1056,10 @@ export default function ForeignKeyManagerPage() {
         {suggestionsLoading ? (
           <div style={{ textAlign: 'center', padding: 40 }}>
             <Spin size="large" />
-            <div style={{ marginTop: 16 }}><Text type="secondary">Analyzing column patterns...</Text></div>
+            <div style={{ marginTop: 16 }}><Text type="secondary">{t('relations.aiLoading')}</Text></div>
           </div>
         ) : suggestions.length === 0 ? (
-          <Empty description="No matching column patterns found. Try AI Suggest for smarter analysis." image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          <Empty description={t('relations.aiNoSuggestions')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {suggestions.map((s, i) => {
@@ -1096,7 +1098,7 @@ export default function ForeignKeyManagerPage() {
                         color={s.confidence === 'high' ? 'green' : s.confidence === 'medium' ? 'orange' : 'default'}
                         style={{ margin: 0, fontSize: 10, borderRadius: 10 }}
                       >
-                        {s.confidence}
+                        {s.confidence === 'high' ? t('relations.high') : s.confidence === 'medium' ? t('relations.medium') : t('relations.low')}
                       </Tag>
                       <Text type="secondary" style={{ fontSize: 11 }}>{s.reason}</Text>
                     </div>

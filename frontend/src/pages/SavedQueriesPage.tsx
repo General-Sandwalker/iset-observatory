@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card, Row, Col, Button, Space, Typography, Table, Select, Input,
   Tag, Spin, Empty, Popconfirm, message, theme, Tooltip, Badge,
-  Modal, Form, Switch, Tabs,
+  Modal, Form, Switch, Tabs, Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
@@ -20,11 +21,23 @@ import { useAuth } from '../contexts/AuthContext';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
+const { useBreakpoint } = Grid;
+
+function useModalWidth(maxWidth: number): number {
+  const screens = useBreakpoint();
+  if (!screens.md) return Math.min(maxWidth, window.innerWidth - 32);
+  if (!screens.lg) return Math.min(maxWidth, window.innerWidth - 48);
+  return Math.min(maxWidth, window.innerWidth - 64);
+}
 
 export default function SavedQueriesPage() {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryModalWidth = useModalWidth(700);
+  const resultsModalWidth = useModalWidth(1100);
+  const aiModalWidth = useModalWidth(650);
 
   const [queries, setQueries] = useState<SavedQuery[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,11 +45,9 @@ export default function SavedQueriesPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingQuery, setEditingQuery] = useState<SavedQuery | null>(null);
-  const [formTitle, setFormTitle] = useState('');
-  const [formSql, setFormSql] = useState('');
-  const [formDescription, setFormDescription] = useState('');
   const [formIsPublic, setFormIsPublic] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [queryForm] = Form.useForm();
 
   const [quickSql, setQuickSql] = useState('');
   const [quickExecuting, setQuickExecuting] = useState(false);
@@ -58,7 +69,7 @@ export default function SavedQueriesPage() {
       const res = await api.get('/saved-queries');
       setQueries(res.data.data || []);
     } catch {
-      message.error('Failed to load saved queries.');
+      message.error(t('queries.fetchFailed'));
     } finally {
       setLoading(false);
     }
@@ -81,21 +92,21 @@ export default function SavedQueriesPage() {
 
   const openCreateModal = useCallback(() => {
     setEditingQuery(null);
-    setFormTitle('');
-    setFormSql('');
-    setFormDescription('');
+    queryForm.resetFields();
     setFormIsPublic(false);
     setModalOpen(true);
-  }, []);
+  }, [queryForm]);
 
   const openEditModal = useCallback((query: SavedQuery) => {
     setEditingQuery(query);
-    setFormTitle(query.title);
-    setFormSql(query.sql);
-    setFormDescription(query.description || '');
+    queryForm.setFieldsValue({
+      title: query.title,
+      sql: query.sql,
+      description: query.description || '',
+    });
     setFormIsPublic(query.is_public);
     setModalOpen(true);
-  }, []);
+  }, [queryForm]);
 
   const closeModal = useCallback(() => {
     setModalOpen(false);
@@ -103,47 +114,50 @@ export default function SavedQueriesPage() {
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!formTitle.trim() || !formSql.trim()) {
-      message.warning('Title and SQL are required.');
-      return;
-    }
+    try {
+      await queryForm.validateFields();
+    } catch { return; }
+    const values = queryForm.getFieldsValue();
+    const formTitle = values.title?.trim();
+    const formSql = values.sql?.trim();
+    const formDescription = values.description?.trim();
     setSaving(true);
     try {
       if (editingQuery) {
         const res = await api.put(`/saved-queries/${editingQuery.id}`, {
-          title: formTitle.trim(),
-          sql: formSql.trim(),
-          description: formDescription.trim() || undefined,
+          title: formTitle,
+          sql: formSql,
+          description: formDescription || undefined,
           isPublic: formIsPublic,
         });
         setQueries((prev) => prev.map((q) => (q.id === editingQuery.id ? res.data.data : q)));
-        message.success('Query updated.');
+        message.success(t('queries.updateSuccess'));
       } else {
         const res = await api.post('/saved-queries', {
-          title: formTitle.trim(),
-          sql: formSql.trim(),
-          description: formDescription.trim() || undefined,
+          title: formTitle,
+          sql: formSql,
+          description: formDescription || undefined,
           isPublic: formIsPublic,
         });
         setQueries((prev) => [res.data.data, ...prev]);
-        message.success('Query saved.');
+        message.success(t('queries.saveSuccess'));
       }
       closeModal();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to save query.';
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('queries.saveFailed');
       message.error(msg);
     } finally {
       setSaving(false);
     }
-  }, [editingQuery, formTitle, formSql, formDescription, formIsPublic, closeModal]);
+  }, [editingQuery, formIsPublic, closeModal, queryForm]);
 
   const handleDelete = useCallback(async (id: number) => {
     try {
       await api.delete(`/saved-queries/${id}`);
       setQueries((prev) => prev.filter((q) => q.id !== id));
-      message.success('Query deleted.');
+      message.success(t('queries.deleteSuccess'));
     } catch {
-      message.error('Failed to delete query.');
+      message.error(t('queries.deleteFailed'));
     }
   }, []);
 
@@ -162,7 +176,7 @@ export default function SavedQueriesPage() {
       setResultRowCount(res.data.rowCount ?? (res.data.data || []).length);
       setResultExecutionTime(elapsed);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Query execution failed.';
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('queries.executeFailed');
       message.error(msg);
       setResultsModalOpen(false);
     } finally {
@@ -173,13 +187,13 @@ export default function SavedQueriesPage() {
   const handleQuickExecute = useCallback(async () => {
     const sql = quickSql.trim();
     if (!sql) {
-      message.warning('Enter a SQL query.');
+      message.warning(t('queries.enterSQL'));
       return;
     }
     setQuickExecuting(true);
     setResultsLoading(true);
     setResultsModalOpen(true);
-    setResultsTitle('Ad-hoc Query');
+    setResultsTitle(t('queries.adHocTitle'));
     setResultRows([]);
     setResultRowCount(0);
     setResultExecutionTime(null);
@@ -191,7 +205,7 @@ export default function SavedQueriesPage() {
       setResultRowCount(res.data.rowCount ?? (res.data.data || []).length);
       setResultExecutionTime(elapsed);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Query execution failed.';
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('queries.executeFailed');
       message.error(msg);
       setResultsModalOpen(false);
     } finally {
@@ -202,7 +216,7 @@ export default function SavedQueriesPage() {
 
   const handleAiGenerate = useCallback(async () => {
     if (!aiQuestion.trim()) {
-      message.warning('Enter a question.');
+      message.warning(t('queries.enterQuestion'));
       return;
     }
     setAiLoading(true);
@@ -212,12 +226,12 @@ export default function SavedQueriesPage() {
       const result = res.data.data;
       if (result?.sql) {
         setAiGeneratedSql(result.sql);
-        message.success('SQL generated.');
+        message.success(t('queries.sqlGenerated'));
       } else {
-        message.info('AI did not generate SQL for this question.');
+        message.info(t('queries.noSQL'));
       }
     } catch {
-      message.error('AI query generation failed.');
+      message.error(t('queries.aiFailed'));
     } finally {
       setAiLoading(false);
     }
@@ -226,15 +240,14 @@ export default function SavedQueriesPage() {
   const handleAiSaveAsQuery = useCallback(() => {
     if (!aiGeneratedSql.trim()) return;
     setEditingQuery(null);
-    setFormTitle('');
-    setFormSql(aiGeneratedSql);
-    setFormDescription('');
+    queryForm.resetFields();
+    queryForm.setFieldsValue({ sql: aiGeneratedSql });
     setFormIsPublic(false);
     setAiModalOpen(false);
     setAiQuestion('');
     setAiGeneratedSql('');
     setModalOpen(true);
-  }, [aiGeneratedSql]);
+  }, [aiGeneratedSql, queryForm]);
 
   const resultColumns = useMemo(() => {
     if (resultRows.length === 0) return [];
@@ -250,16 +263,16 @@ export default function SavedQueriesPage() {
 
   const queryTableColumns: ColumnsType<SavedQuery> = [
     {
-      title: 'Title',
-      dataIndex: 'title',
+title: t('queries.queryTitle'),
+    dataIndex: 'title',
       key: 'title',
       ellipsis: true,
       sorter: (a, b) => a.title.localeCompare(b.title),
       render: (v: string) => <Text strong>{v}</Text>,
     },
     {
-      title: 'SQL',
-      dataIndex: 'sql',
+title: t('queries.querySQL'),
+    dataIndex: 'sql',
       key: 'sql',
       ellipsis: true,
       responsive: ['md' as const],
@@ -270,16 +283,16 @@ export default function SavedQueriesPage() {
       ),
     },
     {
-      title: 'Description',
-      dataIndex: 'description',
+title: t('common.description'),
+    dataIndex: 'description',
       key: 'description',
       ellipsis: true,
       responsive: ['lg' as const],
       render: (v: string | null) => v ? <Text type="secondary">{v}</Text> : <Text type="secondary">—</Text>,
     },
     {
-      title: 'Visibility',
-      dataIndex: 'is_public',
+title: t('queries.visibility'),
+    dataIndex: 'is_public',
       key: 'is_public',
       width: 100,
       render: (v: boolean) => v
@@ -287,8 +300,8 @@ export default function SavedQueriesPage() {
         : <Tag icon={<LockOutlined />}>Private</Tag>,
     },
     {
-      title: 'Created By',
-      dataIndex: 'created_by_name',
+title: t('queries.createdBy'),
+    dataIndex: 'created_by_name',
       key: 'created_by_name',
       responsive: ['lg' as const],
       ellipsis: true,
@@ -304,8 +317,8 @@ export default function SavedQueriesPage() {
       render: (v: string) => new Date(v).toLocaleDateString(),
     },
     {
-      title: 'Actions',
-      key: 'actions',
+title: t('common.actions'),
+    key: 'actions',
       width: 160,
       align: 'right' as const,
     render: (_: unknown, record: SavedQuery) => (
@@ -332,12 +345,12 @@ export default function SavedQueriesPage() {
                 aria-label="Edit query"
               />
             </Tooltip>
-            <Popconfirm
-              title="Delete this query?"
-              description="This action cannot be undone."
-              onConfirm={() => handleDelete(record.id)}
-              okText="Delete"
-              cancelText="Cancel"
+<Popconfirm
+      title={t('queries.deleteConfirm')}
+      description={t('common.cannotUndo')}
+      onConfirm={() => handleDelete(record.id)}
+      okText={t('common.delete')}
+      cancelText={t('common.cancel')}
               okButtonProps={{ danger: true }}
             >
               <Tooltip title="Delete">
@@ -376,8 +389,8 @@ export default function SavedQueriesPage() {
               <CodeOutlined style={{ color: '#fff', fontSize: 22 }} />
             </div>
             <div>
-              <Title level={4} style={{ margin: 0 }}>Saved Queries</Title>
-              <Text type="secondary">Manage and execute SQL queries on your data</Text>
+<Title level={4} style={{ margin: 0 }}>{t('queries.title')}</Title>
+          <Text type="secondary">{t('queries.subtitle')}</Text>
             </div>
           </Space>
         </Col>
@@ -386,15 +399,15 @@ export default function SavedQueriesPage() {
             <Button
               icon={<RobotOutlined />}
               onClick={() => setAiModalOpen(true)}
-            >
-              AI Query Builder
-            </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={openCreateModal}
-            >
-              New Query
+>
+        {t('queries.aiBuilder')}
+      </Button>
+      <Button
+        type="primary"
+        icon={<PlusOutlined />}
+        onClick={openCreateModal}
+      >
+        {t('queries.newQuery')}
             </Button>
             <Tooltip title="Refresh">
               <Button
@@ -415,14 +428,14 @@ export default function SavedQueriesPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
           <ThunderboltOutlined style={{ fontSize: 20, color: token.colorInfo }} />
-          <Text strong>Quick Execute</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>(ad-hoc SQL, not saved)</Text>
+<Text strong>{t('queries.quickExecute')}</Text>
+      <Text type="secondary" style={{ fontSize: 12 }}>{t('queries.quickExecuteDesc')}</Text>
         </div>
         <Space.Compact style={{ width: '100%' }}>
           <TextArea
             value={quickSql}
             onChange={(e) => setQuickSql(e.target.value)}
-            placeholder="SELECT * FROM table_name LIMIT 10"
+            placeholder={t('queries.sqlPlaceholder')}
             autoSize={{ minRows: 1, maxRows: 4 }}
             style={{ fontFamily: 'monospace', fontSize: 13 }}
             onPressEnter={(e) => {
@@ -439,9 +452,9 @@ export default function SavedQueriesPage() {
             loading={quickExecuting}
             disabled={!quickSql.trim()}
             style={{ height: 'auto', minHeight: 40 }}
-          >
-            Run
-          </Button>
+>
+        {t('queries.run')}
+      </Button>
         </Space.Compact>
       </Card>
 
@@ -454,18 +467,18 @@ export default function SavedQueriesPage() {
               key: 'mine',
               label: (
                 <Space size={4}>
-                  <LockOutlined />
-                  My Queries
+<LockOutlined />
+            {t('queries.myQueries')}
                   <Badge count={myQueries.length} showZero size="small" style={{ backgroundColor: token.colorPrimary }} />
                 </Space>
               ),
               children: myQueries.length === 0 ? (
                 <Empty
-                  description="You haven't saved any queries yet."
+                  description={t('queries.noMyQueries')}
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                 >
-                  <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-                    Create First Query
+<Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
+              {t('queries.createFirst')}
                   </Button>
                 </Empty>
               ) : (
@@ -483,14 +496,14 @@ export default function SavedQueriesPage() {
               key: 'public',
               label: (
                 <Space size={4}>
-                  <GlobalOutlined />
-                  Public Queries
+<GlobalOutlined />
+            {t('queries.publicQueries')}
                   <Badge count={publicQueries.length} showZero size="small" style={{ backgroundColor: token.colorSuccess }} />
                 </Space>
               ),
               children: publicQueries.length === 0 ? (
                 <Empty
-                  description="No public queries from other users yet."
+                  description={t('queries.noPublic')}
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                 />
               ) : (
@@ -508,64 +521,51 @@ export default function SavedQueriesPage() {
         />
       </Card>
 
-      <Modal
-        title={editingQuery ? 'Edit Query' : 'Create Query'}
-        open={modalOpen}
-        onCancel={closeModal}
-        onOk={handleSave}
-        okText={editingQuery ? 'Update' : 'Save'}
-        okButtonProps={{ loading: saving, icon: <SaveOutlined />, disabled: !formTitle.trim() || !formSql.trim() }}
-        confirmLoading={saving}
-        width={Math.min(700, window.innerWidth - 48)}
-        destroyOnClose
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
-          <div>
-            <Text strong style={{ display: 'block', marginBottom: 6 }}>Title</Text>
-            <Input
-              value={formTitle}
-              onChange={(e) => setFormTitle(e.target.value)}
-              placeholder="e.g. Top students by department"
-            />
-          </div>
-          <div>
-            <Text strong style={{ display: 'block', marginBottom: 6 }}>SQL</Text>
-            <TextArea
-              value={formSql}
-              onChange={(e) => setFormSql(e.target.value)}
-              placeholder="SELECT * FROM table_name WHERE condition = value"
-              autoSize={{ minRows: 4, maxRows: 12 }}
-              style={{ fontFamily: "'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace", fontSize: 13 }}
-            />
-          </div>
-          <div>
-            <Text strong style={{ display: 'block', marginBottom: 6 }}>Description <Text type="secondary">(optional)</Text></Text>
-            <Input
-              value={formDescription}
-              onChange={(e) => setFormDescription(e.target.value)}
-              placeholder="What does this query do?"
-            />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Switch
-              checked={formIsPublic}
-              onChange={setFormIsPublic}
-            />
-            <Text>{formIsPublic ? 'Public' : 'Private'}</Text>
-            {formIsPublic ? (
-              <GlobalOutlined style={{ color: token.colorSuccess }} />
-            ) : (
-              <LockOutlined style={{ color: token.colorTextQuaternary }} />
-            )}
-          </div>
+    <Modal
+      title={editingQuery ? t('queries.editQuery') : t('queries.createQuery')}
+      open={modalOpen}
+      onCancel={closeModal}
+      onOk={handleSave}
+      okText={t('common.save')}
+      okButtonProps={{ loading: saving, icon: <SaveOutlined /> }}
+      confirmLoading={saving}
+      width={queryModalWidth}
+      destroyOnClose
+    >
+      <Form form={queryForm} layout="vertical" style={{ marginTop: 8 }}>
+        <Form.Item label={t('queries.queryTitle')} name="title" rules={[{ required: true, message: t('queries.titleRequired') }]}>
+          <Input placeholder="e.g. Top students by department" />
+        </Form.Item>
+        <Form.Item label={t('queries.querySQL')} name="sql" rules={[{ required: true, message: t('queries.sqlRequired') }]}>
+          <TextArea
+            placeholder="SELECT * FROM table_name WHERE condition = value"
+            autoSize={{ minRows: 4, maxRows: 12 }}
+            style={{ fontFamily: "'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace", fontSize: 13 }}
+          />
+        </Form.Item>
+        <Form.Item label={<span>{t('queries.descriptionOptional')}</span>} name="description">
+          <Input placeholder={t('queries.descriptionPlaceholder')} />
+        </Form.Item>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Switch
+            checked={formIsPublic}
+            onChange={setFormIsPublic}
+          />
+          <Text>{formIsPublic ? 'Public' : 'Private'}</Text>
+          {formIsPublic ? (
+            <GlobalOutlined style={{ color: token.colorSuccess }} />
+          ) : (
+            <LockOutlined style={{ color: token.colorTextQuaternary }} />
+          )}
         </div>
-      </Modal>
+      </Form>
+    </Modal>
 
       <Modal
         title={null}
         open={resultsModalOpen}
         onCancel={() => { setResultsModalOpen(false); setResultRows([]); }}
-        width={Math.min(1100, window.innerWidth - 48)}
+        width={resultsModalWidth}
         footer={null}
         destroyOnClose
         style={{ top: 20 }}
@@ -593,9 +593,9 @@ export default function SavedQueriesPage() {
                   <Button
                     icon={<BarChartOutlined />}
                     onClick={() => navigate('/charts')}
-                  >
-                    Save as Chart
-                  </Button>
+>
+        {t('queries.saveAsChart')}
+      </Button>
                 </Tooltip>
               </Space>
           </div>
@@ -606,7 +606,7 @@ export default function SavedQueriesPage() {
               <Paragraph type="secondary" style={{ marginTop: 16 }}>Executing query…</Paragraph>
             </div>
           ) : resultRows.length === 0 ? (
-            <Empty description="Query returned no results." image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            <Empty description={t('queries.noResults')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
           ) : (
             <Table
               dataSource={resultRows.map((row, i) => ({ _key: i, ...row }))}
@@ -623,8 +623,8 @@ export default function SavedQueriesPage() {
       <Modal
         title={
           <Space>
-            <RobotOutlined style={{ color: token.colorPrimary }} />
-            AI Query Builder
+<RobotOutlined style={{ color: token.colorPrimary }} />
+        {t('queries.aiBuilder')}
           </Space>
         }
         open={aiModalOpen}
@@ -634,7 +634,7 @@ export default function SavedQueriesPage() {
           setAiGeneratedSql('');
         }}
         footer={null}
-        width={Math.min(650, window.innerWidth - 48)}
+        width={aiModalWidth}
         destroyOnClose
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
@@ -642,12 +642,12 @@ export default function SavedQueriesPage() {
             Describe what you want to query in plain language. The AI will generate SQL for you.
           </Paragraph>
           <div>
-            <Text strong style={{ display: 'block', marginBottom: 6 }}>Your Question</Text>
+            <Text strong style={{ display: 'block', marginBottom: 6 }}>{t('queries.aiQuestion')}</Text>
             <Space.Compact style={{ width: '100%' }}>
               <Input
                 value={aiQuestion}
                 onChange={(e) => setAiQuestion(e.target.value)}
-                placeholder="e.g. Show me the top 10 students by GPA"
+                placeholder={t('queries.aiPlaceholder')}
                 onPressEnter={handleAiGenerate}
                 disabled={aiLoading}
               />
@@ -657,9 +657,9 @@ export default function SavedQueriesPage() {
                 onClick={handleAiGenerate}
                 loading={aiLoading}
                 disabled={!aiQuestion.trim()}
-              >
-                Generate
-              </Button>
+>
+        {t('queries.generate')}
+      </Button>
             </Space.Compact>
           </div>
 
@@ -685,19 +685,19 @@ export default function SavedQueriesPage() {
                 <Button
                   onClick={() => {
                     navigator.clipboard.writeText(aiGeneratedSql);
-                    message.success('SQL copied to clipboard.');
+                    message.success(t('queries.sqlCopied'));
                   }}
                   icon={<FileTextOutlined />}
-                >
-                  Copy SQL
-                </Button>
+>
+        {t('queries.copySQL')}
+      </Button>
                 <Button
                   type="primary"
                   icon={<SaveOutlined />}
                   onClick={handleAiSaveAsQuery}
-                >
-                  Save as Query
-                </Button>
+>
+        {t('queries.saveAsQuery')}
+      </Button>
               </div>
             </>
           )}

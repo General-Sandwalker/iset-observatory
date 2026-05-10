@@ -4,10 +4,43 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>ISET Observatory</title>
+    <style>
+      #boot-error{display:none;position:fixed;inset:0;background:#1a1a2e;color:#ff6b6b;font-family:monospace;padding:32px;overflow:auto;z-index:999999;font-size:14px;line-height:1.6;white-space:pre-wrap}
+      #boot-error h1{color:#ff6b6b;font-size:20px;margin:0 0 16px}
+    </style>
+    <script>
+      window.__BOOT_ERR__=[];
+      window.onerror=function(m,u,l,c,e){window.__BOOT_ERR__.push({m:String(m),s:e&&e.stack,u,l,c});return true};
+      window.addEventListener('unhandledrejection',function(e){window.__BOOT_ERR__.push({m:String(e.reason),s:e.reason&&e.reason.stack,t:'promise'})});
+      setTimeout(function(){
+        var r=document.getElementById('root');
+        if((!r||!r.innerHTML||r.innerHTML.trim()==='')&&window.__BOOT_ERR__.length){
+          var d=document.getElementById('boot-error');
+          d.style.display='block';
+          d.innerHTML='<h1>Runtime Error</h1>'+JSON.stringify(window.__BOOT_ERR__,null,2).replace(/</g,'&lt;');
+        }
+      },8000);
+    </script>
   </head>
   <body>
+    <noscript><div style="padding:40px;text-align:center;font-family:sans-serif"><h1>JavaScript Required</h1><p>ISET Observatory requires JavaScript to run. Please enable it in your browser settings.</p></div></noscript>
     <div id="root"></div>
+    <div id="boot-error"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      setTimeout(function(){
+        var r=document.getElementById('root');
+        var d=document.getElementById('boot-debug')||document.createElement('div');
+        d.id='boot-debug';
+        d.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#111;color:#0f0;font:12px monospace;padding:8px;z-index:999999;max-height:50vh;overflow:auto;white-space:pre-wrap';
+        var info='[boot-check] root.innerHTML length='+r.innerHTML.length+' errors='+window.__BOOT_ERR__.length+' rootChildren='+r.children.length;
+        if(window.__BOOT_ERR__.length>0){
+          info+='\n\nERROR DETAILS:\n'+JSON.stringify(window.__BOOT_ERR__,null,2);
+        }
+        d.textContent=info;
+        document.body.appendChild(d);
+      },6000);
+    </script>
   </body>
 </html>

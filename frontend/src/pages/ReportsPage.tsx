@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card, Row, Col, Button, Space, Typography, Table, Tag, Spin, Empty,
   Modal, Form, Input, Select, Popconfirm, message, theme, Grid, Tooltip,
@@ -25,6 +26,7 @@ const REPORT_TYPE_COLORS: Record<string, string> = {
 };
 
 export default function ReportsPage() {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
@@ -59,11 +61,11 @@ export default function ReportsPage() {
       setClients(clientsRes.data.data || []);
       setDatasets((datasetsRes.data.data || []).filter((d: Dataset) => d.status === 'imported'));
     } catch {
-      message.error('Failed to load reports.');
+      message.error(t('reports.fetchFailed'));
     } finally {
-      setLoading(false);
-    }
-  }, []);
+    setLoading(false);
+  }
+}, [t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -77,7 +79,7 @@ export default function ReportsPage() {
         clientId: values.clientId || undefined,
         datasetId: values.datasetId || undefined,
       });
-      message.success('Report generated successfully.');
+      message.success(t('reports.generateSuccess'));
       setGenerateOpen(false);
       generateForm.resetFields();
       fetchData();
@@ -85,22 +87,22 @@ export default function ReportsPage() {
       if (err.response?.data?.message) {
         message.error(err.response.data.message);
       } else if (!err.errorFields) {
-        message.error('Report generation failed.');
+        message.error(t('reports.generateFailed'));
       }
     } finally {
       setGenerating(false);
     }
-  }, [generateForm, fetchData]);
+  }, [generateForm, fetchData, t]);
 
   const handleTogglePublic = useCallback(async (report: Report) => {
     try {
       await api.put(`/reports/${report.id}`, { isPublic: !report.is_public });
-      message.success(report.is_public ? 'Report unpublished.' : 'Report published.');
+      message.success(report.is_public ? t('reports.unpublished') : t('reports.published'));
       setReports((prev) => prev.map((r) => r.id === report.id ? { ...r, is_public: !r.is_public } : r));
     } catch {
-      message.error('Failed to update report visibility.');
-    }
-  }, []);
+  message.error('Failed to update report visibility.');
+  }
+}, [t]);
 
   const handleEdit = useCallback(async () => {
     if (!editingReport) return;
@@ -108,11 +110,11 @@ export default function ReportsPage() {
       const values = await editForm.validateFields();
       setEditing(true);
       await api.put(`/reports/${editingReport.id}`, {
-        title: values.title,
-        content: values.content,
-        isPublic: values.isPublic,
-      });
-      message.success('Report updated.');
+      title: values.title,
+      content: values.content,
+      isPublic: values.isPublic,
+    });
+    message.success('Report updated.');
       setEditOpen(false);
       editForm.resetFields();
       setEditingReport(null);
@@ -129,12 +131,12 @@ export default function ReportsPage() {
   const handleDelete = useCallback(async (id: number) => {
     try {
       await api.delete(`/reports/${id}`);
-      message.success('Report deleted.');
+      message.success(t('reports.deleteSuccess'));
       setReports((prev) => prev.filter((r) => r.id !== id));
     } catch {
-      message.error('Failed to delete report.');
-    }
-  }, []);
+  message.error(t('reports.deleteFailed'));
+  }
+}, [t]);
 
   const filteredReports = reports.filter((r) => {
     if (!search) return true;
@@ -155,7 +157,7 @@ export default function ReportsPage() {
 
   const columns: ColumnsType<Report> = [
     {
-      title: 'Report',
+      title: t('common.title'),
       key: 'report',
       ellipsis: true,
       render: (_: unknown, r: Report) => (
@@ -187,24 +189,24 @@ export default function ReportsPage() {
       ),
     },
     {
-    title: 'Status',
+    title: t('common.active'),
     key: 'is_public',
     width: 100,
     responsive: ['md' as const],
     render: (_: unknown, r: Report) => (
       <Popconfirm
-        title={r.is_public ? 'Unpublish this report?' : 'Publish this report?'}
-        description={r.is_public ? 'It will no longer be visible to the public.' : 'It will be visible to anyone, including unauthenticated users.'}
+        title={r.is_public ? t('reports.unpublishConfirm') : t('reports.publishConfirm')}
+        description={r.is_public ? t('reports.unpublishDesc') : t('reports.publishDesc')}
         onConfirm={() => handleTogglePublic(r)}
         okText={r.is_public ? 'Unpublish' : 'Publish'}
-        cancelText="Cancel"
+        cancelText={t('common.cancel')}
       >
         <Tag
           color={r.is_public ? 'green' : 'default'}
           icon={r.is_public ? <GlobalOutlined /> : <LockOutlined />}
           style={{ margin: 0, cursor: 'pointer' }}
         >
-          {r.is_public ? 'Public' : 'Private'}
+          {r.is_public ? t('common.public') : t('common.private')}
         </Tag>
       </Popconfirm>
     ),
@@ -232,7 +234,7 @@ export default function ReportsPage() {
       align: 'right' as const,
       render: (_: unknown, r: Report) => (
         <Space size={4}>
-        <Tooltip title="View">
+        <Tooltip title={t('reports.viewReport')}>
           <Button
             type="text"
             size="small"
@@ -249,7 +251,7 @@ export default function ReportsPage() {
               }}
             />
           </Tooltip>
-            <Tooltip title="Edit">
+            <Tooltip title={t('reports.editReport')}>
               <Button
                 type="text"
                 size="small"
@@ -266,13 +268,13 @@ export default function ReportsPage() {
               }}
             />
           </Tooltip>
-            <Tooltip title={r.is_public ? 'Unpublish' : 'Publish'}>
+            <Tooltip title={r.is_public ? t('reports.unpublishConfirm') : t('reports.publishConfirm')}>
               <Popconfirm
-                title={r.is_public ? 'Unpublish this report?' : 'Publish this report?'}
-                description={r.is_public ? 'It will no longer be visible to the public.' : 'It will be visible to anyone.'}
-                onConfirm={() => handleTogglePublic(r)}
-                okText={r.is_public ? 'Unpublish' : 'Publish'}
-                cancelText="Cancel"
+        title={r.is_public ? t('reports.unpublishConfirm') : t('reports.publishConfirm')}
+        description={r.is_public ? t('reports.unpublishDesc') : 'It will be visible to anyone.'}
+        onConfirm={() => handleTogglePublic(r)}
+        okText={r.is_public ? 'Unpublish' : 'Publish'}
+        cancelText={t('common.cancel')}
               >
                 <Button
                   type="text"
@@ -282,12 +284,12 @@ export default function ReportsPage() {
               </Popconfirm>
             </Tooltip>
           <Popconfirm
-            title="Delete this report?"
-            onConfirm={() => handleDelete(r.id)}
-            okText="Delete"
+      title={t('reports.deleteConfirm')}
+      onConfirm={() => handleDelete(r.id)}
+      okText={t('common.delete')}
             okButtonProps={{ danger: true }}
           >
-              <Tooltip title="Delete">
+              <Tooltip title={t('common.delete')}>
                 <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label="Delete report" />
             </Tooltip>
           </Popconfirm>
@@ -317,16 +319,16 @@ export default function ReportsPage() {
               <FileTextOutlined style={{ color: '#fff', fontSize: 22 }} />
             </div>
             <div>
-              <Title level={4} style={{ margin: 0 }}>Reports</Title>
-              <Text type="secondary">AI-generated performance reports and analysis</Text>
+      <Title level={4} style={{ margin: 0 }}>{t('reports.title')}</Title>
+        <Text type="secondary">{t('reports.subtitle')}</Text>
             </div>
           </Space>
         </Col>
         <Col xs={24} sm={12} style={{ textAlign: 'right' }}>
           <Space wrap>
-            <Button type="primary" icon={<RobotOutlined />} onClick={() => { generateForm.resetFields(); setGenerateOpen(true); }}>
-              Generate Report
-            </Button>
+        <Button type="primary" icon={<RobotOutlined />} onClick={() => { generateForm.resetFields(); setGenerateOpen(true); }}>
+          {t('reports.generate')}
+        </Button>
             <Tooltip title="Refresh">
               <Button icon={<ReloadOutlined spin={loading} />} onClick={fetchData} />
             </Tooltip>
@@ -337,17 +339,17 @@ export default function ReportsPage() {
       <Row gutter={[12, 12]}>
         <Col xs={8}>
           <Card size="small" style={{ borderColor: token.colorPrimary, background: token.colorPrimaryBg }} styles={{ body: { padding: '12px 16px' } }}>
-            <Statistic title="Total" value={stats.total} valueStyle={{ fontSize: 22, color: token.colorPrimary }} />
+            <Statistic title={t('common.title')} value={stats.total} valueStyle={{ fontSize: 22, color: token.colorPrimary }} />
           </Card>
         </Col>
         <Col xs={8}>
           <Card size="small" style={{ borderColor: token.colorSuccess, background: token.colorSuccessBg }} styles={{ body: { padding: '12px 16px' } }}>
-            <Statistic title="Published" value={stats.public} valueStyle={{ fontSize: 22, color: token.colorSuccess }} prefix={<GlobalOutlined />} />
+            <Statistic title={t('reports.published')} value={stats.public} valueStyle={{ fontSize: 22, color: token.colorSuccess }} prefix={<GlobalOutlined />} />
           </Card>
         </Col>
         <Col xs={8}>
           <Card size="small" style={{ borderColor: token.colorInfo, background: token.colorInfoBg }} styles={{ body: { padding: '12px 16px' } }}>
-            <Statistic title="Performance" value={stats.performance} valueStyle={{ fontSize: 22, color: token.colorInfo }} />
+            <Statistic title={t('reports.performance')} value={stats.performance} valueStyle={{ fontSize: 22, color: token.colorInfo }} />
           </Card>
         </Col>
       </Row>
@@ -356,13 +358,13 @@ export default function ReportsPage() {
         title={
           <Space>
             <FileTextOutlined style={{ color: token.colorPrimary }} />
-            <Text strong>All Reports</Text>
+            <Text strong>{t('reports.title')}</Text>
             <Tag>{reports.length}</Tag>
           </Space>
         }
         extra={
           <Input
-            placeholder="Search reports..."
+            placeholder={t('common.search')}
             prefix={<SearchOutlined style={{ color: token.colorTextQuaternary }} />}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -374,7 +376,7 @@ export default function ReportsPage() {
       >
         {filteredReports.length === 0 ? (
           <Empty
-            description={search ? 'No reports match your search.' : 'No reports yet. Generate AI-powered reports for your clients.'}
+            description={search ? t('common.noData') : t('common.noData')}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           />
         ) : (
@@ -382,7 +384,7 @@ export default function ReportsPage() {
             dataSource={filteredReports}
             columns={columns}
             rowKey="id"
-            pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (total) => `${total} reports` }}
+            pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (total) => `${total} ${t('reports.title').toLowerCase()}` }}
             scroll={{ x: 600 }}
             size="middle"
           />
@@ -391,11 +393,11 @@ export default function ReportsPage() {
 
       {/* Generate Report Modal */}
       <Modal
-        title={<Space><RobotOutlined style={{ color: token.colorPrimary }} /> Generate AI Report</Space>}
+        title={<Space><RobotOutlined style={{ color: token.colorPrimary }} /> {t('reports.generateTitle')}</Space>}
         open={generateOpen}
         onCancel={() => { setGenerateOpen(false); generateForm.resetFields(); }}
         onOk={handleGenerate}
-        okText="Generate"
+        okText={t('reports.generate')}
         confirmLoading={generating}
         width={560}
       >
@@ -408,26 +410,26 @@ export default function ReportsPage() {
           style={{ marginBottom: 16 }}
         />
         <Form form={generateForm} layout="vertical" requiredMark={false} initialValues={{ reportType: 'performance' }}>
-          <Form.Item label="Title" name="title" rules={[{ required: true, message: 'Title is required' }]}>
-            <Input placeholder="e.g. Academic Performance Report — Spring 2025" />
+    <Form.Item label={t('common.title')} name="title" rules={[{ required: true, message: t('common.required') }]}>
+      <Input placeholder="e.g. Academic Performance Report — Spring 2025" />
           </Form.Item>
           <Row gutter={12}>
             <Col span={12}>
-              <Form.Item label="Report Type" name="reportType">
-                <Select
-                  options={[
-                    { value: 'performance', label: 'Performance' },
-                    { value: 'academic', label: 'Academic' },
-                    { value: 'attendance', label: 'Attendance' },
-                    { value: 'general', label: 'General' },
-                  ]}
+      <Form.Item label={t('reports.reportType')} name="reportType">
+        <Select
+          options={[
+            { value: 'performance', label: t('reports.performance') },
+            { value: 'academic', label: t('reports.summary') },
+            { value: 'attendance', label: t('reports.attendance') },
+            { value: 'general', label: t('reports.custom') },
+          ]}
                 />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Client" name="clientId">
-                <Select
-                  placeholder="Select client (optional)"
+      <Form.Item label={t('reports.selectClient')} name="clientId">
+        <Select
+          placeholder={t('reports.selectClient')}
                   allowClear
                   showSearch
                   optionFilterProp="label"
@@ -439,9 +441,9 @@ export default function ReportsPage() {
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item label="Dataset" name="datasetId">
-            <Select
-              placeholder="Select dataset (optional)"
+    <Form.Item label={t('reports.selectDataset')} name="datasetId">
+      <Select
+        placeholder={t('reports.selectDataset')}
               allowClear
               showSearch
               optionFilterProp="label"
@@ -460,13 +462,13 @@ export default function ReportsPage() {
           <Space>
             <FileTextOutlined style={{ color: token.colorPrimary }} />
             <span>{viewReport?.title}</span>
-            {viewReport?.is_public ? <Tag color="green" icon={<GlobalOutlined />}>Public</Tag> : <Tag icon={<LockOutlined />}>Private</Tag>}
+            {viewReport?.is_public ? <Tag color="green" icon={<GlobalOutlined />}>{t('common.public')}</Tag> : <Tag icon={<LockOutlined />}>{t('common.private')}</Tag>}
           </Space>
         }
         open={viewOpen}
         onCancel={() => { setViewOpen(false); setViewReport(null); }}
         footer={[
-          <Button key="close" onClick={() => { setViewOpen(false); setViewReport(null); }}>Close</Button>,
+          <Button key="close" onClick={() => { setViewOpen(false); setViewReport(null); }}>{t('common.close')}</Button>,
         ]}
         width={720}
       >
@@ -506,23 +508,23 @@ export default function ReportsPage() {
 
       {/* Edit Report Modal */}
       <Modal
-        title={<Space><EditOutlined style={{ color: token.colorPrimary }} /> Edit Report</Space>}
+        title={<Space><EditOutlined style={{ color: token.colorPrimary }} /> {t('reports.editReport')}</Space>}
         open={editOpen}
         onCancel={() => { setEditOpen(false); editForm.resetFields(); setEditingReport(null); }}
         onOk={handleEdit}
-        okText="Save"
+        okText={t('common.save')}
         confirmLoading={editing}
         width={640}
       >
         <Form form={editForm} layout="vertical" requiredMark={false}>
-          <Form.Item label="Title" name="title" rules={[{ required: true, message: 'Title is required' }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="Content" name="content" rules={[{ required: true, message: 'Content is required' }]}>
+    <Form.Item label={t('common.title')} name="title" rules={[{ required: true, message: t('common.required') }]}>
+      <Input />
+    </Form.Item>
+    <Form.Item label={t('common.description')} name="content" rules={[{ required: true, message: t('common.required') }]}>
             <TextArea rows={12} style={{ fontFamily: 'monospace', fontSize: 13 }} />
           </Form.Item>
-          <Form.Item label="Published" name="isPublic" valuePropName="checked">
-            <Switch checkedChildren="Public" unCheckedChildren="Private" />
+    <Form.Item label={t('reports.published')} name="isPublic" valuePropName="checked">
+      <Switch checkedChildren={t('common.public')} unCheckedChildren={t('common.private')} />
           </Form.Item>
         </Form>
       </Modal>
