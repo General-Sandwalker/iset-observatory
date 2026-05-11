@@ -1,0 +1,33 @@
+Student CIN,Subject,Grade,Semester,Year
+ST001,Algorithmique,15.50,S1,2022
+ST001,Bases de donnees,14.00,S1,2022
+ST001,Programmation C,16.00,S1,2022
+ST001,Reseaux,13.50,S2,2022
+ST001,Systemes d exploitation,14.75,S2,2022
+ST002,Algorithmique,17.00,S1,2022
+ST002,Bases de donnees,16.50,S1,2022
+ST002,Programmation C,15.00,S1,2022
+ST002,Reseaux,18.00,S2,2022
+ST002,Systemes d exploitation,14.50,S2,2022
+ST003,Electronique,11.00,S1,2021
+ST003,Electrotechnique,12.50,S1,2021
+ST003,Mathematiques,10.00,S2,2021
+ST003,Automatique,12.50,S2,2021
+ST004,Algorithmique,13.50,S1,2023
+ST004,Bases de donnees,14.00,S1,2023
+ST004,Programmation C,14.00,S1,2023
+ST005,Comptabilite,12.00,S1,2022
+ST005,Economie,14.00,S1,2022
+ST005,Statistiques,12.50,S2,2022
+ST005,Gestion financiere,13.25,S2,2022
+ST006,Electronique,16.00,S1,2023
+ST006,Electrotechnique,15.00,S1,2023
+ST006,Mathematiques,15.25,S2,2023
+ST007,Algorithmique,18.00,S1,2021
+ST007,Bases de donnees,17.50,S1,2021
+ST007,Programmation C,16.00,S1,2021
+ST007,Reseaux,17.00,S2,2021
+ST007,Systemes d exploitation,17.00,S2,2021
+ST008,Comptabilite,10.50,S1,2023
+ST008,Economie,11.00,S1,2023
+ST008,Statistiques,11.00,S2,2023

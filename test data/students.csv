@@ -1,0 +1,21 @@
+CIN,Full Name,Department,Enrollment Year,GPA,Is Active
+ST001,Ahmed Ben Ali,Informatique,2022,14.75,true
+ST002,Fatma Trabelsi,Informatique,2022,16.20,true
+ST003,Rami Kouki,Electrique,2021,11.50,false
+ST004,Nour Hamdi,Informatique,2023,13.80,true
+ST005,Yassine Guedri,Gestion,2022,12.90,true
+ST006,Amina Khelifi,Electrique,2023,15.40,true
+ST007,Bilel Maalej,Informatique,2021,17.10,true
+ST008,Chaima Sassi,Gestion,2023,10.80,true
+ST009,Dhia Bouazizi,Informatique,2022,14.30,true
+ST010,Emna Gharbi,Electrique,2021,13.60,true
+ST011,Fares Kamoun,Gestion,2022,16.50,true
+ST012,Ghada Trabelsi,Informatique,2023,12.10,true
+ST013,Hassen Jebali,Electrique,2022,15.00,true
+ST014,Ines Maatouk,Gestion,2021,11.90,true
+ST015,Jaber Boukadida,Informatique,2023,14.60,true
+ST016,Khawla Ben Salem,Electrique,2022,13.20,true
+ST017,Lotfi Ghanmi,Gestion,2021,16.80,true
+ST018,Marwa Hamdi,Informatique,2023,12.50,true
+ST019,Nabil Jlassi,Electrique,2022,14.00,true
+ST020,Oussama Khmiri,Gestion,2021,15.30,true
