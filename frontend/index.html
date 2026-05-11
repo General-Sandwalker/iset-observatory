@@ -27,20 +27,6 @@
     <noscript><div style="padding:40px;text-align:center;font-family:sans-serif"><h1>JavaScript Required</h1><p>ISET Observatory requires JavaScript to run. Please enable it in your browser settings.</p></div></noscript>
     <div id="root"></div>
     <div id="boot-error"></div>
-    <script type="module" src="/src/main.tsx"></script>
-    <script>
-      setTimeout(function(){
-        var r=document.getElementById('root');
-        var d=document.getElementById('boot-debug')||document.createElement('div');
-        d.id='boot-debug';
-        d.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#111;color:#0f0;font:12px monospace;padding:8px;z-index:999999;max-height:50vh;overflow:auto;white-space:pre-wrap';
-        var info='[boot-check] root.innerHTML length='+r.innerHTML.length+' errors='+window.__BOOT_ERR__.length+' rootChildren='+r.children.length;
-        if(window.__BOOT_ERR__.length>0){
-          info+='\n\nERROR DETAILS:\n'+JSON.stringify(window.__BOOT_ERR__,null,2);
-        }
-        d.textContent=info;
-        document.body.appendChild(d);
-      },6000);
-    </script>
-  </body>
+<script type="module" src="/src/main.tsx"></script>
+</body>
 </html>

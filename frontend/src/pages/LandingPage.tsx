@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
-  Button, Card, Typography, Space, Tag, Row, Col, Switch,
+  Button, Card, Typography, Space, Tag, Switch, Select,
   Drawer, List, Divider,
 } from 'antd';
 import {
@@ -15,6 +15,7 @@ import {
 } from '@ant-design/icons';
 import { Grid, theme } from 'antd';
 import { useTheme } from '../contexts/ThemeContext';
+import i18n from '../i18n';
 
 const { useBreakpoint } = Grid;
 const { Title, Text, Paragraph } = Typography;
@@ -147,33 +148,53 @@ export default function LandingPage() {
         </Text>
       </Space>
 
-      {isMobile ? (
-          <Space size={8} align="center">
-            <Switch
-              checked={mode === 'dark'}
-              onChange={toggleTheme}
-              checkedChildren="🌙"
-              unCheckedChildren="☀️"
-            />
-            <Button
-              type="text"
-              icon={<MenuOutlined />}
-              onClick={() => setDrawerOpen(true)}
-              style={{ fontSize: 18 }}
-            />
-          </Space>
-        ) : (
-          <Space size={12} align="center">
-            <Button type="text" onClick={() => navTo('#features')} style={{ color: token.colorTextSecondary }}>
-{t('landing.features')}
+{isMobile ? (
+        <Space size={8} align="center">
+          <Select
+            size="small"
+            value={i18n.language}
+            onChange={(val) => i18n.changeLanguage(val)}
+            options={[
+              { value: 'fr', label: 'FR' },
+              { value: 'en', label: 'EN' },
+            ]}
+            style={{ width: 64 }}
+          />
+          <Switch
+            checked={mode === 'dark'}
+            onChange={toggleTheme}
+            checkedChildren="🌙"
+            unCheckedChildren="☀️"
+          />
+          <Button
+            type="text"
+            icon={<MenuOutlined />}
+            onClick={() => setDrawerOpen(true)}
+            style={{ fontSize: 18 }}
+          />
+        </Space>
+      ) : (
+<Space size={12} align="center">
+        <Button type="text" onClick={() => navTo('#features')} style={{ color: token.colorTextSecondary }}>
+          {t('landing.features')}
         </Button>
         <Button type="text" onClick={() => navigate('/public')} style={{ color: token.colorTextSecondary }}>
           {t('landing.publicDashboards')}
-            </Button>
+        </Button>
         <Button onClick={() => navigate('/docs')} style={{ borderColor: token.colorBorder }}>
           {t('landing.navDocs')}
         </Button>
-            <Switch
+        <Select
+          size="small"
+          value={i18n.language}
+          onChange={(val) => i18n.changeLanguage(val)}
+          options={[
+            { value: 'fr', label: 'Français' },
+            { value: 'en', label: 'English' },
+          ]}
+          style={{ width: 110 }}
+        />
+        <Switch
               checked={mode === 'dark'}
               onChange={toggleTheme}
               checkedChildren="🌙"
