@@ -117,7 +117,25 @@ export interface SavedSurvey {
   title: string;
   description: string | null;
   goal: string | null;
+  is_public: boolean;
+  status: 'draft' | 'published' | 'closed';
+  client_types: string[] | null;
+  responses_count: number;
+  published_at: string | null;
   created_at: string;
+  updated_at?: string;
+  schema?: GeneratedSurvey;
+}
+
+export interface SurveyResponse {
+  id: number;
+  survey_id: number;
+  client_id: number | null;
+  respondent_type: string | null;
+  answers: Record<string, unknown>;
+  submitted_at: string;
+  client_name?: string;
+  client_cin?: string;
 }
 
 export interface QueryableTable {

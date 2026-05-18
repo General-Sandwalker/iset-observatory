@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   Button, Card, Typography, Space, Tag, Switch, Select,
-  Drawer, List, Divider,
+  Drawer, List, Row, Col,
 } from 'antd';
 import {
   ThunderboltOutlined, RobotOutlined, BarChartOutlined,

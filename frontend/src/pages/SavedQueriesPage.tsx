@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Card, Row, Col, Button, Space, Typography, Table, Select, Input,
+  Card, Row, Col, Button, Space, Typography, Table, Input,
   Tag, Spin, Empty, Popconfirm, message, theme, Tooltip, Badge,
   Modal, Form, Switch, Tabs, Grid,
 } from 'antd';
@@ -12,7 +12,7 @@ import {
   PlayCircleOutlined, EditOutlined, SaveOutlined,
   RobotOutlined, GlobalOutlined, LockOutlined,
   ReloadOutlined, ThunderboltOutlined, TableOutlined,
-  SearchOutlined, FileTextOutlined, BarChartOutlined,
+  FileTextOutlined, BarChartOutlined,
   ClockCircleOutlined, SendOutlined,
 } from '@ant-design/icons';
 import api from '../lib/api';
@@ -84,10 +84,6 @@ export default function SavedQueriesPage() {
   const publicQueries = useMemo(
     () => queries.filter((q) => q.is_public && q.created_by !== user?.id),
     [queries, user],
-  );
-  const allQueries = useMemo(
-    () => activeTab === 'public' ? publicQueries : myQueries,
-    [activeTab, myQueries, publicQueries],
   );
 
   const openCreateModal = useCallback(() => {

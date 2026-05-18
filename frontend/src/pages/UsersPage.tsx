@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Table, Button, Input, Space, Typography, Alert, Spin, Tag,
-  Popconfirm, Avatar, Card, Row, Col, Checkbox, Dropdown, Empty,
+  Popconfirm, Avatar, Card, Row, Col, Dropdown, Empty,
 } from 'antd';
 import { Grid, theme } from 'antd';
 import {
   TeamOutlined, PlusOutlined, EditOutlined, DeleteOutlined,
-  SafetyOutlined, CheckCircleOutlined, CloseCircleOutlined,
-  SearchOutlined, UserOutlined, EyeOutlined, EyeInvisibleOutlined,
+  SafetyOutlined,
+  SearchOutlined, EyeOutlined, EyeInvisibleOutlined,
   DownOutlined,
 } from '@ant-design/icons';
 import api from '../lib/api';
@@ -69,7 +69,7 @@ export default function UsersPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const fetchData = useCallback(async () => {
     try {

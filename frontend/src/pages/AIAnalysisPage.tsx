@@ -2,12 +2,12 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Card, Input, Button, Space, Typography, Spin, Collapse, Select, Tag,
-  Empty, Popconfirm, Table, message, Tooltip, Avatar, Divider, theme, Alert,
+  Popconfirm, Table, message, Tooltip, Avatar, Divider, theme, Alert,
 } from 'antd';
 import {
   RobotOutlined, SendOutlined, DeleteOutlined, SaveOutlined,
   LineChartOutlined, TableOutlined, CodeOutlined, BulbOutlined,
-  HistoryOutlined, DatabaseOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons';
 import {
   Chart as ChartJS,
@@ -17,7 +17,6 @@ import {
 import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
 import api from '../lib/api';
 import type { ChatMessage, QueryableTable } from '../lib/types';
-import { useAuth } from '../contexts/AuthContext';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, LineElement, PointElement,
@@ -198,7 +197,6 @@ options={columns.map((c) => ({ value: c, label: `${t('ai.labelCol')}: ${c}` }))}
 
 function DataResultTable({ data }: { data: Record<string, unknown>[] }) {
   const { t } = useTranslation();
-  const { token } = theme.useToken();
   if (data.length === 0) return null;
   const columns = Object.keys(data[0]);
 
@@ -435,7 +433,6 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 export default function AIAnalysisPage() {
   const { t } = useTranslation();
   const { token } = theme.useToken();
-  const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);
@@ -511,18 +508,6 @@ message.success(t('ai.clearSuccess'));
   } catch {
     message.error(t('ai.clearFailed'));
     }
-  }
-
-  function handleSuggestedQuestion(q: string) {
-    setQuestion(q);
-    setTimeout(() => {
-      const nativeEvent = new Event('submit', { cancelable: true }) as any;
-      const form = document.getElementById('ai-chat-form') as HTMLFormElement;
-      if (form) {
-        setQuestion(q);
-      }
-    }, 0);
-    setQuestion(q);
   }
 
   const chatEmpty = messages.length === 0 && !loading;

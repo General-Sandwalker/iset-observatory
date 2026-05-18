@@ -2,8 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Card, Row, Col, Input, Button, Space, Typography, Tag, Table, Spin,
-  Popconfirm, Empty,
-  Select, message, Tabs, theme,
+  Popconfirm, Empty, Select, message, Tabs, theme, Modal, InputNumber, Switch, Tooltip, Popover,
 } from 'antd';
 import {
   FileTextOutlined, ThunderboltOutlined, EyeOutlined,
@@ -11,10 +10,12 @@ import {
   DownloadOutlined, SaveOutlined, ShareAltOutlined,
   BookOutlined, DeleteOutlined, LinkOutlined,
   ExportOutlined, PlusOutlined, MinusCircleOutlined,
-  EditOutlined,
+  EditOutlined, GlobalOutlined, SendOutlined, TeamOutlined,
+  BarChartOutlined, CloseCircleOutlined,
+  LockOutlined,
 } from '@ant-design/icons';
 import api from '../lib/api';
-import type { GeneratedSurvey, SurveyField, SavedSurvey } from '../lib/types';
+import type { GeneratedSurvey, SurveyField, SavedSurvey, SurveyResponse } from '../lib/types';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -103,6 +104,26 @@ const FIELD_TYPES: { value: SurveyField['type']; label: string }[] = [
   { value: 'rating', label: 'Rating' },
 ];
 
+const CLIENT_TYPE_OPTIONS = [
+  { value: 'student', label: 'Student' },
+  { value: 'alumni', label: 'Alumni' },
+  { value: 'teacher', label: 'Teacher' },
+];
+
+const LANGUAGE_OPTIONS = [
+  { value: 'en', label: 'English' },
+  { value: 'fr', label: 'French' },
+  { value: 'ar', label: 'Arabic' },
+];
+
+const AUDIENCE_OPTIONS = [
+  { value: 'students', label: 'Students' },
+  { value: 'alumni', label: 'Alumni' },
+  { value: 'teachers', label: 'Teachers' },
+  { value: 'staff', label: 'Staff' },
+  { value: 'general', label: 'General / Mixed' },
+];
+
 function SurveyFieldPreview({ field }: { field: SurveyField }) {
   const { token } = theme.useToken();
 
@@ -158,6 +179,9 @@ export default function SurveyGeneratorPage() {
   const { token } = theme.useToken();
   const [goal, setGoal] = useState('');
   const [context, setContext] = useState('');
+  const [numFields, setNumFields] = useState<number | null>(null);
+  const [language, setLanguage] = useState<string | undefined>(undefined);
+  const [audience, setAudience] = useState<string | undefined>(undefined);
   const [generating, setGenerating] = useState(false);
   const [survey, setSurvey] = useState<GeneratedSurvey | null>(null);
   const [copied, setCopied] = useState(false);
@@ -167,6 +191,7 @@ export default function SurveyGeneratorPage() {
   const [loadingSaved, setLoadingSaved] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedId, setSavedId] = useState<number | null>(null);
+  const [editingSavedId, setEditingSavedId] = useState<number | null>(null);
 
   const [shareOpen, setShareOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
@@ -175,14 +200,23 @@ export default function SurveyGeneratorPage() {
 
   const [editingFields, setEditingFields] = useState(false);
 
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [publishIsPublic, setPublishIsPublic] = useState(true);
+  const [publishClientTypes, setPublishClientTypes] = useState<string[]>([]);
+
+  const [responsesModalOpen, setResponsesModalOpen] = useState(false);
+  const [responses, setResponses] = useState<SurveyResponse[]>([]);
+  const [responsesLoading, setResponsesLoading] = useState(false);
+  const [_responsesSurveyId, setResponsesSurveyId] = useState<number | null>(null);
+
   const fetchSaved = useCallback(async () => {
     setLoadingSaved(true);
     try {
       const { data } = await api.get<{ success: boolean; data: SavedSurvey[] }>('/surveys');
       if (data.success) setSaved(data.data);
     } catch {
-    message.error(t('surveys.fetchFailed'));
-  }
+      message.error(t('surveys.fetchFailed'));
+    }
     finally { setLoadingSaved(false); }
   }, []);
 
@@ -195,12 +229,16 @@ export default function SurveyGeneratorPage() {
     setSurvey(null);
     setPreviewMode(false);
     setSavedId(null);
+    setEditingSavedId(null);
     setShareOpen(false);
     setEditingFields(false);
     try {
       const res = await api.post('/ai/survey/generate', {
         goal: goal.trim(),
         context: context.trim() || undefined,
+        numFields: numFields || undefined,
+        language: language || undefined,
+        audience: audience || undefined,
       });
       setSurvey(res.data.data);
     } catch (err: unknown) {
@@ -211,23 +249,84 @@ export default function SurveyGeneratorPage() {
     }
   }
 
-  async function handleSave() {
+  async function handleSaveDraft() {
     if (!survey || saving) return;
     setSaving(true);
     try {
-      const { data } = await api.post<{ success: boolean; data: SavedSurvey }>('/surveys', {
+      const payload: any = {
         title: survey.title,
         description: survey.description,
         goal: survey.goal,
         schema: survey,
-      });
-      setSavedId(data.data.id);
-      message.success(t('surveys.saveSuccess'));
+        isPublic: false,
+        clientTypes: [],
+      };
+      if (editingSavedId) {
+        await api.put(`/surveys/${editingSavedId}`, { ...payload, status: 'draft' });
+        message.success(t('surveys.updateSuccess'));
+        setSavedId(editingSavedId);
+      } else {
+        const { data } = await api.post<{ success: boolean; data: SavedSurvey }>('/surveys', payload);
+        setSavedId(data.data.id);
+        setEditingSavedId(data.data.id);
+        message.success(t('surveys.saveSuccess'));
+      }
       await fetchSaved();
     } catch {
       message.error(t('surveys.saveFailed'));
     } finally {
       setSaving(false);
+    }
+  }
+
+  function openPublishModal() {
+    setPublishIsPublic(true);
+    setPublishClientTypes([]);
+    setPublishModalOpen(true);
+  }
+
+  async function handlePublish() {
+    if (!survey) return;
+    setSaving(true);
+    try {
+      const payload: any = {
+        title: survey.title,
+        description: survey.description,
+        goal: survey.goal,
+        schema: survey,
+        isPublic: publishIsPublic,
+        clientTypes: publishClientTypes,
+        status: 'published',
+      };
+      if (editingSavedId) {
+        await api.put(`/surveys/${editingSavedId}`, payload);
+        message.success(t('surveys.publishSuccess'));
+        setSavedId(editingSavedId);
+      } else {
+        const { data } = await api.post<{ success: boolean; data: SavedSurvey }>('/surveys', payload);
+        setSavedId(data.data.id);
+        setEditingSavedId(data.data.id);
+        message.success(t('surveys.publishSuccess'));
+      }
+      setPublishModalOpen(false);
+      await fetchSaved();
+    } catch {
+      message.error(t('surveys.publishFailed'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleUnpublish(id: number) {
+    try {
+      await api.put(`/surveys/${id}`, { status: 'draft', isPublic: false, clientTypes: [] });
+      message.success(t('surveys.unpublishSuccess'));
+      await fetchSaved();
+      if (editingSavedId === id) {
+        setSavedId(id);
+      }
+    } catch {
+      message.error(t('surveys.publishFailed'));
     }
   }
 
@@ -279,23 +378,52 @@ export default function SurveyGeneratorPage() {
     URL.revokeObjectURL(objUrl);
   }
 
-  function loadSavedSurvey(s: SavedSurvey & { schema?: GeneratedSurvey }) {
+  async function loadSavedSurvey(s: SavedSurvey) {
     setGoal(s.goal ?? '');
     setSavedId(s.id);
+    setEditingSavedId(s.id);
     setPreviewMode(false);
     setShareOpen(false);
     setEditingFields(false);
-    message.info(`"${s.title}" is already saved. Re-generate to get a fresh copy.`);
+    if (s.schema) {
+      setSurvey(s.schema);
+    } else {
+      try {
+        const res = await api.get(`/surveys/${s.id}`);
+        if (res.data.success && res.data.data.schema) {
+          setSurvey(res.data.data.schema);
+        } else {
+          message.info(t('surveys.noSchemaAvailable'));
+          setSurvey(null);
+        }
+      } catch {
+        message.error(t('surveys.fetchFailed'));
+      }
+    }
   }
 
   async function deleteSaved(id: number) {
     try {
       await api.delete(`/surveys/${id}`);
       setSaved((prev) => prev.filter((s) => s.id !== id));
-      if (savedId === id) setSavedId(null);
+      if (savedId === id) { setSavedId(null); setEditingSavedId(null); setSurvey(null); }
       message.success(t('surveys.deleteSuccess'));
     } catch {
       message.error(t('surveys.deleteFailed'));
+    }
+  }
+
+  async function viewResponses(surveyId: number) {
+    setResponsesSurveyId(surveyId);
+    setResponsesModalOpen(true);
+    setResponsesLoading(true);
+    try {
+      const res = await api.get(`/surveys/${surveyId}/responses`);
+      setResponses(res.data.data || []);
+    } catch {
+      message.error(t('surveys.responsesFetchFailed'));
+    } finally {
+      setResponsesLoading(false);
     }
   }
 
@@ -336,6 +464,14 @@ export default function SurveyGeneratorPage() {
     setSurvey({ ...survey, fields: newFields });
   }
 
+  const statusColor = (status: string) => {
+    switch (status) {
+      case 'published': return 'green';
+      case 'closed': return 'red';
+      default: return 'default';
+    }
+  };
+
   if (previewMode && survey) {
     return (
       <div style={{ maxWidth: 640, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -370,11 +506,10 @@ export default function SurveyGeneratorPage() {
             <Card>
               <div style={{ marginBottom: 16 }}>
                 <Text strong style={{ display: 'block', marginBottom: 4, fontSize: 14 }}>
-                  How to use
+                  {t('surveys.howToUse')}
                 </Text>
                 <Text type="secondary" style={{ fontSize: 13 }}>
-                  Describe your survey goal below and the AI will generate a complete survey form with
-                  relevant fields. You can then edit, preview, download, or share the result.
+                  {t('surveys.howToUseDesc')}
                 </Text>
               </div>
               <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -399,6 +534,41 @@ export default function SurveyGeneratorPage() {
                     placeholder={t('surveys.contextPlaceholder')}
                   />
                 </div>
+                <Row gutter={12}>
+                  <Col span={8}>
+                    <Text strong style={{ display: 'block', marginBottom: 4 }}>{t('surveys.numFields')}</Text>
+                    <InputNumber
+                      min={1}
+                      max={30}
+                      value={numFields}
+                      onChange={(v) => setNumFields(v)}
+                      placeholder="5-15"
+                      style={{ width: '100%' }}
+                    />
+                  </Col>
+                  <Col span={8}>
+                    <Text strong style={{ display: 'block', marginBottom: 4 }}>{t('surveys.language')}</Text>
+                    <Select
+                      allowClear
+                      style={{ width: '100%' }}
+                      value={language}
+                      onChange={(v) => setLanguage(v)}
+                      placeholder={t('surveys.languagePlaceholder')}
+                      options={LANGUAGE_OPTIONS}
+                    />
+                  </Col>
+                  <Col span={8}>
+                    <Text strong style={{ display: 'block', marginBottom: 4 }}>{t('surveys.audience')}</Text>
+                    <Select
+                      allowClear
+                      style={{ width: '100%' }}
+                      value={audience}
+                      onChange={(v) => setAudience(v)}
+                      placeholder={t('surveys.audiencePlaceholder')}
+                      options={AUDIENCE_OPTIONS}
+                    />
+                  </Col>
+                </Row>
                 <Button
                   type="primary"
                   htmlType="submit"
@@ -424,7 +594,7 @@ export default function SurveyGeneratorPage() {
               ) : saved.length === 0 ? (
                 <Empty description={t('surveys.noSaved')} image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ padding: 24 }} />
               ) : (
-                <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+                <div style={{ maxHeight: 500, overflowY: 'auto' }}>
                   {saved.map((s) => (
                     <div
                       key={s.id}
@@ -439,14 +609,50 @@ export default function SurveyGeneratorPage() {
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <Text strong ellipsis style={{ display: 'block', fontSize: 13 }}>{s.title}</Text>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Text strong ellipsis style={{ display: 'block', fontSize: 13 }}>{s.title}</Text>
+                            <Tag color={statusColor(s.status)} style={{ fontSize: 10, margin: 0 }}>
+                              {s.status}
+                            </Tag>
+                          </div>
                           <Text type="secondary" style={{ fontSize: 11 }}>{s.goal?.slice(0, 50)}{s.goal && s.goal.length > 50 ? '…' : ''}</Text>
                           <br />
-                          <Text type="secondary" style={{ fontSize: 10 }}>{new Date(s.created_at).toLocaleDateString()}</Text>
+                          <Space size={8} style={{ fontSize: 10, marginTop: 2 }}>
+                            <Text type="secondary">{new Date(s.created_at).toLocaleDateString()}</Text>
+                            {s.responses_count > 0 && (
+                              <Text type="secondary"><BarChartOutlined /> {s.responses_count}</Text>
+                            )}
+                            {s.is_public && <Tag color="green" icon={<GlobalOutlined />} style={{ fontSize: 9, margin: 0 }}>Public</Tag>}
+                            {(s.client_types ?? []).length > 0 && (
+                              <Tag color="blue" icon={<TeamOutlined />} style={{ fontSize: 9, margin: 0 }}>
+                                {(s.client_types ?? []).join(', ')}
+                              </Tag>
+                            )}
+                          </Space>
                         </div>
-                        <Popconfirm title="Remove this saved survey?" onConfirm={() => deleteSaved(s.id)} okButtonProps={{ danger: true }}>
-                          <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={(e) => e.stopPropagation()} />
-                        </Popconfirm>
+                        <Space size={2}>
+                          {s.status === 'published' && (
+                            <Tooltip title={t('surveys.unpublish')}>
+                              <Button
+                                type="text" size="small"
+                                icon={<CloseCircleOutlined />}
+                                onClick={(e) => { e.stopPropagation(); handleUnpublish(s.id); }}
+                              />
+                            </Tooltip>
+                          )}
+                          {s.responses_count > 0 && (
+                            <Tooltip title={t('surveys.viewResponses')}>
+                              <Button
+                                type="text" size="small"
+                                icon={<BarChartOutlined />}
+                                onClick={(e) => { e.stopPropagation(); viewResponses(s.id); }}
+                              />
+                            </Tooltip>
+                          )}
+                          <Popconfirm title={t('surveys.deleteConfirm')} onConfirm={() => deleteSaved(s.id)} okButtonProps={{ danger: true }}>
+                            <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={(e) => e.stopPropagation()} />
+                          </Popconfirm>
+                        </Space>
                       </div>
                     </div>
                   ))}
@@ -459,257 +665,263 @@ export default function SurveyGeneratorPage() {
     },
     ...(survey
       ? [
-          {
-            key: 'result',
-            label: <span><FileTextOutlined /> Result</span>,
-            children: (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <Card>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-                    <div>
-                      <Title level={4} style={{ margin: 0 }}>{survey.title}</Title>
-                      <Paragraph type="secondary" style={{ margin: '4px 0 0' }}>{survey.description}</Paragraph>
-                      <Text type="secondary" style={{ fontSize: 12, marginTop: 8, display: 'block' }}>
-                        {survey.fields.length} fields generated
-                        {savedId && <Tag color="success" style={{ marginLeft: 8 }}>Saved</Tag>}
-                      </Text>
-                    </div>
-                    <Space wrap>
-                      <Button icon={<EyeOutlined />} onClick={() => setPreviewMode(true)}>{t('surveys.preview')}</Button>
-                      <Button icon={copied ? <CheckOutlined /> : <CopyOutlined />} onClick={copyJSON}>
-                        {copied ? 'Copied!' : 'Copy JSON'}
-                      </Button>
-                      <Button icon={<DownloadOutlined />} onClick={handleDownloadHtml}>{t('surveys.exportHTML')}</Button>
-                      <Button type="primary" icon={<SaveOutlined />} onClick={handleSave} loading={saving} disabled={!!savedId}>
-                        {savedId ? 'Saved' : saving ? 'Saving…' : 'Save'}
-                      </Button>
-                      <Button icon={<ShareAltOutlined />} onClick={() => setShareOpen((v) => !v)}>{t('surveys.share')}</Button>
-                    </Space>
+        {
+          key: 'result',
+          label: <span><FileTextOutlined /> Result</span>,
+          children: (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <Card>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                  <div>
+                    <Title level={4} style={{ margin: 0 }}>{survey.title}</Title>
+                    <Paragraph type="secondary" style={{ margin: '4px 0 0' }}>{survey.description}</Paragraph>
+                    <Text type="secondary" style={{ fontSize: 12, marginTop: 8, display: 'block' }}>
+                      {survey.fields.length} {t('surveys.fields')}
+                      {savedId && <Tag color="success" style={{ marginLeft: 8 }}>{t('surveys.saved')}</Tag>}
+                      {editingSavedId && saved[findIndex(saved, editingSavedId)]?.status === 'published' && (
+                        <Tag color="green" style={{ marginLeft: 8 }} icon={<GlobalOutlined />}>{t('surveys.published')}</Tag>
+                      )}
+                    </Text>
                   </div>
-                </Card>
+                  <Space wrap>
+                    <Button icon={<EyeOutlined />} onClick={() => setPreviewMode(true)}>{t('surveys.preview')}</Button>
+                    <Button icon={copied ? <CheckOutlined /> : <CopyOutlined />} onClick={copyJSON}>
+                      {copied ? 'Copied!' : 'Copy JSON'}
+                    </Button>
+                    <Button icon={<DownloadOutlined />} onClick={handleDownloadHtml}>{t('surveys.exportHTML')}</Button>
+                    <Button icon={<SaveOutlined />} onClick={handleSaveDraft} loading={saving}>
+                      {saving ? t('common.loading') : editingSavedId ? t('surveys.updateDraft') : t('surveys.saveDraft')}
+                    </Button>
+                    <Button type="primary" icon={<SendOutlined />} onClick={openPublishModal}>
+                      {t('surveys.publish')}
+                    </Button>
+                    <Button icon={<ShareAltOutlined />} onClick={() => setShareOpen((v) => !v)}>{t('surveys.share')}</Button>
+                  </Space>
+                </div>
+              </Card>
 
-                {shareOpen && (
-                  <Card>
-                    <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <ShareAltOutlined style={{ color: token.colorPrimary }} /> {t('surveys.shareLink')}
-                    </Title>
+              {shareOpen && (
+                <Card>
+                  <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <ShareAltOutlined style={{ color: token.colorPrimary }} /> {t('surveys.shareLink')}
+                  </Title>
 
-                    <div style={{ marginBottom: 16 }}>
-                      <Text strong style={{ display: 'block', marginBottom: 4, fontSize: 12 }}>
-                        Paste your hosted survey URL to generate a QR code
-                      </Text>
-                      <Space.Compact style={{ width: '100%' }}>
-                        <Input
-                          prefix={<LinkOutlined />}
-                          value={shareUrl}
-                          onChange={(e) => setShareUrl(e.target.value)}
-                          placeholder="https://your-domain.com/survey.html"
+                  <div style={{ marginBottom: 16 }}>
+                    <Text strong style={{ display: 'block', marginBottom: 4, fontSize: 12 }}>
+                      Paste your hosted survey URL to generate a QR code
+                    </Text>
+                    <Space.Compact style={{ width: '100%' }}>
+                      <Input
+                        prefix={<LinkOutlined />}
+                        value={shareUrl}
+                        onChange={(e) => setShareUrl(e.target.value)}
+                        placeholder="https://your-domain.com/survey.html"
+                      />
+                      {shareUrl.trim() && (
+                        <Button icon={copiedLink ? <CheckOutlined /> : <CopyOutlined />} onClick={copyLink}>
+                          {copiedLink ? 'Copied!' : t('surveys.copyLink')}
+                        </Button>
+                      )}
+                    </Space.Compact>
+                    <Text type="secondary" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
+                      First, export the HTML file, host it (e.g. GitHub Pages, Netlify), then paste the public URL here.
+                    </Text>
+                  </div>
+
+                  <Row gutter={24}>
+                    <Col style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                      <div style={{ borderRadius: 12, padding: 12, backgroundColor: '#fff', border: `1px solid ${token.colorBorder}`, opacity: shareUrl.trim() ? 1 : 0.2 }}>
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl.trim() || 'https://example.com')}`}
+                          alt="QR code"
+                          width={200}
+                          height={200}
                         />
-                        {shareUrl.trim() && (
-          <Button icon={copiedLink ? <CheckOutlined /> : <CopyOutlined />} onClick={copyLink}>
-            {copiedLink ? 'Copied!' : t('surveys.copyLink')}
-                          </Button>
-                        )}
-                      </Space.Compact>
-                      <Text type="secondary" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
-                        First, export the HTML file, host it (e.g. GitHub Pages, Netlify), then paste the public URL here.
-                      </Text>
-                    </div>
-
-                    <Row gutter={24}>
-                      <Col style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                        <div style={{ borderRadius: 12, padding: 12, backgroundColor: '#fff', border: `1px solid ${token.colorBorder}`, opacity: shareUrl.trim() ? 1 : 0.2 }}>
-                          <img
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl.trim() || 'https://example.com')}`}
-                            alt="QR code"
-                            width={200}
-                            height={200}
-                          />
-                        </div>
-                        {shareUrl.trim() ? (
-                          <Button size="small" icon={<DownloadOutlined />} onClick={downloadQrPng}>Download QR PNG</Button>
-                        ) : (
-                          <Text type="secondary" style={{ fontSize: 12 }}>Enter URL to generate QR</Text>
-                        )}
-                      </Col>
-                      <Col flex="auto" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        <Text strong style={{ fontSize: 12 }}>Embed snippet — paste into your LMS or website:</Text>
-                        <pre style={{
-                          fontSize: 12, padding: 12, borderRadius: 8,
-                          backgroundColor: token.colorBgContainer, overflowX: 'auto',
-                          border: `1px solid ${token.colorBorder}`,
-                        }}>
-                          {`<iframe\n src="${shareUrl.trim() || 'YOUR_SURVEY_URL'}"\n width="100%" height="600"\n style="border:none; border-radius:8px;"\n title="${survey.title}"\n></iframe>`}
-                        </pre>
-                        <Button size="small" icon={copiedEmbed ? <CheckOutlined /> : <CopyOutlined />} onClick={copyEmbed}>
-                          {copiedEmbed ? 'Copied!' : 'Copy snippet'}
-                        </Button>
-                      </Col>
-                    </Row>
-                  </Card>
-                )}
-
-                <Card
-                  title={
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Space><EditOutlined style={{ color: token.colorPrimary }} /> {t('surveys.editFields')}</Space>
-                      <Space>
-                        <Button
-                          size="small"
-                          type={editingFields ? 'primary' : 'default'}
-                          icon={<EditOutlined />}
-                          onClick={() => setEditingFields((v) => !v)}
-                        >
-                          {editingFields ? t('common.close') : t('surveys.editFields')}
-                        </Button>
-                        {editingFields && (
-                          <Button size="small" icon={<PlusOutlined />} onClick={addField}>{t('surveys.addField')}</Button>
-                        )}
-                      </Space>
-                    </div>
-                  }
-                  size="small"
-                >
-                  {editingFields ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {survey.fields.map((field, idx) => (
-                        <Card
-                          key={field.id}
-                          size="small"
-                          style={{ backgroundColor: token.colorBgContainer }}
-                        >
-                          <Row gutter={[12, 8]} align="middle">
-                            <Col flex="none">
-                              <Space direction="vertical" size={2}>
-                                <Button
-                                  type="text"
-                                  size="small"
-                                  icon={<span style={{ fontSize: 10 }}>▲</span>}
-                                  disabled={idx === 0}
-                                  onClick={() => moveField(field.id, 'up')}
-                                />
-                                <Button
-                                  type="text"
-                                  size="small"
-                                  icon={<span style={{ fontSize: 10 }}>▼</span>}
-                                  disabled={idx === survey.fields.length - 1}
-                                  onClick={() => moveField(field.id, 'down')}
-                                />
-                              </Space>
-                            </Col>
-                            <Col xs={24} sm={8} md={6}>
-                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>{t('surveys.fieldName')}</Text>
-                              <Input
-                                size="small"
-                                value={field.label}
-                                onChange={(e) => updateField(field.id, { label: e.target.value })}
-                              />
-                            </Col>
-                            <Col xs={12} sm={6} md={4}>
-                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>{t('surveys.fieldType')}</Text>
-                              <Select
-                                size="small"
-                                style={{ width: '100%' }}
-                                value={field.type}
-                                onChange={(v) => updateField(field.id, { type: v as SurveyField['type'] })}
-                                options={FIELD_TYPES}
-                              />
-                            </Col>
-                            <Col xs={12} sm={6} md={4}>
-                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Placeholder</Text>
-                              <Input
-                                size="small"
-                                value={field.placeholder ?? ''}
-                                onChange={(e) => updateField(field.id, { placeholder: e.target.value })}
-                              />
-                            </Col>
-                            <Col xs={12} sm={4} md={3}>
-                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>{t('surveys.fieldRequired')}</Text>
-                              <Select
-                                size="small"
-                                style={{ width: '100%' }}
-                                value={field.required ? 'yes' : 'no'}
-                                onChange={(v) => updateField(field.id, { required: v === 'yes' })}
-                                options={[{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }]}
-                              />
-                            </Col>
-                            <Col xs={24} sm={12} md={5}>
-                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
-                                {t('surveys.fieldOptions')} <Text type="secondary">(comma-sep)</Text>
-                              </Text>
-                              <Input
-                                size="small"
-                                value={(field.options ?? []).join(', ')}
-                                onChange={(e) => {
-                                  const opts = e.target.value.split(',').map((o) => o.trim()).filter(Boolean);
-                                  updateField(field.id, { options: opts.length ? opts : undefined });
-                                }}
-                                disabled={!['select', 'radio', 'checkbox'].includes(field.type)}
-                              />
-                            </Col>
-                            <Col flex="none">
-                              <Button
-                                type="text"
-                                danger
-                                size="small"
-                                icon={<MinusCircleOutlined />}
-                                onClick={() => removeField(field.id)}
-                                style={{ marginTop: 18 }}
-                              />
-                            </Col>
-                          </Row>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <Table
-                      dataSource={survey.fields.map((f, i) => ({ key: f.id, ...f, idx: i }))}
-                      pagination={false}
-                      size="small"
-                      columns={[
-                        { title: '#', dataIndex: 'idx', width: 40, render: (i: number) => i + 1 },
-          { title: t('surveys.fieldName'), dataIndex: 'label', ellipsis: true },
-          { title: t('surveys.fieldType'), dataIndex: 'type', width: 100, render: (v: string) => <Tag>{v}</Tag> },
-          { title: t('surveys.fieldRequired'), dataIndex: 'required', width: 80, render: (v: boolean) => v ? <Tag color="red">Yes</Tag> : <Tag>No</Tag> },
-          { title: t('surveys.fieldOptions'), dataIndex: 'options', render: (v: string[] | undefined) => v?.join(', ') || '—' },
-                      ]}
-                    />
-                  )}
-                </Card>
-
-                <Card title={<Space><ExportOutlined style={{ color: token.colorPrimary }} /> Publish on a free platform</Space>}>
-                  <Paragraph type="secondary" style={{ fontSize: 12 }}>
-                    Copy your questions into one of these free survey platforms for easy response collection.
-                  </Paragraph>
-                  <Row gutter={[12, 12]}>
-                    {PLATFORMS.map((p) => (
-                      <Col xs={12} md={6} key={p.name}>
-                        <a href={p.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                          <Card hoverable size="small" style={{ textAlign: 'center' }}>
-                            <Space direction="vertical" size={4}>
-                              <Text strong style={{ color: p.color }}>{p.name}</Text>
-                              <Text type="secondary" style={{ fontSize: 11 }}>{p.desc}</Text>
-                            </Space>
-                          </Card>
-                        </a>
-                      </Col>
-                    ))}
+                      </div>
+                      {shareUrl.trim() ? (
+                        <Button size="small" icon={<DownloadOutlined />} onClick={downloadQrPng}>Download QR PNG</Button>
+                      ) : (
+                        <Text type="secondary" style={{ fontSize: 12 }}>Enter URL to generate QR</Text>
+                      )}
+                    </Col>
+                    <Col flex="auto" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <Text strong style={{ fontSize: 12 }}>Embed snippet — paste into your LMS or website:</Text>
+                      <pre style={{
+                        fontSize: 12, padding: 12, borderRadius: 8,
+                        backgroundColor: token.colorBgContainer, overflowX: 'auto',
+                        border: `1px solid ${token.colorBorder}`,
+                      }}>
+                        {`<iframe\n  src="${shareUrl.trim() || 'YOUR_SURVEY_URL'}"\n  width="100%" height="600"\n  style="border:none; border-radius:8px;"\n  title="${survey.title}"\n></iframe>`}
+                      </pre>
+                      <Button size="small" icon={copiedEmbed ? <CheckOutlined /> : <CopyOutlined />} onClick={copyEmbed}>
+                        {copiedEmbed ? 'Copied!' : 'Copy snippet'}
+                      </Button>
+                    </Col>
                   </Row>
                 </Card>
+              )}
 
-                <Card title="JSON Schema" size="small">
-                  <pre style={{
-                    padding: 16, fontSize: 12, overflowX: 'auto', maxHeight: 256,
-                    backgroundColor: token.colorBgContainer, color: token.colorSuccess,
-                    borderRadius: 8,
-                  }}>
-                    {JSON.stringify(survey, null, 2)}
-                  </pre>
-                </Card>
-              </div>
-            ),
-          },
-        ]
+              <Card
+                title={
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Space><EditOutlined style={{ color: token.colorPrimary }} /> {t('surveys.editFields')}</Space>
+                    <Space>
+                      <Button
+                        size="small"
+                        type={editingFields ? 'primary' : 'default'}
+                        icon={<EditOutlined />}
+                        onClick={() => setEditingFields((v) => !v)}
+                      >
+                        {editingFields ? t('common.close') : t('surveys.editFields')}
+                      </Button>
+                      {editingFields && (
+                        <Button size="small" icon={<PlusOutlined />} onClick={addField}>{t('surveys.addField')}</Button>
+                      )}
+                    </Space>
+                  </div>
+                }
+                size="small"
+              >
+                {editingFields ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {survey.fields.map((field, idx) => (
+                      <Card
+                        key={field.id}
+                        size="small"
+                        style={{ backgroundColor: token.colorBgContainer }}
+                      >
+                        <Row gutter={[12, 8]} align="middle">
+                          <Col flex="none">
+                            <Space direction="vertical" size={2}>
+                              <Button
+                                type="text"
+                                size="small"
+                                icon={<span style={{ fontSize: 10 }}>▲</span>}
+                                disabled={idx === 0}
+                                onClick={() => moveField(field.id, 'up')}
+                              />
+                              <Button
+                                type="text"
+                                size="small"
+                                icon={<span style={{ fontSize: 10 }}>▼</span>}
+                                disabled={idx === survey.fields.length - 1}
+                                onClick={() => moveField(field.id, 'down')}
+                              />
+                            </Space>
+                          </Col>
+                          <Col xs={24} sm={8} md={6}>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>{t('surveys.fieldName')}</Text>
+                            <Input
+                              size="small"
+                              value={field.label}
+                              onChange={(e) => updateField(field.id, { label: e.target.value })}
+                            />
+                          </Col>
+                          <Col xs={12} sm={6} md={4}>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>{t('surveys.fieldType')}</Text>
+                            <Select
+                              size="small"
+                              style={{ width: '100%' }}
+                              value={field.type}
+                              onChange={(v) => updateField(field.id, { type: v as SurveyField['type'] })}
+                              options={FIELD_TYPES}
+                            />
+                          </Col>
+                          <Col xs={12} sm={6} md={4}>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Placeholder</Text>
+                            <Input
+                              size="small"
+                              value={field.placeholder ?? ''}
+                              onChange={(e) => updateField(field.id, { placeholder: e.target.value })}
+                            />
+                          </Col>
+                          <Col xs={12} sm={4} md={3}>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>{t('surveys.fieldRequired')}</Text>
+                            <Select
+                              size="small"
+                              style={{ width: '100%' }}
+                              value={field.required ? 'yes' : 'no'}
+                              onChange={(v) => updateField(field.id, { required: v === 'yes' })}
+                              options={[{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }]}
+                            />
+                          </Col>
+                          <Col xs={24} sm={12} md={5}>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>
+                              {t('surveys.fieldOptions')} <Text type="secondary">(comma-sep)</Text>
+                            </Text>
+                            <Input
+                              size="small"
+                              value={(field.options ?? []).join(', ')}
+                              onChange={(e) => {
+                                const opts = e.target.value.split(',').map((o) => o.trim()).filter(Boolean);
+                                updateField(field.id, { options: opts.length ? opts : undefined });
+                              }}
+                              disabled={!['select', 'radio', 'checkbox'].includes(field.type)}
+                            />
+                          </Col>
+                          <Col flex="none">
+                            <Button
+                              type="text"
+                              danger
+                              size="small"
+                              icon={<MinusCircleOutlined />}
+                              onClick={() => removeField(field.id)}
+                              style={{ marginTop: 18 }}
+                            />
+                          </Col>
+                        </Row>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <Table
+                    dataSource={survey.fields.map((f, i) => ({ key: f.id, ...f, idx: i }))}
+                    pagination={false}
+                    size="small"
+                    columns={[
+                      { title: '#', dataIndex: 'idx', width: 40, render: (i: number) => i + 1 },
+                      { title: t('surveys.fieldName'), dataIndex: 'label', ellipsis: true },
+                      { title: t('surveys.fieldType'), dataIndex: 'type', width: 100, render: (v: string) => <Tag>{v}</Tag> },
+                      { title: t('surveys.fieldRequired'), dataIndex: 'required', width: 80, render: (v: boolean) => v ? <Tag color="red">Yes</Tag> : <Tag>No</Tag> },
+                      { title: t('surveys.fieldOptions'), dataIndex: 'options', render: (v: string[] | undefined) => v?.join(', ') || '—' },
+                    ]}
+                  />
+                )}
+              </Card>
+
+              <Card title={<Space><ExportOutlined style={{ color: token.colorPrimary }} /> {t('surveys.externalPlatforms')}</Space>}>
+                <Paragraph type="secondary" style={{ fontSize: 12 }}>
+                  {t('surveys.externalPlatformsDesc')}
+                </Paragraph>
+                <Row gutter={[12, 12]}>
+                  {PLATFORMS.map((p) => (
+                    <Col xs={12} md={6} key={p.name}>
+                      <a href={p.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                        <Card hoverable size="small" style={{ textAlign: 'center' }}>
+                          <Space direction="vertical" size={4}>
+                            <Text strong style={{ color: p.color }}>{p.name}</Text>
+                            <Text type="secondary" style={{ fontSize: 11 }}>{p.desc}</Text>
+                          </Space>
+                        </Card>
+                      </a>
+                    </Col>
+                  ))}
+                </Row>
+              </Card>
+
+              <Card title="JSON Schema" size="small">
+                <pre style={{
+                  padding: 16, fontSize: 12, overflowX: 'auto', maxHeight: 256,
+                  backgroundColor: token.colorBgContainer, color: token.colorSuccess,
+                  borderRadius: 8,
+                }}>
+                  {JSON.stringify(survey, null, 2)}
+                </pre>
+              </Card>
+            </div>
+          ),
+        },
+      ]
       : []),
   ];
 
@@ -717,12 +929,97 @@ export default function SurveyGeneratorPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div>
         <Title level={3} style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-          <FileTextOutlined style={{ color: token.colorPrimary }} /> {t('surveys.title')}
+          <FileTextOutlined style={{ color: token.colorPrimary }} /> {t('surveys.pageTitle')}
         </Title>
         <Text type="secondary">{t('surveys.subtitle')}</Text>
       </div>
 
       <Tabs items={tabItems} defaultActiveKey="generate" />
+
+      <Modal
+        title={<Space><SendOutlined style={{ color: token.colorPrimary }} /> {t('surveys.publishSurvey')}</Space>}
+        open={publishModalOpen}
+        onCancel={() => setPublishModalOpen(false)}
+        onOk={handlePublish}
+        confirmLoading={saving}
+        okText={t('surveys.publish')}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
+          <div>
+            <Text strong style={{ display: 'block', marginBottom: 8 }}>{t('surveys.publishPublic')}</Text>
+            <Switch
+              checked={publishIsPublic}
+              onChange={(v) => setPublishIsPublic(v)}
+              checkedChildren={<GlobalOutlined />}
+              unCheckedChildren={<LockOutlined />}
+            />
+            <Text type="secondary" style={{ display: 'block', fontSize: 12, marginTop: 4 }}>
+              {publishIsPublic ? t('surveys.publishPublicDesc') : t('surveys.publishPrivateDesc')}
+            </Text>
+          </div>
+          <div>
+            <Text strong style={{ display: 'block', marginBottom: 8 }}>{t('surveys.targetClientTypes')}</Text>
+            <Select
+              mode="multiple"
+              style={{ width: '100%' }}
+              value={publishClientTypes}
+              onChange={(v) => setPublishClientTypes(v)}
+              options={CLIENT_TYPE_OPTIONS}
+              placeholder={t('surveys.targetClientTypesPlaceholder')}
+            />
+            <Text type="secondary" style={{ display: 'block', fontSize: 12, marginTop: 4 }}>
+              {t('surveys.targetClientTypesDesc')}
+            </Text>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        title={<Space><BarChartOutlined style={{ color: token.colorPrimary }} /> {t('surveys.responsesTitle')}</Space>}
+        open={responsesModalOpen}
+        onCancel={() => setResponsesModalOpen(false)}
+        footer={<Button onClick={() => setResponsesModalOpen(false)}>{t('common.close')}</Button>}
+        width={800}
+      >
+        {responsesLoading ? (
+          <Spin style={{ display: 'block', margin: '32px auto' }} />
+        ) : responses.length === 0 ? (
+          <Empty description={t('surveys.noResponses')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        ) : (
+          <Table
+            dataSource={responses}
+            rowKey="id"
+            size="small"
+            pagination={{ pageSize: 10 }}
+            columns={[
+              { title: '#', dataIndex: 'id', width: 50 },
+              { title: t('surveys.respondent'), key: 'respondent', render: (_: any, r: SurveyResponse) => r.client_name || r.respondent_type || t('surveys.anonymous') },
+              { title: t('surveys.respondentType'), dataIndex: 'respondent_type', width: 100, render: (v: string) => v ? <Tag>{v}</Tag> : '—' },
+              { title: t('surveys.submittedAt'), dataIndex: 'submitted_at', width: 140, render: (v: string) => new Date(v).toLocaleString() },
+              {
+                title: t('surveys.answers'),
+                dataIndex: 'answers',
+                render: (answers: Record<string, unknown>) => (
+                  <Popover
+                    content={
+                      <div style={{ maxWidth: 400 }}>
+                        <pre style={{ fontSize: 11, margin: 0 }}>{JSON.stringify(answers, null, 2)}</pre>
+                      </div>
+                    }
+                    title={t('surveys.answers')}
+                  >
+                    <Button size="small" icon={<EyeOutlined />}>{t('common.view')}</Button>
+                  </Popover>
+                ),
+              },
+            ]}
+          />
+        )}
+      </Modal>
     </div>
   );
+}
+
+function findIndex(arr: SavedSurvey[], id: number): number {
+  return arr.findIndex((s) => s.id === id);
 }

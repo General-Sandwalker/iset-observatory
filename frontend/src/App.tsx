@@ -24,6 +24,7 @@ import ClientsPage from './pages/ClientsPage';
 import ReportsPage from './pages/ReportsPage';
 import ClientDashboardPage from './pages/ClientDashboardPage';
 import PublicDashboardPage from './pages/PublicDashboardPage';
+import PublicSurveyPage from './pages/PublicSurveyPage';
 
 export default function App() {
   return (
@@ -35,6 +36,8 @@ export default function App() {
         <Route path="/docs" element={<DocsPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/public" element={<PublicDashboardPage />} />
+        <Route path="/public/dashboards/:id" element={<PublicDashboardPage />} />
+        <Route path="/public/surveys/:id" element={<PublicSurveyPage />} />
 
         {/* Protected — all nested routes share the Sidebar layout */}
         <Route

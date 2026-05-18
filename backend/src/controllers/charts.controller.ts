@@ -154,46 +154,43 @@ export async function getChartData(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // ── Dataset-backed chart ─────────────────────────────────────
-    if (!tableName || !tableName.startsWith('dyn_')) {
-      res.status(400).json({ success: false, message: 'Invalid dynamic table.' });
-      return;
-    }
+  // ── Dataset-backed chart ─────────────────────────────────────
+  if (!tableName || (!tableName.startsWith('dyn_') && !tableName.startsWith('data_'))) {
+    res.status(400).json({ success: false, message: 'Invalid dynamic table.' });
+    return;
+  }
 
-    const xCol = cfg.xColumn;
-    const yCol = cfg.yColumn;
-    const aggFn = cfg.aggregation || 'COUNT'; // COUNT, SUM, AVG, MIN, MAX
+  const xCol = cfg.xColumn || cfg.xField;
+  const yCol = cfg.yColumn || cfg.yField;
+  const aggFn = (cfg.aggregation || 'COUNT').toUpperCase();
+  const isCountOnly = !yCol || aggFn === 'COUNT' || aggFn === 'NONE';
 
-    if (!xCol) {
-      res.status(400).json({ success: false, message: 'No x column configured.' });
-      return;
-    }
+  if (!xCol) {
+    res.status(400).json({ success: false, message: 'No x column configured.' });
+    return;
+  }
 
-    let sql: string;
-    let labels: string[];
-    let values: number[];
+  let sql: string;
 
-    if (yCol && aggFn !== 'COUNT') {
-      // Aggregate Y by X  (e.g. AVG(gpa) GROUP BY city)
-      sql = `SELECT "${xCol}" AS label, ${aggFn}("${yCol}") AS value
-             FROM "${tableName}"
-             WHERE "${xCol}" IS NOT NULL
-             GROUP BY "${xCol}"
-             ORDER BY value DESC
-             LIMIT 1000`;
-    } else {
-      // COUNT by X  (e.g. COUNT(*) GROUP BY department)
-      sql = `SELECT "${xCol}" AS label, COUNT(*) AS value
-             FROM "${tableName}"
-             WHERE "${xCol}" IS NOT NULL
-             GROUP BY "${xCol}"
-             ORDER BY value DESC
-             LIMIT 1000`;
-    }
+  if (!isCountOnly && yCol) {
+    sql = `SELECT "${xCol}" AS label, ${aggFn}("${yCol}") AS value
+      FROM "${tableName}"
+      WHERE "${xCol}" IS NOT NULL
+      GROUP BY "${xCol}"
+      ORDER BY value DESC
+      LIMIT 1000`;
+  } else {
+    sql = `SELECT "${xCol}" AS label, COUNT(*) AS value
+      FROM "${tableName}"
+      WHERE "${xCol}" IS NOT NULL
+      GROUP BY "${xCol}"
+      ORDER BY value DESC
+      LIMIT 1000`;
+  }
 
-    const dataResult = await pool.query(sql);
-    labels = dataResult.rows.map((r) => String(r.label));
-    values = dataResult.rows.map((r) => parseFloat(r.value));
+  const dataResult = await pool.query(sql);
+  const labels = dataResult.rows.map((r) => String(r.label));
+  const values = dataResult.rows.map((r) => parseFloat(r.value));
 
     res.json({ success: true, data: { labels, values } });
   } catch (error) {

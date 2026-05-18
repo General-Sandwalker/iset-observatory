@@ -1,4 +1,4 @@
-import { useEffect, useState, CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -14,7 +14,6 @@ import {
   Tag,
   Skeleton,
   Avatar,
-  Divider,
   Empty,
   message,
   theme,
@@ -115,13 +114,6 @@ const CHART_TYPE_COLORS: Record<string, string> = {
   radar: '#fa8c16',
   polarArea: '#13c2c2',
 };
-
-function getGreeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
-}
 
 function formatDate(): string {
   return new Date().toLocaleDateString('en-US', {

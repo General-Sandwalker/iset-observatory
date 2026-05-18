@@ -2,22 +2,21 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Card, Row, Col, Button, Space, Typography, Table, Select,
-  Tag, Spin, Empty, Popconfirm, message, theme, Tooltip, Badge,
-  Modal, Steps, Alert, Progress,
+  Tag, Spin, Empty, Popconfirm, message, theme, Tooltip,
+  Modal, Alert,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   ApartmentOutlined, PlusOutlined, DeleteOutlined,
-  RobotOutlined, LinkOutlined, TableOutlined,
-  ReloadOutlined, DatabaseOutlined, InfoCircleOutlined,
+  RobotOutlined, LinkOutlined,
+  ReloadOutlined, DatabaseOutlined,
   CheckCircleOutlined, WarningOutlined, SwapOutlined,
   BulbOutlined, ArrowRightOutlined,
 } from '@ant-design/icons';
 import api from '../lib/api';
 import type { ForeignLink, Dataset, ColumnMapping } from '../lib/types';
-import { useAuth } from '../contexts/AuthContext';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 interface TableSchema {
   id: number;
@@ -41,11 +40,6 @@ const ER_COLORS = [
   '#6366f1', '#a855f7', '#22c55e', '#eab308',
 ];
 
-function colNameMatch(a: string, b: string): boolean {
-  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
-  return norm(a) === norm(b);
-}
-
 function colNameSimilarity(a: string, b: string): number {
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
   const na = norm(a);
@@ -60,10 +54,8 @@ function colNameSimilarity(a: string, b: string): number {
 export default function ForeignKeyManagerPage() {
   const { t } = useTranslation();
   const { token } = theme.useToken();
-  const { user } = useAuth();
 
   const [links, setLinks] = useState<ForeignLink[]>([]);
-  const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [schemas, setSchemas] = useState<TableSchema[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -91,10 +83,9 @@ export default function ForeignKeyManagerPage() {
         api.get('/datasets'),
       ]);
       setLinks(fkRes.data.data || []);
-      const imported: Dataset[] = (dsRes.data.data || []).filter(
-        (d: Dataset) => d.status === 'imported' && d.table_name,
-      );
-      setDatasets(imported);
+    const imported: Dataset[] = (dsRes.data.data || []).filter(
+      (d: Dataset) => d.status === 'imported' && d.table_name,
+    );
 
       const schemaPromises = imported.map((d) =>
         api.get(`/datasets/${d.id}/schema`).then((r) => ({
@@ -1062,9 +1053,8 @@ title={t('relations.applyAllConfirm')}
           <Empty description={t('relations.aiNoSuggestions')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {suggestions.map((s, i) => {
-              const confColor = s.confidence === 'high' ? token.colorSuccess : s.confidence === 'medium' ? token.colorWarning : token.colorTextQuaternary;
-              const existingLink = links.some(
+{suggestions.map((s, i) => {
+const existingLink = links.some(
                 (l) =>
                   (l.source_table === s.sourceTable && l.source_column === s.sourceColumn &&
                    l.target_table === s.targetTable && l.target_column === s.targetColumn) ||

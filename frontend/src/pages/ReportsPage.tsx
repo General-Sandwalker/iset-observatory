@@ -14,7 +14,7 @@ import {
 import api from '../lib/api';
 import type { Report, Client, Dataset } from '../lib/types';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
 const { TextArea } = Input;
 

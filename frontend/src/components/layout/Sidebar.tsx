@@ -7,7 +7,6 @@ import {
   SafetyOutlined, SettingOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
   SunOutlined, MoonOutlined, LogoutOutlined, ThunderboltOutlined,
   ApartmentOutlined, CodeOutlined, UserOutlined, FileSearchOutlined,
-  GlobalOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -17,21 +16,6 @@ interface SidebarProps {
   collapsed: boolean;
   onCollapse: (collapsed: boolean) => void;
   isMobile: boolean;
-}
-
-type IconComponent = React.ComponentType;
-
-interface NavItem {
-  key: string;
-  label: string;
-  icon: IconComponent;
-  roles?: string[];
-}
-
-interface NavGroup {
-  label: string;
-  items: NavItem[];
-  roles?: string[];
 }
 
 const navGroupDefs = [
@@ -92,7 +76,7 @@ function isAllowed(allowedRoles: string[] | undefined, userRole: string | undefi
   return !!userRole && allowedRoles.includes(userRole);
 }
 
-export default function Sidebar({ collapsed, onCollapse, isMobile }: SidebarProps) {
+export default function Sidebar({ collapsed, onCollapse, isMobile: _isMobile }: SidebarProps) {
   const { user, logout } = useAuth();
   const { theme: currentTheme, toggleTheme, siderTheme } = useTheme();
   const navigate = useNavigate();

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { naturalLanguageToSQL, generateSurvey } from '../services/ai';
+import { naturalLanguageToSQL, generateSurvey, GenerateSurveyOptions } from '../services/ai';
 import pool from '../config/database';
 
 // ─── Chat history (in-memory per session — simple approach) ──────
@@ -90,14 +90,22 @@ export async function listQueryableTables(_req: Request, res: Response): Promise
 
 export async function generateSurveyHandler(req: Request, res: Response): Promise<void> {
   try {
-    const { goal, context } = req.body;
+    const { goal, context, numFields, language, audience } = req.body;
 
     if (!goal || typeof goal !== 'string' || goal.trim().length === 0) {
       res.status(400).json({ success: false, message: 'A goal description is required.' });
       return;
     }
 
-    const survey = await generateSurvey(goal.trim(), context?.trim());
+    const options: GenerateSurveyOptions = {
+      goal: goal.trim(),
+      context: context?.trim(),
+      numFields: numFields ? parseInt(numFields, 10) : undefined,
+      language: language && ['fr', 'en', 'ar'].includes(language) ? language : undefined,
+      audience: audience?.trim(),
+    };
+
+    const survey = await generateSurvey(options);
 
     res.json({ success: true, data: survey });
   } catch (error: any) {

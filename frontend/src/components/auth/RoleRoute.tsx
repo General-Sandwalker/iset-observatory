@@ -1,4 +1,3 @@
-import { Navigate } from 'react-router-dom';
 import { Result, Button } from 'antd';
 import { useAuth } from '../../contexts/AuthContext';
 import type { ReactNode } from 'react';

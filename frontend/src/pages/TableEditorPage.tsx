@@ -21,9 +21,8 @@ const { Text, Title } = Typography;
 const { useBreakpoint } = Grid;
 
 function CellInput({ initial, onSave, onCancel }: { initial: string; onSave: (v: string) => void; onCancel: () => void }) {
-  const { t } = useTranslation();
   const [val, setVal] = useState(initial);
-  const ref = useRef<Input>(null);
+  const ref = useRef<any>(null);
   useEffect(() => {
     const inputEl = ref.current?.input;
     inputEl?.focus();
@@ -518,16 +517,17 @@ export default function TableEditorPage() {
     })),
   ];
 
-  const handleTableChange: TableProps<Record<string, unknown>>['onChange'] = (_pagination, _filters, sorter) => {
-    if (!Array.isArray(sorter) && sorter.field) {
-      const newSortCol = String(sorter.field);
-      const newSortOrder = sorter.order === 'descend' ? 'desc' : 'asc';
-      setSortCol(newSortCol);
-      setSortOrder(newSortOrder);
-    } else if (!sorter.field) {
-      setSortCol('id');
-      setSortOrder('asc');
-    }
+  const handleTableChange: TableProps<Record<string, unknown>>['onChange'] = (_pagination, _filters, sorter, _extra) => {
+  const s = Array.isArray(sorter) ? sorter[0] : sorter;
+  if (s && s.field) {
+    const newSortCol = String(s.field);
+    const newSortOrder = s.order === 'descend' ? 'desc' : 'asc';
+    setSortCol(newSortCol);
+    setSortOrder(newSortOrder);
+  } else {
+    setSortCol('id');
+    setSortOrder('asc');
+  }
   };
 
   const tabItems = [
@@ -585,7 +585,7 @@ export default function TableEditorPage() {
                 if (extra.action === 'paginate') {
                   fetchRows(pag.current, pag.pageSize);
                 }
-                handleTableChange(pag, filters, sorter);
+                handleTableChange(pag, filters, sorter as any, extra);
               }}
               loading={loading}
             />

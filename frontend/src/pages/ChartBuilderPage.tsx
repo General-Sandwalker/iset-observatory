@@ -255,28 +255,30 @@ function renderChartComponent(
   chartData: Record<string, unknown>,
   chartOptions: Record<string, unknown>,
 ) {
+  const data = chartData as any;
+  const options = chartOptions as any;
   switch (type) {
     case 'bar':
     case 'horizontalBar':
-      return <Bar data={chartData} options={chartOptions} />;
+      return <Bar data={data} options={options} />;
     case 'line':
-      return <Line data={chartData} options={chartOptions} />;
+      return <Line data={data} options={options} />;
     case 'area':
-      return <Line data={chartData} options={chartOptions} />;
+      return <Line data={data} options={options} />;
     case 'pie':
-      return <Pie data={chartData} options={chartOptions} />;
+      return <Pie data={data} options={options} />;
     case 'doughnut':
-      return <Doughnut data={chartData} options={chartOptions} />;
+      return <Doughnut data={data} options={options} />;
     case 'radar':
-      return <RadarChart data={chartData} options={chartOptions} />;
+      return <RadarChart data={data} options={options} />;
     case 'polarArea':
-      return <PolarArea data={chartData} options={chartOptions} />;
+      return <PolarArea data={data} options={options} />;
     case 'scatter':
-      return <Scatter data={chartData} options={chartOptions} />;
+      return <Scatter data={data} options={options} />;
     case 'bubble':
-      return <Bubble data={chartData} options={chartOptions} />;
+      return <Bubble data={data} options={options} />;
     default:
-      return <Bar data={chartData} options={chartOptions} />;
+      return <Bar data={data} options={options} />;
   }
 }
 
@@ -1017,7 +1019,7 @@ export default function ChartBuilderPage() {
         </Row>
       )}
 
-      <Divider orientation="left" style={{ margin: 0 }}>
+      <Divider orientation={"left" as any} style={{ margin: 0 }}>
         <Space>
           <AppstoreOutlined />
           <span>Saved Charts</span>

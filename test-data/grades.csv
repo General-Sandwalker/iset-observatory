@@ -1,0 +1,107 @@
+Student CIN,Subject,Grade,Semester,Year
+09727720,Algorithmique,15.50,S1,2022
+09727720,Bases de donnees,14.00,S1,2022
+09727720,Programmation C,16.00,S1,2022
+09727720,Reseaux,13.50,S2,2022
+09727720,Systemes d exploitation,14.75,S2,2022
+09727721,Algorithmique,17.00,S1,2022
+09727721,Bases de donnees,16.50,S1,2022
+09727721,Programmation C,15.00,S1,2022
+09727721,Reseaux,18.00,S2,2022
+09727721,Systemes d exploitation,14.50,S2,2022
+09727722,Electronique,11.00,S1,2021
+09727722,Electrotechnique,12.50,S1,2021
+09727722,Mathematiques,10.00,S2,2021
+09727722,Automatique,12.50,S2,2021
+09727723,Algorithmique,13.50,S1,2023
+09727723,Bases de donnees,14.00,S1,2023
+09727723,Programmation C,14.00,S1,2023
+09727724,Comptabilite,12.00,S1,2022
+09727724,Economie,14.00,S1,2022
+09727724,Statistiques,12.50,S2,2022
+09727724,Gestion financiere,13.25,S2,2022
+09727725,Electronique,16.00,S1,2023
+09727725,Electrotechnique,15.00,S1,2023
+09727725,Mathematiques,15.25,S2,2023
+09727726,Algorithmique,18.00,S1,2021
+09727726,Bases de donnees,17.50,S1,2021
+09727726,Programmation C,16.00,S1,2021
+09727726,Reseaux,17.00,S2,2021
+09727726,Systemes d exploitation,17.00,S2,2021
+09727727,Comptabilite,10.50,S1,2023
+09727727,Economie,11.00,S1,2023
+09727727,Statistiques,11.00,S2,2023
+09727728,Algorithmique,15.00,S1,2022
+09727728,Bases de donnees,14.00,S1,2022
+09727728,Programmation C,14.00,S2,2022
+09727729,Electronique,13.50,S1,2021
+09727729,Electrotechnique,14.00,S1,2021
+09727729,Mathematiques,13.25,S2,2021
+09727730,Comptabilite,17.00,S1,2022
+09727730,Economie,16.50,S1,2022
+09727730,Statistiques,16.00,S2,2022
+09727731,Algorithmique,12.50,S1,2023
+09727731,Bases de donnees,11.50,S1,2023
+09727732,Electronique,15.00,S1,2022
+09727732,Electrotechnique,15.50,S1,2022
+09727733,Comptabilite,12.00,S1,2021
+09727733,Economie,11.50,S1,2021
+09727734,Algorithmique,15.00,S1,2023
+09727734,Bases de donnees,14.50,S1,2023
+09727735,Electronique,13.00,S1,2022
+09727735,Electrotechnique,13.50,S1,2022
+09727736,Comptabilite,17.50,S1,2021
+09727736,Economie,16.00,S1,2021
+09727737,Algorithmique,13.00,S1,2023
+09727737,Bases de donnees,12.00,S1,2023
+09727738,Electronique,14.00,S1,2022
+09727738,Electrotechnique,14.50,S1,2022
+09727739,Comptabilite,15.50,S1,2021
+09727739,Economie,15.00,S1,2021
+09727710,Algorithmique,14.00,S1,2019
+09727710,Bases de donnees,15.00,S1,2019
+09727710,Programmation C,14.50,S1,2019
+09727710,Reseaux,14.50,S2,2019
+09727711,Comptabilite,16.50,S1,2020
+09727711,Economie,16.00,S1,2020
+09727711,Statistiques,15.50,S2,2020
+09727712,Electronique,13.50,S1,2018
+09727712,Electrotechnique,14.00,S1,2018
+09727712,Mathematiques,13.50,S2,2018
+09727713,Algorithmique,16.00,S1,2019
+09727713,Bases de donnees,16.00,S1,2019
+09727714,Comptabilite,12.50,S1,2020
+09727714,Economie,12.50,S1,2020
+09727715,Electronique,17.50,S1,2018
+09727715,Electrotechnique,17.50,S1,2018
+09727715,Mathematiques,17.00,S2,2018
+09727716,Algorithmique,14.00,S1,2019
+09727716,Bases de donnees,14.50,S1,2019
+09727717,Comptabilite,11.50,S1,2020
+09727717,Economie,12.00,S1,2020
+09727718,Electronique,16.50,S1,2018
+09727718,Electrotechnique,16.00,S1,2018
+09727719,Algorithmique,13.50,S1,2019
+09727740,Algorithmique,12.00,S1,2022
+09727741,Electronique,14.00,S1,2023
+09727742,Comptabilite,16.50,S1,2022
+09727742,Economie,15.50,S2,2022
+09727743,Algorithmique,14.50,S1,2021
+09727744,Electronique,12.50,S1,2023
+09727745,Comptabilite,15.50,S1,2022
+09727746,Algorithmique,18.00,S1,2021
+09727746,Bases de donnees,17.00,S1,2021
+09727746,Programmation C,17.00,S1,2021
+09727747,Electronique,13.00,S1,2023
+09727748,Comptabilite,15.00,S1,2022
+09727749,Algorithmique,12.50,S1,2021
+09727750,Electronique,16.00,S1,2022
+09727751,Comptabilite,11.00,S1,2023
+09727752,Algorithmique,17.50,S1,2021
+09727753,Electronique,13.50,S1,2022
+09727754,Comptabilite,14.50,S1,2023
+09727755,Algorithmique,14.00,S1,2021
+09727756,Electronique,12.00,S1,2022
+09727757,Comptabilite,10.50,S1,2023
+09727758,Algorithmique,15.50,S1,2021
+09727759,Electronique,13.00,S1,2022

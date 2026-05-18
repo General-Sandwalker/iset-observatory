@@ -337,7 +337,7 @@ label={t('login.password')}
             ISET Tozeur
           </Text>
         </Divider>
-        <Text type="tertiary" style={{ display: 'block', textAlign: 'center', fontSize: 11 }}>
+        <Text type="secondary" style={{ display: 'block', textAlign: 'center', fontSize: 11 }}>
           {t('login.subtitle')}
         </Text>
       </div>

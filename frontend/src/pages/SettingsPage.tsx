@@ -5,7 +5,7 @@ import {
   Avatar, Row, Col, Tooltip, Divider, Space, message, Radio, Segmented,
 } from 'antd';
 import {
-  UserOutlined, LockOutlined, BgColorsOutlined, BellOutlined,
+  UserOutlined, LockOutlined, BellOutlined,
   DatabaseOutlined, ExclamationCircleOutlined, InfoCircleOutlined,
   LogoutOutlined, CheckOutlined, FormatPainterOutlined,
 } from '@ant-design/icons';

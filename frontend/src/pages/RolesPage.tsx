@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Collapse, Modal, Form, Input, Checkbox, Button, Space, Typography,
-  Alert, Spin, Tag, Popconfirm, Card, Row, Col, Table, Switch, Select,
+  Collapse, Modal, Input, Checkbox, Button, Space, Typography,
+  Alert, Spin, Tag, Popconfirm, Card, Row, Col, Table, Select,
 } from 'antd';
 import { Grid, theme } from 'antd';
 import {
@@ -242,7 +242,7 @@ const matrixColumns = [
         const color = CATEGORY_COLORS[cat] || token.colorPrimary;
         return (
           <Space size={6}>
-            <CatIcon style={{ color, fontSize: 14 }} />
+            {React.createElement(CatIcon as any, { style: { color, fontSize: 14 } })}
             <Text style={{ textTransform: 'capitalize', fontWeight: 600, fontSize: 12 }}>{cat}</Text>
           </Space>
         );
@@ -350,7 +350,7 @@ const matrixColumns = [
         const color = CATEGORY_COLORS[cat] || token.colorPrimary;
         return (
           <Space size={6}>
-            <CatIcon style={{ color, fontSize: 14 }} />
+            {React.createElement(CatIcon as any, { style: { color, fontSize: 14 } })}
             <Text style={{ textTransform: 'capitalize', fontWeight: 600, fontSize: 12 }}>{cat}</Text>
           </Space>
         );
@@ -452,7 +452,7 @@ const matrixColumns = [
           return (
             <div key={cat} style={{ marginBottom: 16 }}>
               <Space size={6} style={{ marginBottom: 8 }}>
-                <CatIcon style={{ color }} />
+                {React.createElement(CatIcon as any, { style: { color } })}
                 <Text strong style={{ textTransform: 'capitalize' }}>{cat}</Text>
               </Space>
               <Row gutter={[8, 8]}>
@@ -676,7 +676,7 @@ function RoleModal({ role, permsByCategory, onSave, onClose }: RoleModalProps) {
                   style={{ marginBottom: 8 }}
                 >
                   <Space size={6}>
-                    <CatIcon style={{ color: catColor, fontSize: 14 }} />
+                    {React.createElement(CatIcon as any, { style: { color: catColor, fontSize: 14 } })}
                     <Text strong style={{ textTransform: 'capitalize' }}>{category}</Text>
                   </Space>
                 </Checkbox>

@@ -6,7 +6,6 @@ import {
   CheckCircleOutlined,
   WarningOutlined,
   CloseCircleOutlined,
-  CheckOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
 import { Outlet, useLocation } from 'react-router-dom';
@@ -247,16 +246,15 @@ export default function AppLayout() {
                 darkSubMenuItemBg: 'transparent',
                 darkItemHoverBg: `${siderTheme.colorPrimary}18`,
                 darkItemSelectedBg: `${siderTheme.colorPrimary}28`,
-                darkItemActiveBg: `${siderTheme.colorPrimary}38`,
+                dangerItemActiveBg: `${siderTheme.colorPrimary}38`,
                 itemBorderRadius: 8,
                 darkItemColor: siderTheme.colorTextSecondary,
                 darkItemSelectedColor: siderTheme.colorText,
-                itemMarginInline: 4,
-                groupMarginBottom: 0,
+          itemMarginInline: 4,
               },
               Button: {
                 colorText: siderTheme.colorTextSecondary,
-                colorTextHover: siderTheme.colorText,
+                colorBgTextHover: siderTheme.colorText,
                 defaultBg: 'transparent',
                 defaultBorderColor: siderTheme.colorBorder,
                 colorBorder: siderTheme.colorBorder,

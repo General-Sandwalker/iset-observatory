@@ -237,29 +237,47 @@ export interface GeneratedSurvey {
   goal: string;
 }
 
-export async function generateSurvey(goal: string, context?: string): Promise<GeneratedSurvey> {
+export interface GenerateSurveyOptions {
+  goal: string;
+  context?: string;
+  numFields?: number;
+  language?: 'fr' | 'en' | 'ar';
+  audience?: string;
+}
+
+export async function generateSurvey(options: GenerateSurveyOptions): Promise<GeneratedSurvey> {
+  const { goal, context, numFields, language, audience } = options;
   const groq = getGroq();
+
+  const fieldCount = numFields && numFields >= 1 && numFields <= 30 ? numFields : '5-15';
+  const langInstruction = language
+    ? `Write ALL labels, descriptions, placeholders, and option text in ${language === 'fr' ? 'French' : language === 'ar' ? 'Arabic' : 'English'}.`
+    : 'Use French labels only if the goal is in French; otherwise use English.';
+  const audienceInstruction = audience
+    ? `Target audience: ${audience}. Tailor the questions, language level, and topics to be appropriate for this audience.`
+    : '';
 
   const prompt = `You are a survey design expert for a higher education institute (ISET Tozeur, Tunisia). Generate a professional survey based on the user's goal.
 
 GOAL: ${goal}
 ${context ? `ADDITIONAL CONTEXT: ${context}` : ''}
+${audienceInstruction}
 
 RULES:
 1. Return a JSON object with these keys:
-   - "title": string (survey title)
-   - "description": string (brief description for respondents)
-   - "fields": array of field objects, each with:
-     - "id": unique snake_case identifier (string)
-     - "type": one of "text", "textarea", "number", "select", "radio", "checkbox", "date", "email", "rating"
-     - "label": human-readable question label (string)
-     - "placeholder": optional hint text (string)
-     - "required": boolean
-     - "options": array of strings (REQUIRED for select, radio, checkbox types)
-     - "min": number (optional, for number/rating)
-     - "max": number (optional, for number/rating)
-2. Generate 5-15 relevant fields.
-3. Use French labels only if the goal is in French; otherwise use English.
+- "title": string (survey title)
+- "description": string (brief description for respondents)
+- "fields": array of field objects, each with:
+  - "id": unique snake_case identifier (string)
+  - "type": one of "text", "textarea", "number", "select", "radio", "checkbox", "date", "email", "rating"
+  - "label": human-readable question label (string)
+  - "placeholder": optional hint text (string)
+  - "required": boolean
+  - "options": array of strings (REQUIRED for select, radio, checkbox types)
+  - "min": number (optional, for number/rating)
+  - "max": number (optional, for number/rating)
+2. Generate exactly ${fieldCount} relevant fields.
+3. ${langInstruction}
 4. Make surveys professional, clear, and suitable for academic contexts.
 5. Do NOT include markdown code fences. Return ONLY valid JSON.`;
 
@@ -364,7 +382,8 @@ INSTRUCTIONS:
 7. Write in a professional, academic tone.
 8. Keep the report concise but thorough (aim for 500-1000 words).
 9. Use markdown headers (##), bullet points, and bold text for readability.
-10. Do NOT include a code block fence around the output.`;
+10. Do NOT include a code block fence around the output.
+11. Do NOT include any internal reasoning, chain-of-thought, or thinking blocks (e.g. <think>...</think>). Output ONLY the report content.`;
 
   const completion = await withRetry(() =>
     groq.chat.completions.create({
@@ -375,5 +394,9 @@ INSTRUCTIONS:
   );
 
   const raw = (completion.choices[0].message.content ?? '').trim();
-  return raw.replace(/^```markdown?\s*/im, '').replace(/\s*```$/im, '').trim();
+  return raw
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/^```markdown?\s*/im, '')
+    .replace(/\s*```$/im, '')
+    .trim();
 }

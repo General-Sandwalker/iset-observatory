@@ -328,9 +328,26 @@ CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(user_id, is_r
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_reports_client ON reports(client_id);
-    CREATE INDEX IF NOT EXISTS idx_reports_public ON reports(is_public);
-  `,
-  },
+CREATE INDEX IF NOT EXISTS idx_reports_public ON reports(is_public);
+`, },
+{ name: '014_survey_publishing', sql: `
+ALTER TABLE surveys ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE surveys ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'draft';
+ALTER TABLE surveys ADD COLUMN IF NOT EXISTS client_types JSONB DEFAULT '[]';
+ALTER TABLE surveys ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ;
+ALTER TABLE surveys ADD COLUMN IF NOT EXISTS responses_count INTEGER NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS survey_responses (
+  id SERIAL PRIMARY KEY,
+  survey_id INTEGER NOT NULL REFERENCES surveys(id) ON DELETE CASCADE,
+  client_id INTEGER REFERENCES clients(id) ON DELETE SET NULL,
+  respondent_type VARCHAR(20),
+  answers JSONB NOT NULL DEFAULT '{}',
+  submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_survey_responses_survey ON survey_responses(survey_id);
+CREATE INDEX IF NOT EXISTS idx_survey_responses_client ON survey_responses(client_id);
+`, },
 ];
 
 export async function runMigrations(): Promise<void> {

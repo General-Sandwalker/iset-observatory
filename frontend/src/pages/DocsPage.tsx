@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Anchor, Card, Typography, Button, Tag, Space, Row, Col, Alert,
@@ -10,7 +10,7 @@ import {
   AppstoreOutlined, FileTextOutlined, SettingOutlined,
   DashboardOutlined, SunOutlined, MoonOutlined,
   ArrowRightOutlined, RightOutlined, BulbOutlined,
-  ApiOutlined, CodeOutlined, RocketOutlined,
+  ApiOutlined, RocketOutlined,
 } from '@ant-design/icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -126,28 +126,28 @@ const SECTIONS: SectionDef[] = [
 ];
 
 const API_ENDPOINTS = [
-  { method: 'POST', path: '/api/auth/login', description: 'Authenticate user and receive JWT token', auth: 'No' },
-  { method: 'GET', path: '/api/auth/me', description: 'Get current authenticated user profile', auth: 'Yes' },
-  { method: 'GET', path: '/api/users', description: 'List all users (admin only)', auth: 'Yes' },
-  { method: 'POST', path: '/api/users', description: 'Create a new user', auth: 'Yes' },
-  { method: 'PUT', path: '/api/users/:id', description: 'Update a user by ID', auth: 'Yes' },
-  { method: 'DELETE', path: '/api/users/:id', description: 'Delete a user by ID', auth: 'Yes' },
-  { method: 'GET', path: '/api/roles', description: 'List all roles', auth: 'Yes' },
-  { method: 'POST', path: '/api/roles', description: 'Create a new role', auth: 'Yes' },
-  { method: 'PUT', path: '/api/roles/:id', description: 'Update a role and its permissions', auth: 'Yes' },
-  { method: 'DELETE', path: '/api/roles/:id', description: 'Delete a non-system role', auth: 'Yes' },
-  { method: 'GET', path: '/api/roles/permissions', description: 'List all available permissions', auth: 'Yes' },
-  { method: 'POST', path: '/api/datasets/upload', description: 'Upload and parse a CSV file', auth: 'Yes' },
-  { method: 'GET', path: '/api/datasets', description: 'List all imported datasets', auth: 'Yes' },
-  { method: 'GET', path: '/api/datasets/:id/preview', description: 'Preview parsed dataset rows', auth: 'Yes' },
-  { method: 'POST', path: '/api/ai/ask', description: 'Send a natural-language query to AI', auth: 'Yes' },
-  { method: 'GET', path: '/api/charts', description: 'List saved charts', auth: 'Yes' },
-  { method: 'POST', path: '/api/charts', description: 'Create and save a new chart', auth: 'Yes' },
-  { method: 'GET', path: '/api/dashboards', description: 'List all dashboards', auth: 'Yes' },
-  { method: 'POST', path: '/api/dashboards', description: 'Create a new dashboard', auth: 'Yes' },
-  { method: 'POST', path: '/api/dashboards/:id/export', description: 'Export dashboard as PDF', auth: 'Yes' },
-  { method: 'POST', path: '/api/surveys/generate', description: 'Generate AI survey from dataset', auth: 'Yes' },
-  { method: 'GET', path: '/api/surveys', description: 'List saved surveys', auth: 'Yes' },
+  { method: 'POST', path: '/api/auth/login', descriptionKey: 'docs.api.authLogin', auth: 'No' },
+  { method: 'GET', path: '/api/auth/me', descriptionKey: 'docs.api.authMe', auth: 'Yes' },
+  { method: 'GET', path: '/api/users', descriptionKey: 'docs.api.usersList', auth: 'Yes' },
+  { method: 'POST', path: '/api/users', descriptionKey: 'docs.api.usersCreate', auth: 'Yes' },
+  { method: 'PUT', path: '/api/users/:id', descriptionKey: 'docs.api.usersUpdate', auth: 'Yes' },
+  { method: 'DELETE', path: '/api/users/:id', descriptionKey: 'docs.api.usersDelete', auth: 'Yes' },
+  { method: 'GET', path: '/api/roles', descriptionKey: 'docs.api.rolesList', auth: 'Yes' },
+  { method: 'POST', path: '/api/roles', descriptionKey: 'docs.api.rolesCreate', auth: 'Yes' },
+  { method: 'PUT', path: '/api/roles/:id', descriptionKey: 'docs.api.rolesUpdate', auth: 'Yes' },
+  { method: 'DELETE', path: '/api/roles/:id', descriptionKey: 'docs.api.rolesDelete', auth: 'Yes' },
+  { method: 'GET', path: '/api/roles/permissions', descriptionKey: 'docs.api.rolesPermissions', auth: 'Yes' },
+  { method: 'POST', path: '/api/datasets/upload', descriptionKey: 'docs.api.datasetsUpload', auth: 'Yes' },
+  { method: 'GET', path: '/api/datasets', descriptionKey: 'docs.api.datasetsList', auth: 'Yes' },
+  { method: 'GET', path: '/api/datasets/:id/preview', descriptionKey: 'docs.api.datasetsPreview', auth: 'Yes' },
+  { method: 'POST', path: '/api/ai/ask', descriptionKey: 'docs.api.aiAsk', auth: 'Yes' },
+  { method: 'GET', path: '/api/charts', descriptionKey: 'docs.api.chartsList', auth: 'Yes' },
+  { method: 'POST', path: '/api/charts', descriptionKey: 'docs.api.chartsCreate', auth: 'Yes' },
+  { method: 'GET', path: '/api/dashboards', descriptionKey: 'docs.api.dashboardsList', auth: 'Yes' },
+  { method: 'POST', path: '/api/dashboards', descriptionKey: 'docs.api.dashboardsCreate', auth: 'Yes' },
+  { method: 'POST', path: '/api/dashboards/:id/export', descriptionKey: 'docs.api.dashboardsExport', auth: 'Yes' },
+  { method: 'POST', path: '/api/surveys/generate', descriptionKey: 'docs.api.surveysGenerate', auth: 'Yes' },
+  { method: 'GET', path: '/api/surveys', descriptionKey: 'docs.api.surveysList', auth: 'Yes' },
 ];
 
 const METHOD_COLORS: Record<string, string> = {
@@ -428,11 +428,11 @@ export default function DocsPage() {
     title: <Text style={{ fontWeight: active === id ? 600 : 400 }}>{t(title)}</Text>,
   }));
 
-  const mobileTabItems = SECTIONS.map(({ id, step, icon: Icon, title }) => ({
+  const mobileTabItems = SECTIONS.map(({ id, step: _step, icon: Icon, title }) => ({
     key: id,
     label: (
       <Space size={4} align="center">
-        <Icon style={{ fontSize: 14 }} />
+        {React.createElement(Icon as any, { style: { fontSize: 14 } })}
         <span style={{ fontSize: 12 }}>{t(title)}</span>
       </Space>
     ),
@@ -462,11 +462,11 @@ export default function DocsPage() {
       ),
     },
     {
-      title: t('docs.apiColDescription'),
-      dataIndex: 'description',
-      key: 'description',
-      responsive: ['md' as const],
-      render: (desc: string) => <Text style={{ fontSize: 12, color: token.colorTextSecondary }}>{desc}</Text>,
+  title: t('docs.apiColDescription'),
+  dataIndex: 'descriptionKey',
+  key: 'descriptionKey',
+  responsive: ['md' as const],
+  render: (key: string) => <Text style={{ fontSize: 12, color: token.colorTextSecondary }}>{t(key)}</Text>,
     },
     {
       title: t('docs.apiColAuth'),
@@ -504,7 +504,7 @@ export default function DocsPage() {
               background: color + '1a',
             }}
           >
-            <Icon style={{ fontSize: 24, color }} />
+            {React.createElement(Icon as any, { style: { fontSize: 24, color } })}
           </div>
           <div>
             <Space size={8} style={{ marginBottom: 2 }}>

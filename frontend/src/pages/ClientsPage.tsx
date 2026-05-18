@@ -27,12 +27,6 @@ const CLIENT_TYPE_COLORS: Record<ClientType, string> = {
   teacher: 'orange',
 };
 
-const CLIENT_TYPE_LABELS: Record<ClientType, string> = {
-  student: 'Student',
-  alumni: 'Alumni',
-  teacher: 'Teacher',
-};
-
 function initials(name: string) {
   return name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 }
