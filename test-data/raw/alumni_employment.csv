@@ -1,0 +1,81 @@
+id_ancien,nom,prenom,date_diplome,filiere,employeur,poste,date_embauche,salaire,ville
+1,Chaari,Insaf,2020-10-01,Informatique,Les Moulins Mahjoub,CHARGÉ DE COMMUNICATION,2022/04/14,2000,Médenine
+2,Sahli,Moez,2024/08/26,Génie Civil,,Ingénieur Génie Civil,,,Kairouan
+3,Khlifi,Mohamed,21/03/2023,Génie Civil,Tunisie Telecom,Ingénieur Réseaux,2019-06-22,4500,Médenine
+4,Jemli,Chedlia,2023-02-23,Informatique,société tunisienne de l'électricité,Technicien Supérieur,2022/01/1,5000,Metlaoui
+5,Haddad,Nader,03/07/2019,Informatique,ATB,Data Scientist,05/11/2024,1500000,Zarzis
+6,Boujelben,Anis,05/12/2023,Électronique,Délice Danone,Ingénieur Réseaux,13/12/2023,2500,Gabès
+7,Gharbi,Mounir,20/10/2022,Génie Civil,Tunisair,Consultant IT,2023/04/24,2800000,Moknine
+8,Kammoun,Nadia,2018-04-16,Informatique,actia,Analyste Financier,14/10/2022,2500,Nefta
+9,Mzoughi,Maha,01/02/2022,Génie Civil,,Développeur Full Stack,,,Sidi Bouzid
+10,Khlifi,Khaoula,2021/02/21,Gestion,,Ingénieur Réseaux,,,Gafsa
+11,Boussetta,Slim,2023/11/3,Génie Civil,SFBT,Développeur Full Stack,2019-08-20,---,Sousse
+12,Ben Amor,Nader,12/08/2019,Génie Civil,Tunisie Telecom,Chargé de Communication,11/01/2025,2800000,Sidi Bouzid
+13,Mzoughi,Maya,2021-09-12,Informatique,Carthage Cement,Data Scientist,24/11/2023,1500,Tunis
+14,Fekih,Sarra,13/06/2021,Gestion,Poulina Group,Commercial,2024/11/14,2000,Ben Arous
+15,Boukhris,Omar,2018-09-22,Informatique,Poulina Group,Développeur Full Stack,25/05/2022,2200,Tozeur
+16,Boukhris,Khaled,2023-10-08,Électronique,SwissGulf,Administrateur Système,2023/04/5,1200000,Tataouine
+17,Ben Ali,Nabil,2018-11-13,Génie Civil,ATB,Comptable,09/12/2020,---,Moknine
+18,Ben Amor,Khaoula,2021-12-03,Informatique,,Chargé de Communication,,,Hammamet
+19,Cherni,Nadia,2024-06-26,Électronique,Elife,Ingénieur Réseaux,04/10/2025,1800,Gafsa
+20,Hajji,Raed,15/05/2021,Génie Civil,,Administrateur Système,,,Bizerte
+21,Fourati,Wafa,12/04/2023,Électronique,,Consultant IT,,,Degache
+22,Fekih,Fatma,26/02/2021,Gestion,,Chargé de Communication,,,Kasserine
+23,Jribi,Slim,09/10/2022,Informatique,Tunisair,Ingénieur Génie Civil,04/06/2019,1200000,Chebba
+24,Souissi,Naima,2018-07-22,Électronique,Poulina Group,Consultant IT,20/10/2019,4000,El Hamma
+25,Hassine,Nawres,05/07/2020,Électronique,SOTRAPIL,Chef de Projet,2025/01/13,5000,Nefta
+26,Louati,Moez,2021-05-06,Informatique,elife,Administrateur Système,17/08/2025,2500,Kairouan
+27,Fekih,Riadh,2022-12-02,Gestion,Tayba Oil,Chargé de Communication,26/06/2023,5000,Tozeur
+28,Boukhris,Beya,2019/10/7,Électronique,TEK-UP,INGÉNIEUR RÉSEAUX,2020/01/17,---,Manouba
+29,Khalifa,Adel,2018-01-05,Gestion,La Poste Tunisienne,Ingénieur Réseaux,2022/10/4,2500,Kairouan
+30,Hannachi,Eya,2021/11/11,Gestion,InstaDeep,Data Scientist,2024/05/5,1800,Mahdia
+31,Boukhris,Lassad,11/10/2019,Gestion,ATB,INGÉNIEUR ÉLECTRONIQUE,2021-03-21,1500,Ben Arous
+32,Ben Ali,Marwa,2019-04-23,Informatique,InstaDeep,DÉVELOPPEUR FULL STACK,2024-07-06,2800,Tataouine
+33,Hannachi,Chahine,2023/11/8,Gestion,,CHARGÉ DE COMMUNICATION,,,Sfax
+34,Dridi,Aymen,2018/09/3,Génie Civil,Groupe Slim,Ingénieur Génie Civil,2020-01-04,2500,Sidi Bouzid
+35,Hmila,Naima,2023-05-10,Gestion,,Technicien Supérieur,,,Tozeur
+36,Hamrouni,Khaled,2023/10/16,Gestion,,Data Scientist,,,Manouba
+37,Moussa,Zied,2018-11-18,Électronique,Poulina Group,Data Scientist,2022-08-09,2000,Gabès
+38,Mansouri,Rihab,26/06/2023,Électronique,Vermeg,Chargé de Communication,2024/08/19,2000000,Moknine
+39,Louati,Mariem,2022/10/22,Gestion,La Poste Tunisienne,Data Scientist,14/01/2020,1500,Kebili
+40,Rekik,Amani,2023-02-03,Électronique,SNA,Commercial,20/12/2025,4000,El Hamma
+41,Moatemri,Moez,2024/02/4,Informatique,Carrefour Tunisie,Assistant Administratif,2024-08-19,4000,Kasserine
+42,Hadhri,Walid,2021/01/13,Génie Civil,,Responsable RH,,,Manouba
+43,Jaziri,Montassar,2024-12-22,Informatique,,Ingénieur Électronique,,,Béja
+44,Baccar,Fatma,24/07/2024,Électronique,ACTIA,Commercial,17/12/2021,2800,Moknine
+45,Laabidi,Asma,08/01/2024,Informatique,,Analyste Financier,,,Kasserine
+46,Hadhri,Yosra,16/06/2019,Électronique,Poulina Group,Commercial,24/05/2025,N/A,Kasserine
+47,Chtioui,Moez,21/04/2024,Gestion,One Tech,Développeur Full Stack,2019/08/5,4500,Monastir
+48,Nouri,Hedi,2023/05/14,Électronique,InstaDeep,Consultant IT,2022/10/4,1200,Kebili
+49,Jribi,Fatma,2022/05/10,Informatique,,Consultant IT,,,Moknine
+50,Fourati,Fatma,2024/04/2,Électronique,Elife,Ingénieur Génie Civil,2021-07-13,2800,Mahdia
+51,Boujelben,Dorra,2019/11/18,Électronique,InstaDeep,Chargé de Communication,2020/05/4,3000,Manouba
+52,Hadhri,Asma,2023-02-08,Génie Civil,Vermeg,Administrateur Système,2021-10-10,3000,Metlaoui
+53,Ben Saïd,Emna,17/04/2021,Informatique,Tayba Oil,Chargé de Communication,14/06/2020,4000,Gabès
+54,Khalifa,Adel,21/06/2021,Gestion,elife,Consultant IT,16/03/2023,1500,El Hamma
+55,Zghidi,Chahine,07/09/2018,Génie Civil,Société Tunisienne de l'Électricité,Commercial,2019/11/24,2000,Médenine
+56,Louati,Aymen,2020/03/3,Informatique,MGIM,Commercial,2022-11-05,2500,Ariana
+57,Trabelsi,Mehdi,05/12/2019,Gestion,Tunisair,Analyste Financier,09/11/2022,3500,Tunis
+58,Jaziri,Siwar,04/12/2018,Électronique,Délice Danone,Responsable RH,21/11/2024,1200,Hammamet
+59,Chérif,Souhir,2019/07/27,Informatique,ENIT-LAMSIN,Ingénieur Réseaux,2020-10-07,2200,Jendouba
+60,Dridi,Samar,07/08/2022,Électronique,expensya,Ingénieur Réseaux,2024/08/5,1500000,Ben Arous
+61,Jribi,Seif,09/05/2021,Électronique,,Data Scientist,,,El Hamma
+62,Kefi,Amira,22/03/2018,Gestion,Expensya,Technicien Supérieur,2019/06/27,2500,Degache
+63,Ben Amor,Aymen,2024-07-21,Gestion,,INGÉNIEUR ÉLECTRONIQUE,,,Nefta
+64,Baccar,Jihene,25/07/2022,Génie Civil,Tunisair,Ingénieur Électronique,04/08/2022,2800000,Zarzis
+65,Hadhri,Adel,2024/12/19,Gestion,Expensya,TECHNICIEN SUPÉRIEUR,2024/04/16,2500,Gabès
+66,Ben Saïd,Fatma,06/11/2018,Électronique,carthage cement,Responsable RH,2021-01-17,2000,Kebili
+67,Baccar,Yassine,2021/02/28,Électronique,Délice Danone,Ingénieur Électronique,02/07/2022,3500,Manouba
+68,Zamouri,Souhir,2022-09-07,Électronique,expensya,Chef de Projet,2023-10-20,3000,Degache
+69,Moussa,Sofiene,12/06/2018,Génie Civil,ACTIA,Assistant Administratif,24/12/2025,5000,Bizerte
+70,Ayadi,Mehdi,2024-04-23,Génie Civil,atb,Ingénieur Génie Civil,2019/08/15,4500,Nefta
+71,Hassine,Ghassen,2021/10/16,Gestion,Poulina Group,Comptable,2021/09/13,2800,Ariana
+72,Zemni,Mehdi,2021-03-05,Électronique,ENIT-LAMSIN,Chargé de Communication,2023/11/7,2000,Hammamet
+73,Sahli,Fethi,2023/03/17,Génie Civil,La Poste Tunisienne,Technicien Supérieur,2024/07/22,5000,Moknine
+74,Bouallagui,Sarra,05/07/2018,Informatique,Amen Bank,Data Scientist,2021/03/27,1200,Ariana
+75,Hamrouni,Beya,2018-10-28,Gestion,Tayba Oil,Administrateur Système,2024/01/13,2800,Hammamet
+76,Hassine,Lotfi,07/05/2023,Électronique,Vermeg,Ingénieur Génie Civil,2023/12/20,2000,Médenine
+77,Mzoughi,Fethi,17/12/2019,Informatique,,Consultant IT,,,Nabeul
+78,Nouri,Yassine,11/03/2018,Informatique,MGIM,ANALYSTE FINANCIER,2021/09/8,1800,Kairouan
+79,Souissi,Raed,07/04/2020,Génie Civil,Expensya,Administrateur Système,2023-11-01,1500,Moknine
+80,Fekih,Souhir,13/06/2023,Informatique,Tayba Oil,Développeur Full Stack,2023-09-15,---,Gafsa

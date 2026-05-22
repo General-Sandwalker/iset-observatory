@@ -1,0 +1,101 @@
+id,nom,prenom,date_naissance,email,telephone,filiere,niveau,annee_inscription
+1,Sassi,Nour,2002/03/07,sassinour@planet.tn,228-386-37,Gestion,L2,2022
+2,Mansouri,Aymen,2004/05/15,mansouriaymen@hexabyte.tn,97495931,Informatique,L1,2022
+3,Ayadi,Anis,21-04-2003,a.ayadi@planet.tn,55483503,Informatique,L3,2022
+4,Chaari,Mounir,09/09/2005,mounir_chaari@hexabyte.tn,26 871 012,Informatique,L3,2024
+5,Hadhri,Yosra,11-10-1998,yhadhri@gmail.com,508-281-48,Gestion,L3,2024
+6,Jaziri,Bilel,17-08-2003,"b.jaziri@gmail,com",0021626782489,Gestion,L2,2022
+7,Mzoughi,Sami,04/04/2004,sami.mzoughi@gmail.com,531-834-73,Électronique,L2,2023
+8,Khlifi,BEYA,21/01/1999,khlifibeya@gmail.com,+216 28 387 262,Informatique,L3,2022
+9,Kefi,Chedlia,1998-10-16,chedliakefi@gmail.com,NA,Informatique,L1,2025
+10,gharbi,ADEM,2000/11/21,adem.gharbi@topnet.tn,+216 23 916 998,Génie Civil,L2,2023
+11,MZOUGHI,Sofiene,2002-11-04,sofiene_mzoughi@gmail.com,+216 24 354 278,Informatique,L3,2022
+12,Sassi,Houssem,1998-02-03,h.sassi@yahoo.fr,23 164 005,Électronique,L2,2024
+13,Moatemri,INSAF,2004-11-28,insaf.moatemri@isetr.tn,25 586 923,électronique,L2,2024
+14,mansouri,Nabil,2002/03/19,mansourinabil@isetr.tn,+216 29 036 541,Génie Civil,L1,2023
+15,Khlifi,Walid,2004/06/13,,+216 97 356 159,Génie Civil,L3,2022
+16,Ouni,Fatma,2000/11/03,,0021652369957,Électronique,L3,2023
+17,Ben Saïd,Maya,06-04-2004,mayabensaïd@yahoo.fr,0021624769367,Informatique,L1,2024
+18,Kefi,Wassim,2002/04/09,kefiwassim@isetr.tn,+216 97 727 743,Gestion,L1,2024
+19,Gharbi,Raed,2001/08/08,gharbiraed@gmail.com,0021628669096,Électronique,L2,2023
+20,Zghidi,Ahmed,09-07-2003,zghidiahmed@isetr.tn,0021655990162,Génie Civil,L2,2023
+21,HADDAD,Karim,10/03/1999,k.haddad@yahoo.fr,28092327,Génie Civil,L1,2024
+22,Boukhris,Meriem,12-07-1999,meriem_boukhris@gmail.com,0021652919058,GÉNIE CIVIL,L2,2023
+23,Khalifa,Eya,2005/04/12,khalifaeya@topnet.tn,291-473-79,Électronique,L1,2025
+24,Ben Amor,Walid,2003/07/24,walidbenamor@gmail.com,0021659770143,Génie Civil,L3,2023
+25,Bouazizi,Yassine,02/05/2000,y.bouazizi@gmail.com,28749894,Génie Civil,L1,2024
+26,Sahli,Nada,08/02/2002,nsahli@planet.tn,23471167,Gestion,L3,2022
+27,Chérif,Khaoula,15-07-1998,chérifkhaoula@topnet.tn,+216 98 909 133,Gestion,L1,2025
+28,Cherni,Sami,2002/12/13,s.cherni@outlook.com,25832421,Génie Civil,L2,2023
+29,BACCAR,CHAIMA,27-11-2004,cbaccar@hexabyte.tn,0021698904902,Génie Civil,L3,2025
+30,Hajji,Nawres,2005-07-02,hajjinawres@outlook.com,97071545,Informatique,L3,2023
+31,Boussetta,SOUHIR,2000/08/23,souhirboussetta@planet.tn,25093248,Informatique,L1,2024
+32,Ouni,Ahlem,11-06-2005,ahlemouni@topnet.tn,+216 24 465 840,Électronique,L2,2023
+33,Laabidi,Aziz,05-12-1998,alaabidi@gmail.com,+216 55 270 289,Électronique,L2,2025
+34,Mzoughi,Sana,23/11/1999,sana.mzoughi@hexabyte.tn,55 578 091,Gestion,L2,2025
+35,maalej,Nabil,22/05/2005,nmaalej@outlook.com,27 221 969,Gestion,L2,2024
+36,Cherni,Manel,19/01/2002,mcherni@planet.tn,523-671-36,génie civil,L2,2024
+37,Kammoun,Souad,2000/04/05,skammoun@planet.tn,+216 26 104 709,Génie Civil,L2,2023
+38,Jaziri,Ahlem,2003-02-22,,+216 29 685 160,Génie Civil,L3,2024
+39,Guesmi,Tarek,21/07/2000,,23 471 138,Électronique,L3,2025
+40,Ouni,Souhir,1998/01/26,,54850643,Informatique,L3,2023
+41,hannachi,Nader,2003/01/06,naderhannachi@planet.tn,99 042 284,gestion,L1,2023
+42,Ouni,Ghassen,2000/02/05,,0021696470076,ÉLECTRONIQUE,L3,2024
+43,Guesmi,Emna,05-06-2002,emna_guesmi@topnet.tn,0021697367365,Génie Civil,L3,2024
+44,Gharbi,Karim,2001/02/12,karim.gharbi@planet.tn,+216 25 656 049,Gestion,L2,2023
+45,Boukhris,Montassar,14-07-2001,m.boukhris@planet.tn,0021652550229,Informatique,L3,2022
+46,Maalej,Bilel,2005/09/22,bilelmaalej@gmail.com,+216 50 767 976,Génie Civil,L2,2022
+47,CHÉRIF,Mehdi,15/01/2004,mehdichérif@isetr.tn,596-226-83,génie civil,L1,2023
+48,Khlifi,Zeineb,03/03/2003,zeineb.khlifi@topnet.tn,585-161-36,Génie Civil,L1,2022
+49,Chtioui,Fatma,15/03/2003,fatma.chtioui@yahoo.fr,242-779-97,Génie Civil,L3,2023
+50,Maalej,Slim,20-06-2001,,249-986-79,Informatique,L3,2022
+51,Baccar,Ines,11/02/2003,i.baccar@planet.tn,+216 58 889 255,Informatique,L3,2022
+52,Cherni,Lilia,2003/01/12,lilia.cherni@outlook.com,+216 55 291 486,Informatique,L2,2023
+53,Zemni,Rami,2004-06-22,rami.zemni@yahoo.fr,0021697805929,Gestion,L1,2023
+54,Cherni,Souhir,18/06/2005,chernisouhir@outlook.com,0021698774688,Gestion,L1,2023
+55,Kefi,Aya,1999/12/21,ayakefi@planet.tn,+216 58 506 068,Génie Civil,L2,2025
+56,Kacem,Leila,26-11-2004,l.kacem@isetr.tn,0021622432898,Génie Civil,L1,2023
+57,Chérif,Zied,2002/12/01,chérifzied AT outlook.com,248-518-88,ÉLECTRONIQUE,L2,2023
+58,Fekih,Beya,2004/09/16,beya.fekih@yahoo.fr,+216 58 722 170,Informatique,L2,2024
+59,Laabidi,MOUNIR,04/06/2002,mounir.laabidi@outlook.com,586-527-75,électronique,L1,2024
+60,Maalej,Khaled,13/06/2003,maalejkhaled AT outlook.com,23 165 820,ÉLECTRONIQUE,L3,2025
+61,Baccar,Jihene,2002-12-16,jbaccar@planet.tn,25027868,Électronique,L3,2023
+62,Baccar,Omar,05/09/2005,obaccar@hexabyte.tn,52 225 831,électronique,L2,2024
+63,Nouri,Mehdi,2000-03-11,mnouri@yahoo.fr,NA,Informatique,L2,2022
+64,Cherni,Achref,07-11-2002,a.cherni@yahoo.fr,+216 27 992 299,Informatique,L3,2024
+65,Kammoun,Nour,2004/03/25,nourkammoun@topnet.tn,24 027 677,Génie Civil,L2,2024
+66,Miled,Amira,2004-09-15,amira.miled@gmail.com,0021629259532,Génie Civil,L1,2023
+67,HASSINE,Anis,22/10/2002,anis_hassine@outlook.com,546-506-09,Informatique,L2,2025
+68,Souissi,Houssem,2000/07/20,houssemsouissi@isetr.tn,23 025 787,Génie Civil,L2,2024
+69,Jaziri,Syrine,2004-03-27,syrine.jaziri@isetr.tn,NA,Électronique,L3,2025
+70,Jaballah,Nabil,2003/11/25,nabiljaballah@hexabyte.tn,232-838-57,Électronique,L2,2025
+71,Fekih,Fatma,10/01/2002,ffekih@isetr.tn,595-844-19,Génie Civil,L1,2024
+72,Jribi,Rayen,06-09-1998,r.jribi@planet.tn,29308330,Informatique,L1,2024
+73,Haddad,Nawres,20/10/2002,nawres.haddad@hexabyte.tn,0021697026206,Génie Civil,L1,2024
+74,Cherni,Dorra,13/02/2003,dorra_cherni@isetr.tn,277-420-54,Électronique,L3,2023
+75,Haddad,Nader,2002-06-20,nhaddad@topnet.tn,+216 22 453 017,Génie Civil,L3,2023
+76,Haddad,Nader,2001-10-18,nader_haddad@hexabyte.tn,+21628391878,Informatique,L3,2025
+77,Baccar,Achref,23/06/2004,baccarachref@planet.tn,NA,Gestion,L1,2022
+78,Mzoughi,Ines,2004-09-05,inesmzoughi@isetr.tn,565-676-61,Informatique,L3,2023
+79,Trabelsi,Chedlia,24/04/1998,trabelsichedlia@planet.tn,50 310 690,Informatique,L3,2025
+80,Hmila,SAMI,12-01-2005,s.hmila@yahoo.fr,+216 53 342 836,Gestion,L2,2024
+81,Ben Amor,Wafa,1999-09-24,wafabenamor@yahoo.fr,0021623866882,Informatique,L2,2025
+82,hadhri,AYMEN,2005/09/21,aymenhadhri@topnet.tn,22 331 739,Génie Civil,L2,2023
+83,Louati,Bilel,2001/08/18,blouati@isetr.tn,983-204-89,Gestion,L2,2025
+84,Boujelben,Zied,2001/09/15,ziedboujelben@yahoo.fr,0021697080100,Informatique,L1,2024
+85,Moussa,Slim,12-02-2004,"slim_moussa@gmail,com",97408621,Génie Civil,L2,2022
+86,Ben Amor,Wassim,02/05/2005,,22217659,Gestion,L3,2022
+87,hmila,Ahlem,1999/09/24,ahlemhmila@gmail.com,0021655142939,Électronique,L1,2024
+88,Jemli,Dhia,2002-03-13,djemli AT isetr.tn,0021629586629,Gestion,L1,2025
+89,saidi,Wafa,13/07/2002,wsaidi@isetr.tn,978-610-15,Génie Civil,L1,2024
+90,Fekih,Fatma,2002/01/13,ffekih@outlook.com,50 647 154,Gestion,L1,2023
+91,Fradi,Lilia,2001-10-18,lfradi@outlook.com,+216 27 654 793,Électronique,L3,2023
+92,Trabelsi,Fatma,2004/09/02,ftrabelsi@isetr.tn,26434266,Électronique,L3,2025
+93,Chérif,Hadil,2005-11-19,h.chérif@yahoo.fr,55 561 014,Gestion,L2,2024
+94,Haddad,Ahmed,2000-12-08,a.haddad@isetr.tn,0021628875717,INFORMATIQUE,L1,2022
+95,Guesmi,Dorra,2000-06-11,d.guesmi@yahoo.fr,28 796 603,Informatique,L3,2023
+96,Moussa,Seif,2004-07-20,moussaseif@planet.tn,+216 99 249 912,Gestion,L1,2025
+97,Khalifa,Eya,27-12-2004,eyakhalifa@planet.tn,58 905 072,Électronique,L2,2023
+98,BOUKHRIS,Karim,07-09-2005,kboukhris@gmail.com,+216 98 788 191,Génie Civil,L1,2024
+99,Boussetta,MOUNIR,2003-09-09,mounir.boussetta@outlook.com,293-959-62,Gestion,L3,2024
+100,Cherni,Adel,1999/07/17,cherniadel@yahoo.fr,0021626232536,Électronique,L1,2022

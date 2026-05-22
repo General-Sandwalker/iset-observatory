@@ -1,0 +1,201 @@
+id_etudiant,matiere,note,coeff,semestre,annee_univ,date_evaluation
+66,Bases de Données,AB,1,S2,2024-2025,27-09-2023
+10,Microprocesesurs,21.49,2,S2,2024-2025,11/07/2025
+16,INTELLIGENCE ARTIFICIELEL,11.71,3,S1,2023-2024,13/07/2025
+69,Statistiques,15.95,1,S1,2023-2024,02/02/2023
+51,Intelligence Artificielle,4.2,1,S2,2024-2025,2024-04-04
+73,Programmation C,19.89,2,S1,2022-2023,2024-06-05
+80,Bases de Données,9.01,3,S1,2024-2025,2024-04-26
+83,Économie Générale,13.59,2,S1,2023-2024,2022-05-28
+26,Probabilités,14.55,,S2,2024-2025,18-09-2024
+20,Marketing,11.79,3,S2,2023-2024,05-09-2023
+73,Mécanique des Sols,14.72,1,S2,2023-2024,2023/09/26
+59,PROGRAMMATION C,19.37,3,S2,2024-2025,09-09-2022
+29,Développement Web,6.9,1,S2,2024-2025,2024-04-05
+78,Électronique Numérique,8.29,3,S2,2024/2025,2022-03-19
+66,Programmation C,3.33,2,S1,2023-2024,20-08-2023
+22,Statistiques,15.89,3,S2,2023-2024,13-04-2022
+3,Analyse Mathématique,13.69,1,S1,2022-2023,2022-02-16
+70,ARCHITECTURE DES ORDINATEURS,8.63,3,S2,2024-2025,19/06/2025
+33,Français,1.68,2,S1,2023-2024,2025/11/07
+14,Systèmes d'Exploitation,5.23,3,S2,2024-2025,12-03-2025
+40,Mécanique des Sols,14.72,3,S2,2022-2023,20/09/2024
+82,Algorithmique,9.43,2,S1,2024-2025,2025/10/21
+77,Programmation C,12.81,3,S1,2022-2023,06/10/2023
+84,Algorithmique,5.52,2,S1,2023-2024,2024/12/27
+36,Statistiques,18.59,2,S1,2023-2024,2024/09/27
+49,Mécanique des Sols,6.79,3,S2,2023-2024,2023-11-23
+53,Markteing,27.06,,S2,2023-2024,2024-03-24
+26,Statistiques,4.14,3,S1,2023-2024,01/10/2025
+48,Résistance des Matériaux,17.62,1,S1,2022-2023,18/08/2025
+51,Électronique Analogique,2.41,,S2,2023-2024,2024/03/18
+61,Résistance des Matériaux,8.48,2,S1,2022-2023,2023/02/24
+72,Économie Générale,16.0,1,S2,2022-2023,2024/08/10
+73,Programmation C,1.2,,S1,2023-2024,01-06-2024
+87,Résistance des Matériaux,12.98,2,S2,2024-2025,10-10-2025
+19,Génie Logiciel,8.44,,S1,2023-2024,21-10-2024
+57,Systèmes Asservis,11.74,1,S2,2023-2024,06-04-2022
+9,Fraçnais,10.48,3,S2,2024-2025,2025-11-05
+22,algorithmique,17.28,2,S2,2022-2023,24-11-2025
+82,Intelligence Artificielle,10.79,2,S2,2023-2024,10-06-2023
+89,Français,0.18,1,S1,2022-2023,23-03-2023
+29,PROBABILITÉS,16.0,2,S1,2023-2024,21-02-2024
+35,Électronique Numérique,25.81,1,S1,2024-2025,05/02/2023
+44,Économie Générale,19.96,,S2,2024-2025,2025/03/07
+2,Réseaux,7.7,1,S1,2024-2025,06/06/2024
+71,Développement Web,5.98,3,S1,2024-2025,19/05/2023
+32,Algorithmique,13.82,1,S2,2022-2023,2022-01-12
+14,Systèmes d'Exploitation,11.17,2,S1,2023-2024,16-01-2024
+70,Électronique Numérique,10.87,3,S2,2024-2025,à venir
+65,Gestion des Ressources Humaines,12.39,2,S2,2024-2025,2023/10/10
+42,Réseaux,0.88,1,S2,2023-2024,TBD
+78,ÉLECTRONIQUE NUMÉRIQUE,9.83,,S2,2023-2024,02/09/2024
+10,Analyse Mathématique,14.5,3,S2,2022-2023,2022/11/19
+90,Électronique Analogique,15.85,3,S2,2023-2024,14-06-2024
+42,Résistance des Matériaux,7.5,2,S2,2023-2024,2024-10-01
+39,Algorithmique,28.4,3,S2,2024-2025,2023-05-12
+39,Bases de Données,23.92,2,S1,2023/2024,25/02/2025
+43,Marketing,18.6,3,S1,2024/2025,2022-06-18
+90,Statistiques,19.95,3,S2,2024-2025,16/02/2024
+34,Bases de Données,13.96,1,S2,2022-2023,25-05-2022
+74,Bases de Données,7.31,,S1,2023-2024,TBD
+26,Électronique Analogique,21.49,3,Semestre1,2023-2024,2022-06-07
+67,Systèmes Asservis,14.6,1,S1,2023-2024,à venir
+35,Électronique Analogique,28.81,3,S2,2023-2024,18/10/2025
+65,Anglais,0.8,2,sem1,2023-2024,09/09/2023
+50,Architecture des Ordinateurs,18.98,2,S1,2022-2023,2023-07-08
+40,Résistance des Matériaux,4.14,1,S1,2022-2023,2025-03-21
+72,Intelligence Artificielle,6.35,2,S2,2023-2024,2024-03-25
+24,Algorithmique,5.34,1,S1,2024-2025,2025/12/21
+50,Français,4.53,2,S2,2024-2025,15-03-2022
+59,Statistiques,12.16,2,S1,2024-2025,17-04-2022
+6,Intelligence Artificielle,19.25,2,S1,2024-2025,2022-12-17
+83,Anglais,3.6,3,S2,2023-2024,2023/08/03
+84,Électronique Numérique,25.04,,S2,2022-2023,TBD
+43,Mécanique des Sols,3.24,1,S1,2024-2025,
+2,Anglais,16.15,1,S2,2024-2025,2022/04/18
+72,Archtiecture des Ordinateurs,1.1,1,S1,2023/2024,2025/03/06
+89,Électronique Numérique,3.55,,S1,2024-2025,2025/09/03
+16,Électronique Numérique,8.28,1,S1,2022-2023,2024/07/20
+74,Résistance des Matériaux,11.25,2,S2,2024/2025,21/08/2022
+27,Traitement du Signal,0.91,,S2,2023-2024,2024/05/17
+15,Électronique Analogique,11.38,1,S1,2024-2025,05-11-2022
+59,Intelligence Artificielle,16.28,3,S1,2023-2024,2024-06-03
+4,Comptabilité,16.85,3,S1,2023-2024,03-07-2024
+48,Anglais,10.5,1,S1,2023-2024,11-04-2023
+68,Algèbre Linéaire,17.44,3,S2,2024-2025,10/01/2022
+77,Bases de Données,2.06,1,S1,2024-2025,2023/05/09
+86,Réseaux,2.29,1,S1,2023-2024,à venir
+44,Intelligence Artificielle,9.41,,S2,2022-2023,2025/10/12
+26,Électronique Numérique,1.57,3,S2,2023-2024,2025-08-08
+79,Probabilités,13.99,2,S1,2023-2024,2025/03/10
+17,Développement Web,15.94,2,S2,2024-2025,13/08/2023
+89,Mécanique des Sols,11.34,1,S1,2022-2023,20-10-2022
+13,Architecture des Ordinateurs,8.12,3,S2,2023-2024,25/10/2023
+85,Systèmes d'Exploitation,12.31,2,S1,2024-2025,19/02/2024
+66,Gestion des Ressources Humaines,1.25,1,S1,2023-2024,23-07-2023
+92,Gestion des Ressources Humaines,4.22,3,S1,2024-2025,01/03/2023
+19,Microprocesseurs,19.5,2,S2,2024-2025,2025-07-12
+78,Algorithmique,4.73,3,S1,2022-2023,19-02-2024
+11,Systèmes d'Exploitation,17.19,,S1,2023-2024,2024/10/02
+2,Français,11.48,2,S1,2022-2023,21-01-2024
+74,Programmation C,25.36,1,S1,2022-2023,24/01/2024
+76,Microprocesseurs,16.16,2,S1,2023-2024,25-08-2023
+31,Électronique Analogique,4.22,3,S1,2024-2025,2024-08-24
+91,Gestion des Ressources Humaines,29.35,2,S1,2023-2024,2024/07/20
+35,Traitement du Signal,7.82,3,S2,2024-2025,TBD
+68,Réseaux,-,,S2,2023-2024,2022-02-28
+98,Thermodynamique,17.92,2,S1,2023-2024,06/05/2024
+8,Gestion des Ressources Humaines,5.16,1,S2,2024-2025,18-03-2022
+83,Réseaux,26.14,2,S1,2024-2025,22-01-2022
+90,Comptabilité,10.31,2,S1,2023-2024,2025/02/19
+39,GESTION DES RESSOURCES HUMAINES,7.31,2,S1,2024-2025,2025/11/07
+14,Thermodynamique,17.7,1,S2,2023-2024,18-08-2024
+3,Programmation C,14.42,3,S2,2022-2023,2023-02-02
+3,Français,-,1,S1,2024-2025,04-02-2022
+79,statistiques,16.72,1,S2,2024-2025,03/06/2023
+97,Économie Générale,3.3,,S2,2023-2024,2022-01-01
+91,Thermodynamique,13.87,1,S1,2024-2025,23/10/2023
+92,Français,16.53,3,S1,2023-2024,2023-08-25
+25,Réseaux,19.37,3,S1,2023-2024,à venir
+7,Intelligence Artificielle,29.06,3,S1,2023-2024,08/06/2022
+53,Analyse Mathématique,9.42,1,S2,2023-2024,2023/11/12
+17,Prgorammation C,2.22,2,S1,2022-2023,14-02-2023
+28,Mécanique des Sols,0.29,1,S2,2022-2023,02/07/2022
+94,Systèmes Asservis,7.89,1,S2,2023-2024,2025/04/05
+83,BASES DE DONNÉES,9.19,2,S2,2024-2025,15/11/2024
+10,Gestion des Ressources Humaines,0.65,3,S2,2023-2024,2024/12/02
+15,Gestion des Ressources Humaines,7.31,1,S2,2023-2024,2022-11-16
+98,Statistiques,10.07,2,S2,2023-2024,2024/08/20
+89,Traitement du Signal,3.77,2,S1,2023-2024,2024-02-23
+27,DéveloppementW eb,19.39,2,S1,2023/2024,2023/09/21
+44,Thermodynamique,11.87,2,S2,2023-2024,2024/04/16
+99,Programmation C,19.12,3,S2,2024-2025,2022-01-11
+48,Génie Logiciel,13.31,2,S2,2023-2024,2025-08-25
+41,SYSTÈMES D'EXPLOITATION,6.63,2,S2,2024-2025,16/12/2022
+71,Réseaux,16.82,1,S2,2024-2025,01/04/2024
+58,Électronique Analogique,10.24,3,S1,2023-2024,
+45,Algèbre Linéaire,1.75,2,S1,2024-2025,27/03/2025
+39,Français,6.71,,S2,2023-2024,2025-12-19
+49,Algèbre Linéarie,6.04,3,S1,2024-2025,2025/02/21
+63,Électronqiue Numérique,9.86,2,S2,2024-2025,17/06/2022
+21,mécanique des sols,2.71,2,sem1,2022-2023,2022-09-07
+77,Systèmes Asservis,6.32,2,S1,2022-2023,2023/01/05
+63,Économie Générale,2.05,1,S1,2023-2024,2023/01/16
+47,Systèmes d'Exploitation,11.95,3,S1,2024-2025,2024-03-07
+55,Électronique Numérique,0.38,1,S1,2023/2024,01/11/2024
+78,Analyse Mathématique,22.31,3,S1,2022-2023,19/09/2023
+75,systèmes asservis,5.64,,S2,2024-2025,22/08/2023
+46,Gestion des Ressources Humaines,8.15,2,S2,2023-2024,11-02-2022
+37,Anglais,19.52,2,S2,2023-2024,à venir
+63,Électronique Analogique,22.29,2,S1,2024-2025,07-06-2023
+55,Microprocesseurs,15.32,3,S1,2022-2023,2025-09-09
+14,Réseaux,12.57,1,S2,2024-2025,10/03/2024
+85,Systèmes Asservis,9.32,3,S1,2022-2023,04-07-2022
+49,Anglias,13.19,1,S2,2024-2025,22-10-2022
+88,Intelligence Artificielle,17.09,2,S2,2023-2024,02/06/2024
+17,Architecture des Ordinateurs,11.68,,S1,2024-2025,2023/04/08
+89,Bases de Données,-,2,S2,2024-2025,19-07-2024
+13,Traitement du Signal,4.12,3,S1,2024-2025,2022/09/07
+39,Mécanique des Sols,28.6,1,S1,2022-2023,26/06/2023
+39,Développement Web,10.8,3,S2,2022-2023,22-04-2025
+82,Intelligence Artificielle,18.14,1,S1,2024-2025,2024/07/14
+9,Thermodynamique,16.47,3,S2,2024/2025,16-08-2024
+5,Analyse Mathématique,5.17,1,S1,2024-2025,2022/02/11
+53,Marketing,7.94,1,S1,2022-2023,2024-08-03
+99,Traitement du Signal,14.74,2,S1,2023-2024,02-10-2024
+90,Réseaux,13.65,1,S1,2023-2024,22/12/2022
+86,Statistiques,12.78,3,S2,2024/2025,10/05/2025
+97,Statistiques,3.2,3,S1,2023-2024,24-08-2025
+43,Électronique Numérique,2.01,1,S1,2023-2024,TBD
+81,Algèbre Linéaire,3.16,3,S2,2023-2024,2023/05/06
+26,Bases de Données,17.53,,S1,2022-2023,2022/08/07
+22,Programmation C,24.31,3,S2,2024-2025,2025-02-08
+35,Algèbre Linéaire,8.63,2,S2,2024-2025,2022-05-09
+32,Marketing,1.71,3,S2,2024-2025,TBD
+61,Marketing,19.34,,S2,2024-2025,2023-09-02
+65,Français,2.64,1,Semestre2,2024-2025,12-12-2024
+34,Résistance des Matériaux,10.34,3,S2,2024/2025,
+21,Électronique Numérique,17.9,3,S2,2024-2025,2022/04/28
+22,Microprocesseurs,17.82,1,S2,2023-2024,à venir
+88,Réseaux,19.02,1,S2,2023-2024,02-06-2022
+94,Microprocesseurs,2.59,2,S1,2022-2023,2025/02/13
+99,Gestion des Ressources Humaines,3.26,3,S1,2024-2025,2024-11-20
+13,Architecture des Ordinateurs,8.91,3,S2,2022-2023,2025/02/02
+87,Statistiques,18.61,1,S2,2024-2025,2023-11-10
+38,mécnaique des sols,10.21,3,S1,2022-2023,24-02-2022
+24,Architecture des Ordinateurs,17.54,2,S2,2023-2024,06/04/2023
+78,Probabilités,22.05,1,S2,2022-2023,2024/10/27
+89,Électronique Analogique,22.01,1,S2,2024-2025,08-11-2023
+69,Analyse Mathématique,2.96,1,S2,2024/2025,2025-10-08
+51,Programmation C,16.95,2,sems1,2024-2025,23/04/2025
+55,Mécanique desS ols,26.6,3,sem1,2024-2025,2025-04-17
+88,Comptabilité,14.3,3,S2,2023-2024,2023/10/07
+12,Électronique Analogique,3.13,2,S2,2023-2024,2024-06-22
+65,Programmation C,2.28,2,S1,2023-2024,28/03/2024
+57,Traitement du Signal,26.5,1,S1,2024-2025,2023/06/06
+98,Développement Web,3.09,1,S2,2023-2024,2025-06-10
+48,Électronique Numérique,13.3,2,S2,2024-2025,2025/09/26
+57,Systèmes d'Exploitation,24.04,2,S2,2024-2025,2023/10/02
+88,Électronique Numérique,absent,3,S2,2024-2025,12-12-2025
+39,bases de données,14.8,2,S1,2024/2025,2024/04/27
