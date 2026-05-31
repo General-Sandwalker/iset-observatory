@@ -1,0 +1,19 @@
+graph TD
+    Actor1["Student/Alumni (Client)"]
+    Actor2["Guest/Anonymous"]
+    
+    subgraph Portal["Client Portal"]
+        P1["View Published Dashboards"]
+        P2["Take Surveys"]
+        P3["View Performance Reports"]
+        P4["Update Profile"]
+        P5["Change Password"]
+    end
+    
+    subgraph Public["Public Access"]
+        Q1["View Public Dashboards"]
+        Q2["Submit Survey Responses"]
+    end
+    
+    Actor1 --> Portal
+    Actor2 --> Public

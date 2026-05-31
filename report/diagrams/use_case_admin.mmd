@@ -1,0 +1,41 @@
+graph TD
+    Actor1["Administrator"]
+    
+    subgraph Data["Data Management"]
+        A1["Import CSV/Excel Files"]
+        A2["Browse Database Explorer"]
+        A3["Edit Table Data"]
+        A4["Manage Foreign Keys"]
+        A5["Execute SQL Queries"]
+    end
+    
+    subgraph Analytics["Analytics"]
+        B1["Create Charts"]
+        B2["Compose Dashboards"]
+        B3["Generate Reports"]
+        B4["Publish Dashboards"]
+    end
+    
+    subgraph AI["AI Features"]
+        C1["Natural Language Queries"]
+        C2["Generate Survey Fields"]
+        C3["Generate AI Reports"]
+    end
+    
+    subgraph Admin["Administration"]
+        D1["Manage Users"]
+        D2["Manage Roles & Permissions"]
+        D3["Manage Clients"]
+        D4["View System Stats"]
+    end
+    
+    subgraph Profile["User"]
+        E1["Manage Profile"]
+        E2["Customize Settings"]
+    end
+    
+    Actor1 --> Data
+    Actor1 --> Analytics
+    Actor1 --> AI
+    Actor1 --> Admin
+    Actor1 --> Profile

@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant B as Backend
+    participant G as Groq AI
+    participant DB as PostgreSQL
+
+    U->>F: Type natural language question
+    F->>B: POST /api/ai/query { question }
+    B->>B: Get available table schemas
+    B->>G: Send prompt + schema context
+    G-->>B: Generated SQL query
+    B->>DB: Execute generated SQL
+    DB-->>B: Query results
+    B->>B: Generate insights from data
+    B-->>F: { sql, data, insights }
+    F-->>U: Display results & chart
+    U->>F: Click "Save as Chart"
+    F->>B: POST /api/charts { config }
+    B-->>F: Chart created

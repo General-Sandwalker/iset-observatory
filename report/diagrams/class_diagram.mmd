@@ -1,0 +1,144 @@
+classDiagram
+    class User {
+        +Int id
+        +String email
+        +String password_hash
+        +String full_name
+        +String role
+        +Boolean is_active
+        +String user_type
+        +JSON preferences
+        +login()
+        +updateProfile()
+    }
+
+    class Role {
+        +Int id
+        +String name
+        +String description
+        +Boolean is_system
+        +getPermissions()
+    }
+
+    class Permission {
+        +Int id
+        +String name
+        +String description
+        +String category
+    }
+
+    class Client {
+        +Int id
+        +String cin
+        +String username
+        +String full_name
+        +String email
+        +String client_type
+        +Boolean is_active
+        +String password_hash
+        +login()
+        +takeSurvey()
+    }
+
+    class Dataset {
+        +Int id
+        +String name
+        +String file_name
+        +String table_name
+        +String status
+        +Int row_count
+        +JSON column_mapping
+        +upload()
+        +importData()
+    }
+
+    class Chart {
+        +Int id
+        +String title
+        +String chart_type
+        +Int dataset_id
+        +JSON config
+        +getData()
+    }
+
+    class Dashboard {
+        +Int id
+        +String title
+        +String description
+        +JSON layout
+        +Boolean is_public
+        +addChart()
+        +exportPDF()
+    }
+
+    class Survey {
+        +Int id
+        +String title
+        +String description
+        +String goal
+        +JSON schema
+        +String status
+        +Boolean is_public
+        +JSON client_types
+        +collectResponses()
+    }
+
+    class SurveyResponse {
+        +Int id
+        +Int survey_id
+        +Int client_id
+        +String respondent_type
+        +JSON answers
+    }
+
+    class Report {
+        +Int id
+        +String title
+        +Text content
+        +String report_type
+        +Int client_id
+        +Boolean is_public
+        +generate()
+    }
+
+    class SavedQuery {
+        +Int id
+        +String title
+        +Text sql
+        +String description
+        +Boolean is_public
+        +execute()
+    }
+
+    class ForeignKey {
+        +Int id
+        +String source_table
+        +String source_column
+        +String target_table
+        +String target_column
+    }
+
+    class Notification {
+        +Int id
+        +Int user_id
+        +String type
+        +String title
+        +String message
+        +Boolean is_read
+    }
+
+    User "1" --> "*" Role : has
+    Role "*" --> "*" Permission : has
+    User "1" --> "*" Dataset : uploads
+    Dataset "1" --> "*" Chart : based_on
+    User "1" --> "*" Chart : creates
+    Dashboard "*" --> "*" Chart : contains
+    User "1" --> "*" Dashboard : creates
+    User "1" --> "*" Survey : creates
+    Survey "1" --> "*" SurveyResponse : has
+    Client "1" --> "*" SurveyResponse : submits
+    User "1" --> "*" Client : manages
+    Client "1" --> "*" Report : has
+    Dataset "1" --> "*" Report : references
+    User "1" --> "*" SavedQuery : saves
+    User "1" --> "*" Notification : receives

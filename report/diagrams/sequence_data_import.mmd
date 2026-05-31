@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant U as Admin User
+    participant F as Frontend
+    participant B as Backend
+    participant P as File Parser
+    participant D as Dynamic Table
+    participant DB as PostgreSQL
+
+    U->>F: Select CSV/Excel file
+    F->>B: POST /api/datasets/upload (multipart)
+    B->>P: Parse file headers & preview
+    P-->>B: { headers, preview rows }
+    B-->>F: Dataset created (status: uploaded)
+    F-->>U: Show column mapping interface
+    U->>F: Configure column names & types
+    F->>B: POST /api/datasets/:id/import
+    B->>D: CREATE TABLE with mapped columns
+    B->>P: Read all rows from file
+    P-->>B: Parsed data rows
+    B->>D: Bulk INSERT rows
+    D->>DB: Execute INSERT statements
+    DB-->>D: Inserted rows count
+    D-->>B: { rowCount }
+    B-->>F: Dataset imported successfully
+    F-->>U: Show success with row count

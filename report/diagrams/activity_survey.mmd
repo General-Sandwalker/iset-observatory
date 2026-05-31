@@ -1,0 +1,17 @@
+graph TB
+    Start(["Start"]) --> A["Admin defines survey goal"]
+    A --> B{"Use AI to<br/>generate fields?"}
+    B -->|Yes| C["AI generates field schema<br/>based on goal"]
+    B -->|No| D["Admin manually creates fields"]
+    C --> E["Admin reviews & edits fields"]
+    D --> E
+    E --> F["Save as draft"]
+    F --> G{"Publish survey?"}
+    G -->|Yes| H["Set survey as published"]
+    G -->|No| I["Keep as draft"]
+    H --> J["Configure target audience<br/>(students/alumni/teachers)"]
+    J --> K["Share survey link<br/>(public or client)"]
+    K --> L["Clients submit responses"]
+    L --> M["Admin views responses & stats"]
+    M --> N["Export results"]
+    N --> End(["End"])

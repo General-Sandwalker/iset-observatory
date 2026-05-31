@@ -36,3 +36,6 @@ backend/uploads/*
 
 setup_github.sh
 .kilo
+
+chrome
+app_data

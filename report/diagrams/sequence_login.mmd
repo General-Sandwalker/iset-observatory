@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant B as Backend
+    participant DB as PostgreSQL
+    participant JWT as JWT Service
+
+    U->>F: Enter email & password
+    F->>B: POST /api/auth/login
+    B->>DB: Query user by email
+    DB-->>B: User record
+    B->>B: Verify password (bcrypt)
+    alt Invalid credentials
+        B-->>F: 401 Unauthorized
+        F-->>U: Show error message
+    else Valid credentials
+        B->>JWT: Generate JWT token
+        JWT-->>B: Signed token
+        B-->>F: { token, user }
+        F->>F: Store token in localStorage
+        F->>F: Redirect to dashboard
+    end

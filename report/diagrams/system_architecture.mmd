@@ -1,0 +1,52 @@
+graph TB
+    subgraph Client["Client Layer"]
+        direction LR
+        A1["React SPA<br/>(Frontend)"]
+        A2["Public Users<br/>(Anonymous)"]
+        A3["Client Portal<br/>(Students/Alumni)"]
+    end
+
+    subgraph Server["Server Layer"]
+        direction TB
+        B1["Nginx / Vercel<br/>(Reverse Proxy)"]
+        B2["Express API<br/>(Backend)"]
+        B3["Authentication<br/>Middleware"]
+        B4["Authorization<br/>Middleware"]
+    end
+
+    subgraph Services["Service Layer"]
+        direction TB
+        C1["AI Service<br/>(Groq LLM)"]
+        C2["File Parser<br/>(CSV/Excel)"]
+        C3["Table Builder<br/>(Dynamic SQL)"]
+        C4["Data Profiler"]
+        C5["Report Generator"]
+        C6["Survey Engine"]
+    end
+
+    subgraph Data["Data Layer"]
+        D1["PostgreSQL 15<br/>(Main Database)"]
+        D2["Dynamic Tables<br/>(Imported Data)"]
+        D3["Upload Storage<br/>(uploads/)"]
+    end
+
+    A1 --> B1
+    A2 --> B1
+    A3 --> B1
+    B1 --> B2
+    B2 --> B3
+    B3 --> B4
+    B4 --> C1
+    B4 --> C2
+    B4 --> C3
+    B4 --> C4
+    B4 --> C5
+    B4 --> C6
+    C1 --> D1
+    C2 --> D2
+    C3 --> D2
+    C4 --> D1
+    C5 --> D1
+    C6 --> D1
+    D1 --> D2
+    D2 --> D3

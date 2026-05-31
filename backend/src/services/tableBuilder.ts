@@ -42,10 +42,13 @@ export async function createDynamicTable(
     return `"${safeCol}" ${c.columnType.toUpperCase()}`;
   });
 
+  // Avoid duplicate `id` column when CSV already contains one
+  const hasIdColumn = columns.some(c => sanitiseIdentifier(c.columnName) === 'id');
+  const idDef = hasIdColumn ? '' : 'id SERIAL PRIMARY KEY,\n      ';
+
   const sql = `
     CREATE TABLE IF NOT EXISTS "${safeName}" (
-      id SERIAL PRIMARY KEY,
-      ${colDefs.join(',\n      ')},
+      ${idDef}${colDefs.join(',\n      ')},
       _imported_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `;
